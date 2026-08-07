@@ -5,18 +5,16 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-[2px] border px-2.5 text-button-sm whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border-transparent px-2.5 text-caption font-medium whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
-        // badge-new — the signature yellow pill, reserved / scarce
-        new: "rounded-[46px] border-transparent bg-primary text-primary-foreground",
-        outline: "border-foreground text-foreground bg-transparent",
-        success: "border-transparent bg-success/15 text-success",
-        warning: "border-transparent bg-warning/15 text-warning",
-        error: "border-transparent bg-destructive/15 text-destructive",
-        info: "border-transparent bg-info/15 text-info",
-        neutral: "border-transparent bg-muted text-muted-foreground",
+        neutral: "bg-[var(--surface-card)] text-foreground",
+        success: "bg-success/15 text-success",
+        warning: "bg-warning/15 text-warning",
+        error: "bg-destructive/15 text-destructive",
+        info: "bg-[var(--brand-accent)]/15 text-[var(--brand-accent)]",
+        outline: "border border-[var(--hairline)] text-foreground bg-transparent",
       },
     },
     defaultVariants: {

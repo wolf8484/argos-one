@@ -24,33 +24,28 @@ import {
 type Step = 'vehicle' | 'problem' | 'results'
 
 function StepBar({ current }: { current: Step }) {
-  const steps: Step[] = ['vehicle', 'problem', 'results']
-  const labels = ['Vehicle', 'Problem', 'Results']
-  const idx = steps.indexOf(current)
+  const steps: { key: Step; label: string }[] = [
+    { key: 'vehicle', label: 'Vehicle' },
+    { key: 'problem', label: 'Problem' },
+    { key: 'results', label: 'Results' },
+  ]
+  const idx = steps.findIndex((s) => s.key === current)
 
   return (
-    <div className="flex items-center gap-0 mb-8">
+    <div className="inline-flex items-center gap-1 bg-[var(--surface-soft)] rounded-full p-1.5 mb-8">
       {steps.map((s, i) => (
-        <div key={s} className="flex items-center flex-1">
-          <div className={`flex items-center gap-2 ${i <= idx ? 'text-foreground' : 'text-muted-foreground'}`}>
-            <div
-              className={`w-6 h-6 rounded-[2px] flex items-center justify-center text-caption font-bold shrink-0 border ${
-                i <= idx
-                  ? 'bg-primary text-primary-foreground border-transparent'
-                  : 'bg-transparent text-muted-foreground'
-              }`}
-              style={i > idx ? { borderColor: 'var(--hairline-strong)' } : undefined}
-            >
-              {i < idx ? <CheckCircle2 size={14} /> : i + 1}
-            </div>
-            <span className="text-button-sm hidden sm:block">{labels[i]}</span>
-          </div>
-          {i < steps.length - 1 && (
-            <div
-              className="flex-1 h-px mx-2"
-              style={{ backgroundColor: i < idx ? 'var(--foreground)' : 'var(--hairline)' }}
-            />
-          )}
+        <div
+          key={s.key}
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-nav-link transition-colors ${
+            i === idx
+              ? 'bg-card text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+              : i < idx
+              ? 'text-foreground'
+              : 'text-muted-foreground'
+          }`}
+        >
+          {i < idx ? <CheckCircle2 size={13} /> : <span className="text-caption font-semibold">{i + 1}</span>}
+          {s.label}
         </div>
       ))}
     </div>
@@ -150,16 +145,15 @@ export default function NewJobPage() {
   const vehicleReady = (vehicle.make && vehicle.model && vehicle.year) || manualMode
 
   return (
-    <div className="px-4 pt-8 pb-4">
+    <div className="px-5 pt-8 pb-4">
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => (step === 'vehicle' ? router.back() : setStep(step === 'results' ? 'problem' : 'vehicle'))}
-          className="p-2 rounded-[2px] border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          style={{ borderColor: 'var(--hairline-strong)' }}
+          className="flex items-center justify-center size-9 rounded-full border border-[var(--hairline)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={16} />
         </button>
-        <h1 className="text-heading-lg">New Diagnostic</h1>
+        <h1 className="text-title-lg">New Diagnostic</h1>
       </div>
 
       <StepBar current={step} />
@@ -167,13 +161,13 @@ export default function NewJobPage() {
       {step === 'vehicle' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-heading-md mb-1">Identify the vehicle</h2>
-            <p className="text-body-sm text-muted-foreground">Enter the VIN or fill in manually</p>
+            <h2 className="text-title-md mb-1">Identify the vehicle</h2>
+            <p className="text-body-sm">Enter the VIN or fill in manually</p>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-body-sm font-semibold text-muted-foreground">VIN Number</label>
-            <div className="flex gap-2 items-end">
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">VIN NUMBER</label>
+            <div className="flex gap-2">
               <Input
                 value={vin}
                 onChange={(e) => {
@@ -199,30 +193,28 @@ export default function NewJobPage() {
                 <AlertCircle size={14} /> {vinError}
               </p>
             )}
-            <p className="text-caption text-muted-foreground">
-              {vin.length}/17 characters
-            </p>
+            <p className="text-caption">{vin.length}/17 characters</p>
           </div>
 
           {vehicle.make && (
-            <div className="border rounded-none p-4 space-y-2" style={{ borderColor: 'var(--hairline-strong)' }}>
+            <div className="bg-[var(--surface-card)] rounded-lg p-4 space-y-2">
               <div className="flex items-center gap-2 text-foreground text-body-sm font-semibold">
-                <CheckCircle2 size={16} />
+                <CheckCircle2 size={16} className="text-success" />
                 VIN decoded successfully
               </div>
-              <p className="text-heading-md">
+              <p className="text-title-lg">
                 {vehicle.year} {vehicle.make} {vehicle.model}
               </p>
-              <div className="flex flex-wrap gap-2 text-caption text-muted-foreground">
-                {vehicle.engine && <span className="bg-muted px-2 py-1 rounded-[2px]">{vehicle.engine}</span>}
-                {vehicle.trim && <span className="bg-muted px-2 py-1 rounded-[2px]">{vehicle.trim}</span>}
-                {vehicle.bodyStyle && <span className="bg-muted px-2 py-1 rounded-[2px]">{vehicle.bodyStyle}</span>}
+              <div className="flex flex-wrap gap-2 text-caption">
+                {vehicle.engine && <span className="bg-card px-2 py-1 rounded-md">{vehicle.engine}</span>}
+                {vehicle.trim && <span className="bg-card px-2 py-1 rounded-md">{vehicle.trim}</span>}
+                {vehicle.bodyStyle && <span className="bg-card px-2 py-1 rounded-md">{vehicle.bodyStyle}</span>}
               </div>
             </div>
           )}
 
-          <div className="space-y-3">
-            <label className="text-body-sm font-semibold text-muted-foreground">Current Mileage</label>
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">CURRENT MILEAGE</label>
             <Input
               value={mileage}
               onChange={(e) => setMileage(e.target.value)}
@@ -234,7 +226,7 @@ export default function NewJobPage() {
           {!vehicle.make && (
             <button
               onClick={() => setManualMode(!manualMode)}
-              className="text-body-sm font-semibold underline underline-offset-4"
+              className="text-body-sm font-semibold text-foreground underline underline-offset-4 decoration-[var(--hairline)]"
             >
               {manualMode ? 'Hide manual entry' : 'Enter manually instead'}
             </button>
@@ -243,36 +235,22 @@ export default function NewJobPage() {
           {manualMode && !vehicle.make && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-body-sm font-semibold text-muted-foreground">Year</label>
-                <Input
-                  placeholder="2020"
-                  onChange={(e) => setVehicle((v) => ({ ...v, year: parseInt(e.target.value) }))}
-                />
+                <label className="text-caption font-semibold">YEAR</label>
+                <Input placeholder="2020" onChange={(e) => setVehicle((v) => ({ ...v, year: parseInt(e.target.value) }))} />
               </div>
               <div className="space-y-2">
-                <label className="text-body-sm font-semibold text-muted-foreground">Make</label>
-                <Input
-                  placeholder="Toyota"
-                  onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))}
-                />
+                <label className="text-caption font-semibold">MAKE</label>
+                <Input placeholder="Toyota" onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))} />
               </div>
               <div className="col-span-2 space-y-2">
-                <label className="text-body-sm font-semibold text-muted-foreground">Model</label>
-                <Input
-                  placeholder="Camry"
-                  onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))}
-                />
+                <label className="text-caption font-semibold">MODEL</label>
+                <Input placeholder="Camry" onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))} />
               </div>
             </div>
           )}
 
-          <Button
-            variant="primary"
-            className="w-full"
-            disabled={!vehicleReady}
-            onClick={() => setStep('problem')}
-          >
-            Continue <ArrowRight size={16} className="ml-2" />
+          <Button variant="primary" size="lg" className="w-full" disabled={!vehicleReady} onClick={() => setStep('problem')}>
+            Continue <ArrowRight size={16} className="ml-1" />
           </Button>
         </div>
       )}
@@ -280,14 +258,14 @@ export default function NewJobPage() {
       {step === 'problem' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-heading-md mb-1">What&apos;s the problem?</h2>
-            <p className="text-body-sm text-muted-foreground">
+            <h2 className="text-title-md mb-1">What&apos;s the problem?</h2>
+            <p className="text-body-sm">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </p>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-body-sm font-semibold text-muted-foreground">DTC Codes</label>
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">DTC CODES</label>
             <div className="flex gap-2">
               <Input
                 value={dtcInput}
@@ -296,7 +274,7 @@ export default function NewJobPage() {
                 placeholder="e.g. P0420"
                 className="font-mono"
               />
-              <Button variant="outline" size="icon" onClick={addDtc} className="shrink-0">
+              <Button variant="secondary" size="icon" onClick={addDtc} className="shrink-0 rounded-md">
                 <Plus size={16} />
               </Button>
             </div>
@@ -314,8 +292,8 @@ export default function NewJobPage() {
             )}
           </div>
 
-          <div className="space-y-3">
-            <label className="text-body-sm font-semibold text-muted-foreground">Symptoms observed</label>
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">SYMPTOMS OBSERVED</label>
             <Textarea
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
@@ -324,8 +302,8 @@ export default function NewJobPage() {
             />
           </div>
 
-          <div className="space-y-3">
-            <label className="text-body-sm font-semibold text-muted-foreground">Customer complaint (optional)</label>
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">CUSTOMER COMPLAINT (OPTIONAL)</label>
             <Textarea
               value={complaint}
               onChange={(e) => setComplaint(e.target.value)}
@@ -336,11 +314,12 @@ export default function NewJobPage() {
 
           <Button
             variant="primary"
+            size="lg"
             className="w-full"
             disabled={dtcCodes.length === 0 && !symptoms.trim()}
             onClick={goToResults}
           >
-            Find Solutions <ArrowRight size={16} className="ml-2" />
+            Find Solutions <ArrowRight size={16} className="ml-1" />
           </Button>
         </div>
       )}
@@ -348,12 +327,12 @@ export default function NewJobPage() {
       {step === 'results' && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-heading-md mb-1">Repair Intelligence</h2>
-            <div className="flex flex-wrap items-center gap-2 text-body-sm text-muted-foreground">
+            <h2 className="text-title-md mb-1">Repair Intelligence</h2>
+            <div className="flex flex-wrap items-center gap-2 text-body-sm">
               <span>{vehicle.year} {vehicle.make} {vehicle.model}</span>
               <span>·</span>
               {dtcCodes.map((c) => (
-                <span key={c} className="font-mono font-bold text-foreground">{c}</span>
+                <span key={c} className="font-mono font-semibold text-foreground">{c}</span>
               ))}
             </div>
           </div>
@@ -361,42 +340,38 @@ export default function NewJobPage() {
           {solutions.length === 0 ? (
             <div className="text-center py-12 space-y-3">
               <AlertCircle size={40} className="mx-auto text-muted-foreground" />
-              <p className="text-heading-sm">No previous repairs found</p>
-              <p className="text-body-sm text-muted-foreground">
-                Be the first to log a fix for this code — it helps the whole team.
-              </p>
-              <Button variant="outline" className="mt-4">
+              <p className="text-title-sm">No previous repairs found</p>
+              <p className="text-body-sm">Be the first to log a fix for this code — it helps the whole team.</p>
+              <Button variant="secondary" className="mt-4">
                 <Plus size={16} className="mr-2" /> Log a New Fix
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-caption text-muted-foreground">
-                {solutions.length} solutions found · ranked by success rate
-              </p>
+              <p className="text-caption">{solutions.length} solutions found · ranked by success rate</p>
               {solutions.map((sol, i) => (
                 <div
                   key={sol.id}
-                  className="border rounded-none p-4 space-y-3 transition-colors"
+                  className="bg-card border rounded-lg p-4 space-y-3 transition-colors"
                   style={{
-                    borderColor: confirmedId === sol.id ? 'var(--success)' : 'var(--hairline-strong)',
-                    backgroundColor: confirmedId === sol.id ? 'color-mix(in oklab, var(--success) 8%, transparent)' : undefined,
+                    borderColor: confirmedId === sol.id ? 'var(--success)' : 'var(--hairline)',
+                    backgroundColor: confirmedId === sol.id ? 'color-mix(in oklab, var(--success) 6%, var(--card))' : undefined,
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {i === 0 && <Badge variant="new">Top Match</Badge>}
+                        {i === 0 && <Badge variant="info">Top Match</Badge>}
                         <span className="text-base">{categoryIcon(sol.category)}</span>
                       </div>
-                      <p className="text-heading-sm leading-snug">{sol.title}</p>
+                      <p className="text-title-sm leading-snug">{sol.title}</p>
                     </div>
-                    <Badge variant={rateBadgeVariant(sol.successRate)} className="shrink-0 font-bold">
+                    <Badge variant={rateBadgeVariant(sol.successRate)} className="shrink-0 font-semibold">
                       {sol.successRate}%
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-4 text-caption text-muted-foreground">
+                  <div className="flex items-center gap-4 text-caption">
                     <span className="flex items-center gap-1">
                       <Wrench size={11} /> {sol.occurrences} repairs
                     </span>
@@ -408,7 +383,7 @@ export default function NewJobPage() {
                   {sol.parts.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {sol.parts.map((p) => (
-                        <span key={p} className="text-caption bg-muted text-muted-foreground px-2 py-0.5 rounded-[2px]">
+                        <span key={p} className="text-caption bg-[var(--surface-card)] px-2 py-0.5 rounded-md">
                           {p}
                         </span>
                       ))}
@@ -416,7 +391,7 @@ export default function NewJobPage() {
                   )}
 
                   {sol.notes && (
-                    <p className="text-body-sm text-muted-foreground bg-muted px-3 py-2 leading-relaxed">
+                    <p className="text-body-sm bg-[var(--surface-card)] rounded-md px-3 py-2 leading-relaxed">
                       {sol.notes}
                     </p>
                   )}
@@ -428,7 +403,7 @@ export default function NewJobPage() {
                   ) : (
                     <Button
                       size="sm"
-                      variant="outline"
+                      variant="secondary"
                       className="w-full"
                       onClick={() => setConfirmedId(sol.id)}
                       disabled={confirmedId !== null}
@@ -440,10 +415,7 @@ export default function NewJobPage() {
               ))}
 
               {!confirmedId && (
-                <button
-                  className="w-full flex items-center justify-center gap-2 text-body-sm font-semibold text-muted-foreground py-4 border border-dashed hover:text-foreground transition-colors"
-                  style={{ borderColor: 'var(--hairline-strong)' }}
-                >
+                <button className="w-full flex items-center justify-center gap-2 text-body-sm font-semibold text-muted-foreground py-4 border border-dashed border-[var(--hairline)] rounded-lg hover:text-foreground transition-colors">
                   <Plus size={16} /> None worked — log a new fix
                 </button>
               )}
@@ -451,8 +423,8 @@ export default function NewJobPage() {
           )}
 
           {confirmedId && (
-            <Button variant="primary" className="w-full" onClick={() => router.push('/dashboard')}>
-              Done <ChevronRight size={16} className="ml-2" />
+            <Button variant="primary" size="lg" className="w-full" onClick={() => router.push('/dashboard')}>
+              Done <ChevronRight size={16} className="ml-1" />
             </Button>
           )}
         </div>

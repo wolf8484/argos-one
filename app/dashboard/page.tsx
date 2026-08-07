@@ -13,53 +13,50 @@ export default function DashboardPage() {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <div className="px-4 pt-10 pb-4 space-y-8">
+    <div className="px-5 pt-10 pb-4 space-y-8">
       <div>
-        <p className="text-body-sm text-muted-foreground">{today}</p>
-        <h1 className="text-display-md mt-1">
-          Good morning<span className="text-primary">.</span>
-        </h1>
+        <p className="text-body-sm">{today}</p>
+        <h1 className="text-display-md mt-1">Good morning.</h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-0 border border-[var(--hairline-strong)]">
-        <div className="p-4 text-center border-r" style={{ borderColor: 'var(--hairline-strong)' }}>
-          <p className="text-heading-lg">{open.length}</p>
-          <p className="text-caption text-muted-foreground mt-1">Open jobs</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-[var(--surface-card)] rounded-lg p-4 text-center">
+          <p className="text-display-sm">{open.length}</p>
+          <p className="text-caption mt-1">Open jobs</p>
         </div>
-        <div className="p-4 text-center border-r" style={{ borderColor: 'var(--hairline-strong)' }}>
-          <p className="text-heading-lg text-success">{resolved.length}</p>
-          <p className="text-caption text-muted-foreground mt-1">Resolved</p>
+        <div className="bg-[var(--surface-card)] rounded-lg p-4 text-center">
+          <p className="text-display-sm text-success">{resolved.length}</p>
+          <p className="text-caption mt-1">Resolved</p>
         </div>
-        <div className="p-4 text-center">
-          <p className="text-heading-lg">1.8h</p>
-          <p className="text-caption text-muted-foreground mt-1">Avg time</p>
+        <div className="bg-[var(--surface-card)] rounded-lg p-4 text-center">
+          <p className="text-display-sm">1.8h</p>
+          <p className="text-caption mt-1">Avg time</p>
         </div>
       </div>
 
       <Link
         href="/dashboard/jobs/new"
-        className="flex items-center justify-between bg-primary text-primary-foreground rounded-[2px] p-5 text-button-lg active:opacity-85 transition-opacity"
+        className="flex items-center justify-between bg-primary text-primary-foreground rounded-lg px-5 py-4 text-title-sm shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:bg-[var(--primary-active)] transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Zap size={20} />
+          <Zap size={18} />
           <span>Start New Diagnostic</span>
         </div>
-        <ArrowRight size={20} />
+        <ArrowRight size={18} />
       </Link>
 
       <div className="space-y-3">
-        <h2 className="text-overline text-muted-foreground">Recent Jobs</h2>
+        <h2 className="text-nav-link text-muted-foreground">Recent Jobs</h2>
         {mockJobs.map((job) => (
           <Link
             key={job.id}
             href={`/dashboard/jobs/${job.id}`}
-            className="block bg-card border rounded-none p-4 hover:bg-muted transition-colors"
-            style={{ borderColor: 'var(--hairline-strong)' }}
+            className="block bg-card border border-[var(--hairline)] rounded-lg p-4 hover:shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-shadow"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-heading-sm truncate">
+                  <p className="text-title-sm truncate">
                     {job.vehicle.year} {job.vehicle.make} {job.vehicle.model}
                   </p>
                   <Badge variant={job.status === 'resolved' ? 'success' : 'warning'}>
@@ -70,22 +67,22 @@ export default function DashboardPage() {
                     )}
                   </Badge>
                 </div>
-                <p className="text-body-sm text-muted-foreground mt-1 truncate">{job.symptoms}</p>
+                <p className="text-body-sm mt-1 truncate">{job.symptoms}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {job.dtcCodes.map((code) => (
-                    <span key={code} className="text-caption font-mono font-bold bg-muted px-2 py-0.5 rounded-[2px]">
+                    <span key={code} className="text-code font-medium bg-[var(--surface-card)] px-2 py-0.5 rounded">
                       {code}
                     </span>
                   ))}
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <div className="flex items-center gap-1 text-caption text-muted-foreground">
+                <div className="flex items-center gap-1 text-caption">
                   <Clock size={10} />
                   <span>{formatDate(job.createdAt)}</span>
                 </div>
                 {job.vehicle.mileage && (
-                  <p className="text-caption text-muted-foreground mt-1">
+                  <p className="text-caption mt-1">
                     {job.vehicle.mileage.toLocaleString()} mi
                   </p>
                 )}
