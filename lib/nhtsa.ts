@@ -22,12 +22,14 @@ export async function decodeVin(vin: string): Promise<VinDecodeResult> {
   const bodyStyle = get('Body Class')
   const fuelType = get('Fuel Type - Primary')
 
-  // Make + Year are reliably present for any real VIN; Model is occasionally
-  // null for incomplete records, so it isn't required for a successful decode.
+  // Make + Year come from the WMI prefix and are present for any real VIN.
+  // Model/engine/trim require detailed records NHTSA lacks for many
+  // non-US-market vehicles (common in Australia) — so they're optional, and a
+  // missing Model is flagged as a partial decode rather than a failure.
   if (!make || !year) {
     const errorText = get('Error Text') || 'This VIN could not be decoded'
     return { make: '', model: '', year: '', engine: '', trim: '', bodyStyle: '', fuelType: '', error: errorText }
   }
 
-  return { make, model: model || '—', year, engine, trim, bodyStyle, fuelType }
+  return { make, model, year, engine, trim, bodyStyle, fuelType, partial: !model }
 }

@@ -83,7 +83,8 @@ export default function NewJobPage() {
   const [vinError, setVinError] = useState('')
   const [vehicle, setVehicle] = useState<Partial<Vehicle>>({})
   const [mileage, setMileage] = useState('')
-  const [manualMode, setManualMode] = useState(false)
+  const [vinApplied, setVinApplied] = useState(false)
+  const [vinPartial, setVinPartial] = useState(false)
 
   // Problem step
   const [dtcInput, setDtcInput] = useState('')
@@ -109,15 +110,20 @@ export default function NewJobPage() {
         setVinError(data.error || 'Could not decode VIN')
         return
       }
-      setVehicle({
+      // VIN is an assist: fill the manual fields with whatever decoded, so the
+      // mechanic can complete or correct anything (e.g. Model on EU/import VINs).
+      setVehicle((v) => ({
+        ...v,
         vin,
         make: data.make,
-        model: data.model,
+        model: data.model || '',
         year: parseInt(data.year),
         engine: data.engine,
         trim: data.trim,
         bodyStyle: data.bodyStyle,
-      })
+      }))
+      setVinApplied(true)
+      setVinPartial(Boolean(data.partial))
     } catch {
       setVinError('VIN lookup failed — check your connection')
     } finally {
@@ -142,7 +148,7 @@ export default function NewJobPage() {
     setStep('results')
   }
 
-  const vehicleReady = (vehicle.make && vehicle.model && vehicle.year) || manualMode
+  const vehicleReady = Boolean(vehicle.make && vehicle.model && vehicle.year)
 
   return (
     <div className="px-5 pt-8 pb-4">
@@ -162,22 +168,22 @@ export default function NewJobPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-title-md mb-1">Identify the vehicle</h2>
-            <p className="text-body-sm">Enter the VIN or fill in manually</p>
+            <p className="text-body-sm">Enter Year, Make &amp; Model — or scan a VIN to auto-fill.</p>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-caption font-semibold">VIN NUMBER</label>
+          {/* VIN assist */}
+          <div className="bg-[var(--surface-card)] rounded-lg p-4 space-y-2">
+            <label className="text-caption font-semibold">SCAN OR ENTER VIN (OPTIONAL)</label>
             <div className="flex gap-2">
               <Input
                 value={vin}
                 onChange={(e) => {
                   setVin(e.target.value.toUpperCase())
                   setVinError('')
-                  if (vehicle.make) setVehicle({})
                 }}
                 placeholder="17-character VIN"
                 maxLength={17}
-                className="font-mono tracking-wider"
+                className="font-mono tracking-wider bg-card"
               />
               <Button
                 variant="secondary"
@@ -193,23 +199,65 @@ export default function NewJobPage() {
                 <AlertCircle size={14} /> {vinError}
               </p>
             )}
-            <p className="text-caption">{vin.length}/17 characters</p>
+            {vinApplied && !vinPartial && (
+              <p className="text-body-sm text-success flex items-center gap-1.5">
+                <CheckCircle2 size={14} /> Auto-filled from VIN — check the details below.
+              </p>
+            )}
+            {vinApplied && vinPartial && (
+              <div className="flex items-start gap-2 rounded-md bg-warning/10 px-3 py-2">
+                <AlertCircle size={15} className="text-warning shrink-0 mt-0.5" />
+                <p className="text-body-sm text-foreground">
+                  <span className="font-semibold">Partial decode.</span> This VIN only
+                  returned Make &amp; Year — common for imported or European vehicles.
+                  Please enter the <span className="font-semibold">Model</span> below.
+                </p>
+              </div>
+            )}
+            {!vinApplied && !vinError && <p className="text-caption">{vin.length}/17 characters</p>}
           </div>
 
-          {vehicle.make && (
-            <div className="bg-[var(--surface-card)] rounded-lg p-4 space-y-2">
-              <div className="flex items-center gap-2 text-foreground text-body-sm font-semibold">
-                <CheckCircle2 size={16} className="text-success" />
-                VIN decoded successfully
-              </div>
-              <p className="text-title-lg">
-                {vehicle.year} {vehicle.make} {vehicle.model}
-              </p>
-              <div className="flex flex-wrap gap-2 text-caption">
-                {vehicle.engine && <span className="bg-card px-2 py-1 rounded-md">{vehicle.engine}</span>}
-                {vehicle.trim && <span className="bg-card px-2 py-1 rounded-md">{vehicle.trim}</span>}
-                {vehicle.bodyStyle && <span className="bg-card px-2 py-1 rounded-md">{vehicle.bodyStyle}</span>}
-              </div>
+          {/* Manual-primary fields (VIN fills these in) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-caption font-semibold">YEAR</label>
+              <Input
+                type="number"
+                placeholder="2020"
+                value={vehicle.year ?? ''}
+                onChange={(e) => setVehicle((v) => ({ ...v, year: e.target.value ? parseInt(e.target.value) : undefined }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-caption font-semibold">MAKE</label>
+              <Input
+                placeholder="Toyota"
+                value={vehicle.make ?? ''}
+                onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))}
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <label className="text-caption font-semibold flex items-center gap-1.5">
+                MODEL
+                {vinApplied && vinPartial && !vehicle.model && (
+                  <span className="text-warning font-semibold normal-case tracking-normal">· needs input</span>
+                )}
+              </label>
+              <Input
+                placeholder="Camry"
+                value={vehicle.model ?? ''}
+                onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))}
+                aria-invalid={vinApplied && vinPartial && !vehicle.model}
+              />
+            </div>
+          </div>
+
+          {/* Extra decoded details, when present */}
+          {(vehicle.engine || vehicle.trim || vehicle.bodyStyle) && (
+            <div className="flex flex-wrap gap-2 text-caption">
+              {vehicle.engine && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.engine}</span>}
+              {vehicle.trim && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.trim}</span>}
+              {vehicle.bodyStyle && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.bodyStyle}</span>}
             </div>
           )}
 
@@ -222,32 +270,6 @@ export default function NewJobPage() {
               type="number"
             />
           </div>
-
-          {!vehicle.make && (
-            <button
-              onClick={() => setManualMode(!manualMode)}
-              className="text-body-sm font-semibold text-foreground underline underline-offset-4 decoration-[var(--hairline)]"
-            >
-              {manualMode ? 'Hide manual entry' : 'Enter manually instead'}
-            </button>
-          )}
-
-          {manualMode && !vehicle.make && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-caption font-semibold">YEAR</label>
-                <Input placeholder="2020" onChange={(e) => setVehicle((v) => ({ ...v, year: parseInt(e.target.value) }))} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-caption font-semibold">MAKE</label>
-                <Input placeholder="Toyota" onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))} />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <label className="text-caption font-semibold">MODEL</label>
-                <Input placeholder="Camry" onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))} />
-              </div>
-            </div>
-          )}
 
           <Button variant="primary" size="lg" className="w-full" disabled={!vehicleReady} onClick={() => setStep('problem')}>
             Continue <ArrowRight size={16} className="ml-1" />

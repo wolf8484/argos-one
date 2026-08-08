@@ -62,5 +62,6 @@ export interface VinDecodeResult {
   trim: string
   bodyStyle: string
   fuelType: string
+  partial?: boolean
   error?: string
 }
