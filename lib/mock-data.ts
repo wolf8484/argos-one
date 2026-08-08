@@ -101,7 +101,7 @@ export const mockJobs: Job[] = [
     id: 'j1',
     vehicle: {
       id: 'v1',
-      vin: '1HGBH41JXMN109186',
+      vin: '2HGFC2F59KH000000',
       make: 'Honda',
       model: 'Civic',
       year: 2019,

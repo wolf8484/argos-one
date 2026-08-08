@@ -22,9 +22,12 @@ export async function decodeVin(vin: string): Promise<VinDecodeResult> {
   const bodyStyle = get('Body Class')
   const fuelType = get('Fuel Type - Primary')
 
-  if (!make || !model || !year) {
-    return { make: '', model: '', year: '', engine: '', trim: '', bodyStyle: '', fuelType: '', error: 'VIN not found' }
+  // Make + Year are reliably present for any real VIN; Model is occasionally
+  // null for incomplete records, so it isn't required for a successful decode.
+  if (!make || !year) {
+    const errorText = get('Error Text') || 'This VIN could not be decoded'
+    return { make: '', model: '', year: '', engine: '', trim: '', bodyStyle: '', fuelType: '', error: errorText }
   }
 
-  return { make, model, year, engine, trim, bodyStyle, fuelType }
+  return { make, model: model || '—', year, engine, trim, bodyStyle, fuelType }
 }
