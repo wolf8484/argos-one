@@ -20,6 +20,10 @@ This document is the design to review before we build.
   makes rankings improve as more repairs are logged.
 - **Case-insensitive uniqueness** on make/model names, enforced in the database —
   so `sq5` and `SQ5` can never both exist (matches the current UI behaviour).
+- **Customer data is private and role-gated.** Owner + mechanics share one app,
+  but only the owner (and admins they authorise) can see customer details.
+  Client PII is never shared globally and is subject to the Australian Privacy
+  Act / APPs. See §3.5 (roles & seats) and §7 (customers).
 
 ---
 
@@ -67,17 +71,23 @@ create unique index models_make_name_lower_idx on models (make_id, lower(name));
 
 ```sql
 create table shops (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null,
-  created_at timestamptz not null default now()
+  id               uuid primary key default gen_random_uuid(),
+  name             text not null,
+  plan             text not null default 'standard',  -- billing tier
+  admin_seat_limit int  not null default 2,           -- included admin seats
+  created_at       timestamptz not null default now()
 );
 
--- One row per authenticated user, linking them to a shop
+create type shop_role as enum ('owner', 'admin', 'mechanic');
+
+-- One row per authenticated user, linking them to a shop.
+-- 'owner' and 'admin' are the "admin seats" that can see customer data;
+-- 'mechanic' cannot. See §3.5 for roles & seats.
 create table profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   shop_id    uuid references shops(id),
   full_name  text,
-  role       text not null default 'mechanic',  -- mechanic | owner
+  role       shop_role not null default 'mechanic',
   created_at timestamptz not null default now()
 );
 ```
@@ -192,6 +202,63 @@ create policy "shop writes its jobs" on jobs for insert to authenticated
 -- same pattern for vehicles, repairs (repairs via job -> shop)
 ```
 
+### 3.5 Roles, seats & billing
+
+One shop, one app — the owner and all mechanics sign in to the same product.
+Access to **customer information** is gated by role, so a mechanic can run
+diagnostics and log repairs without ever seeing client contact details.
+
+**Roles** (`profiles.role`):
+
+| Role | Diagnostics & repairs | Customer details (§7) | Manage team / seats |
+|---|---|---|---|
+| `owner` | ✅ | ✅ | ✅ |
+| `admin` | ✅ | ✅ | — (view/manage clients only) |
+| `mechanic` | ✅ | ❌ hidden | — |
+
+- The **owner** creates the shop and can promote any mechanic to **admin** (an
+  "admin seat") to grant them customer-data access — "the owner, or whoever he
+  authorises."
+- `owner` + `admin` together count as **admin seats**, capped by
+  `shops.admin_seat_limit`.
+
+**Billing model.** The subscription includes a base number of admin seats
+(default **2** — e.g. owner + 1 admin); additional admin seats are billed extra.
+Mechanic seats are not admin seats (billed separately or unlimited, TBD by plan).
+
+- `shops.admin_seat_limit` holds the included allowance.
+- Promoting a mechanic to `owner`/`admin` beyond the limit is blocked until the
+  extra seat is purchased. **Enforce server-side** (a trigger or an RPC that
+  counts current admins vs. limit) — never trust the client for a paywall.
+
+```sql
+-- Guard: block promotions past the shop's admin_seat_limit.
+create or replace function enforce_admin_seat_limit()
+returns trigger language plpgsql as $$
+declare
+  seat_limit int;
+  admin_count int;
+begin
+  if new.role in ('owner','admin') then
+    select admin_seat_limit into seat_limit from shops where id = new.shop_id;
+    select count(*) into admin_count
+      from profiles
+      where shop_id = new.shop_id and role in ('owner','admin') and id <> new.id;
+    if admin_count + 1 > seat_limit then
+      raise exception 'Admin seat limit (%) reached — purchase an extra seat', seat_limit;
+    end if;
+  end if;
+  return new;
+end $$;
+
+create trigger admin_seat_guard
+  before insert or update of role on profiles
+  for each row execute function enforce_admin_seat_limit();
+```
+
+> Actual charging (Stripe, plan tiers, proration) is out of scope for this doc —
+> `plan` + `admin_seat_limit` are the hooks the billing system will drive.
+
 ---
 
 ## 4. App integration — what changes
@@ -225,6 +292,9 @@ Client setup:
 3. **Phase 3 — Jobs & knowledge base.** Move jobs/vehicles/solutions/repairs to
    Supabase; replace mock data; the ranking view drives the Results screen and it
    starts genuinely learning from logged repairs.
+4. **Phase 4 — Customers & roles.** Add the `customers` table, role-gated access
+   (owner/admin vs mechanic), team management, and the admin-seat limit. Triggers
+   the privacy-compliance work below. See §7.
 
 ---
 
@@ -236,3 +306,70 @@ Client setup:
 2. Confirm the **catalog is global** (shared across all shops) — or say if you'd
    rather each shop keep its own private catalog.
 3. Confirm **Phase 1 first** (catalog only) vs. going wider.
+
+---
+
+## 7. Phase 4 — Customers & client privacy
+
+Client details are **personal information** under the Australian Privacy Act 1988
+and the Australian Privacy Principles (APPs). They are stored **private per-shop**,
+gated to `owner`/`admin` roles, and **never** enter the shared/global layer.
+
+### Schema
+
+```sql
+create table customers (
+  id         uuid primary key default gen_random_uuid(),
+  shop_id    uuid not null references shops(id) on delete cascade,
+  full_name  text not null,
+  phone      text,
+  email      text,
+  address    text,
+  notes      text,
+  created_at timestamptz not null default now()
+);
+
+-- Link a customer to the cars they own (vehicles already exist from Phase 3).
+alter table vehicles add column customer_id uuid references customers(id);
+```
+
+This unlocks per-customer service history: a car's past jobs, "this vehicle was
+here 8 months ago for the same code," and follow-up reminders.
+
+### Access control (role-gated RLS)
+
+`customers` is readable/writable only by the **owner/admin** of the owning shop —
+mechanics in the same shop cannot see it:
+
+```sql
+alter table customers enable row level security;
+
+create policy "admins read shop customers" on customers for select to authenticated
+  using (
+    shop_id = (select shop_id from profiles where id = auth.uid())
+    and (select role from profiles where id = auth.uid()) in ('owner','admin')
+  );
+
+create policy "admins write shop customers" on customers for all to authenticated
+  using (
+    shop_id = (select shop_id from profiles where id = auth.uid())
+    and (select role from profiles where id = auth.uid()) in ('owner','admin')
+  )
+  with check (
+    shop_id = (select shop_id from profiles where id = auth.uid())
+    and (select role from profiles where id = auth.uid()) in ('owner','admin')
+  );
+```
+
+> Mechanics still work jobs on a vehicle; they just don't get the owner's
+> name/phone/email. The UI hides customer fields when the signed-in user's role
+> is `mechanic` — but RLS is the real guard (UI hiding alone is not security).
+
+### Privacy-compliance checklist (before go-live with real customer data)
+
+- [ ] Privacy policy covering what's collected, why, and how it's stored/shared.
+- [ ] Consent capture for storing customer contact details.
+- [ ] Data-access limited by role (the RLS above) + audit of who can export.
+- [ ] Deletion / "right to be forgotten" path for a customer record.
+- [ ] Confirm the anonymised repair-intelligence layer carries **no** customer
+      identifiers, VINs, or shop identity before any cross-shop sharing.
