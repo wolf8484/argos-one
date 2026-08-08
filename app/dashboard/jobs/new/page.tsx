@@ -1,12 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { getSolutionsForCodes } from '@/lib/mock-data'
+import {
+  addCustomMake,
+  addCustomModel,
+  getAllMakes,
+  getModelsForMake,
+  normalizeMake,
+} from '@/lib/vehicle-data'
 import { Solution, Vehicle } from '@/types'
 import {
   ArrowLeft,
@@ -86,6 +94,31 @@ export default function NewJobPage() {
   const [vinApplied, setVinApplied] = useState(false)
   const [vinPartial, setVinPartial] = useState(false)
 
+  // Make/model catalog (loaded after mount so localStorage additions are included
+  // without causing an SSR/hydration mismatch). catalogVersion re-derives lists.
+  const [makeOptions, setMakeOptions] = useState<string[]>([])
+  const [modelOptions, setModelOptions] = useState<string[]>([])
+  const [catalogVersion, setCatalogVersion] = useState(0)
+
+  useEffect(() => {
+    setMakeOptions(getAllMakes())
+  }, [catalogVersion])
+
+  useEffect(() => {
+    setModelOptions(vehicle.make ? getModelsForMake(vehicle.make) : [])
+  }, [vehicle.make, catalogVersion])
+
+  function onMakeChange(make: string) {
+    setVehicle((v) => {
+      const changed = (v.make ?? '').toLowerCase() !== make.toLowerCase()
+      return { ...v, make, model: changed ? '' : v.model }
+    })
+  }
+
+  function onModelChange(model: string) {
+    setVehicle((v) => ({ ...v, model }))
+  }
+
   // Problem step
   const [dtcInput, setDtcInput] = useState('')
   const [dtcCodes, setDtcCodes] = useState<string[]>([])
@@ -115,7 +148,7 @@ export default function NewJobPage() {
       setVehicle((v) => ({
         ...v,
         vin,
-        make: data.make,
+        make: normalizeMake(data.make),
         model: data.model || '',
         year: parseInt(data.year),
         engine: data.engine,
@@ -230,10 +263,17 @@ export default function NewJobPage() {
             </div>
             <div className="space-y-2">
               <label className="text-caption font-semibold">MAKE</label>
-              <Input
-                placeholder="Toyota"
+              <Combobox
                 value={vehicle.make ?? ''}
-                onChange={(e) => setVehicle((v) => ({ ...v, make: e.target.value }))}
+                onValueChange={onMakeChange}
+                onAdd={(m) => {
+                  addCustomMake(m)
+                  setCatalogVersion((n) => n + 1)
+                }}
+                options={makeOptions}
+                allowAdd
+                placeholder="Select make"
+                searchPlaceholder="Search or add make…"
               />
             </div>
             <div className="col-span-2 space-y-2">
@@ -243,11 +283,20 @@ export default function NewJobPage() {
                   <span className="text-warning font-semibold normal-case tracking-normal">· needs input</span>
                 )}
               </label>
-              <Input
-                placeholder="Camry"
+              <Combobox
                 value={vehicle.model ?? ''}
-                onChange={(e) => setVehicle((v) => ({ ...v, model: e.target.value }))}
-                aria-invalid={vinApplied && vinPartial && !vehicle.model}
+                onValueChange={onModelChange}
+                onAdd={(m) => {
+                  if (vehicle.make) addCustomModel(vehicle.make, m)
+                  setCatalogVersion((n) => n + 1)
+                }}
+                options={modelOptions}
+                allowAdd
+                disabled={!vehicle.make}
+                invalid={vinApplied && vinPartial && !vehicle.model}
+                placeholder={vehicle.make ? 'Select model' : 'Select make first'}
+                searchPlaceholder="Search or add model…"
+                emptyText="No models yet — type to add one"
               />
             </div>
           </div>
