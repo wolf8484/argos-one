@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Combobox } from '@/components/ui/combobox'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { VoiceInput } from '@/components/ui/voice-input'
 import { getSolutionsForCodes } from '@/lib/mock-data'
 import {
   addCustomMake,
@@ -26,7 +27,14 @@ import {
   Wrench,
   ChevronRight,
   AlertCircle,
+  Camera,
 } from 'lucide-react'
+
+interface JobPhoto {
+  id: string
+  url: string
+  file: File
+}
 
 type Step = 'vehicle' | 'problem' | 'results'
 
@@ -124,6 +132,36 @@ export default function NewJobPage() {
   const [dtcCodes, setDtcCodes] = useState<string[]>([])
   const [symptoms, setSymptoms] = useState('')
   const [complaint, setComplaint] = useState('')
+
+  // Check-in photos. Kept in-memory for now (object URLs); they'll persist to
+  // Supabase Storage once jobs are backed by the database (Phase 3).
+  const [photos, setPhotos] = useState<JobPhoto[]>([])
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const photosRef = useRef<JobPhoto[]>([])
+  photosRef.current = photos
+
+  useEffect(() => {
+    // Revoke any outstanding object URLs when leaving the flow.
+    return () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.url))
+  }, [])
+
+  function addPhotos(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const next = Array.from(files).map((file) => ({
+      id: crypto.randomUUID(),
+      url: URL.createObjectURL(file),
+      file,
+    }))
+    setPhotos((p) => [...p, ...next])
+  }
+
+  function removePhoto(id: string) {
+    setPhotos((p) => {
+      const found = p.find((x) => x.id === id)
+      if (found) URL.revokeObjectURL(found.url)
+      return p.filter((x) => x.id !== id)
+    })
+  }
 
   // Results step
   const [solutions, setSolutions] = useState<Solution[]>([])
@@ -363,23 +401,72 @@ export default function NewJobPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-caption font-semibold">SYMPTOMS OBSERVED</label>
+            <div className="flex items-center justify-between">
+              <label className="text-caption font-semibold">SYMPTOMS OBSERVED</label>
+              <VoiceInput onTranscript={(t) => setSymptoms((s) => (s ? `${s} ${t}` : t))} />
+            </div>
             <Textarea
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
-              placeholder="Describe what you see, hear, or feel…"
+              placeholder="Describe what you see, hear, or feel — or tap Dictate…"
               className="resize-none min-h-[100px]"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-caption font-semibold">CUSTOMER COMPLAINT (OPTIONAL)</label>
+            <div className="flex items-center justify-between">
+              <label className="text-caption font-semibold">CUSTOMER COMPLAINT (OPTIONAL)</label>
+              <VoiceInput onTranscript={(t) => setComplaint((s) => (s ? `${s} ${t}` : t))} />
+            </div>
             <Textarea
               value={complaint}
               onChange={(e) => setComplaint(e.target.value)}
-              placeholder="In their own words…"
+              placeholder="In their own words — or tap Dictate…"
               className="resize-none min-h-[80px]"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-caption font-semibold">PHOTOS</label>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                addPhotos(e.target.files)
+                e.target.value = ''
+              }}
+            />
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {photos.map((p) => (
+                <div key={p.id} className="relative aspect-square overflow-hidden rounded-md border border-[var(--hairline)]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.url} alt="Car check-in" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(p.id)}
+                    aria-label="Remove photo"
+                    className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-md border border-dashed border-[var(--hairline)] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Camera size={20} />
+                <span className="text-caption">Add photo</span>
+              </button>
+            </div>
+            {photos.length > 0 && (
+              <p className="text-caption">{photos.length} photo{photos.length > 1 ? 's' : ''} attached</p>
+            )}
           </div>
 
           <Button
