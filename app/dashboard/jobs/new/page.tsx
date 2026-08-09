@@ -13,7 +13,6 @@ import {
   addCustomModel,
   getAllMakes,
   getModelsForMake,
-  normalizeMake,
 } from '@/lib/vehicle-data'
 import { Solution, Vehicle } from '@/types'
 import {
@@ -101,11 +100,12 @@ export default function NewJobPage() {
   const [catalogVersion, setCatalogVersion] = useState(0)
 
   useEffect(() => {
-    setMakeOptions(getAllMakes())
+    getAllMakes().then(setMakeOptions)
   }, [catalogVersion])
 
   useEffect(() => {
-    setModelOptions(vehicle.make ? getModelsForMake(vehicle.make) : [])
+    if (vehicle.make) getModelsForMake(vehicle.make).then(setModelOptions)
+    else setModelOptions([])
   }, [vehicle.make, catalogVersion])
 
   function onMakeChange(make: string) {
@@ -148,7 +148,7 @@ export default function NewJobPage() {
       setVehicle((v) => ({
         ...v,
         vin,
-        make: normalizeMake(data.make),
+        make: data.make,
         model: data.model || '',
         year: parseInt(data.year),
         engine: data.engine,
@@ -267,8 +267,7 @@ export default function NewJobPage() {
                 value={vehicle.make ?? ''}
                 onValueChange={onMakeChange}
                 onAdd={(m) => {
-                  addCustomMake(m)
-                  setCatalogVersion((n) => n + 1)
+                  addCustomMake(m).then(() => setCatalogVersion((n) => n + 1))
                 }}
                 options={makeOptions}
                 allowAdd
@@ -287,8 +286,8 @@ export default function NewJobPage() {
                 value={vehicle.model ?? ''}
                 onValueChange={onModelChange}
                 onAdd={(m) => {
-                  if (vehicle.make) addCustomModel(vehicle.make, m)
-                  setCatalogVersion((n) => n + 1)
+                  const p = vehicle.make ? addCustomModel(vehicle.make, m) : Promise.resolve()
+                  p.then(() => setCatalogVersion((n) => n + 1))
                 }}
                 options={modelOptions}
                 allowAdd
