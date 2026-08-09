@@ -33,6 +33,19 @@ function getCtor(): SpeechRecognitionCtor | undefined {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition
 }
 
+// iOS forces every browser onto WebKit, where webkitSpeechRecognition is
+// present but non-functional. Detect iOS and steer users to the native
+// keyboard mic instead of showing a button that silently fails.
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+}
+
+type Mode = 'none' | 'button' | 'ios-hint'
+
 export function VoiceInput({
   onTranscript,
   className,
@@ -40,22 +53,38 @@ export function VoiceInput({
   onTranscript: (text: string) => void
   className?: string
 }) {
-  const [supported, setSupported] = useState(false)
+  const [mode, setMode] = useState<Mode>('none')
   const [listening, setListening] = useState(false)
   const recRef = useRef<SpeechRecognitionLike | null>(null)
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    setSupported(Boolean(getCtor()))
-    return () => recRef.current?.stop()
+    if (isIOS()) setMode('ios-hint')
+    else if (getCtor()) setMode('button')
+
+    return () => {
+      recRef.current?.stop()
+      if (watchdogRef.current) clearTimeout(watchdogRef.current)
+    }
   }, [])
+
+  function reset() {
+    setListening(false)
+    if (watchdogRef.current) {
+      clearTimeout(watchdogRef.current)
+      watchdogRef.current = null
+    }
+  }
 
   function toggle() {
     if (listening) {
       recRef.current?.stop()
+      reset()
       return
     }
     const Ctor = getCtor()
     if (!Ctor) return
+
     const rec = new Ctor()
     rec.lang = 'en-AU'
     rec.continuous = false
@@ -67,15 +96,39 @@ export function VoiceInput({
         .trim()
       if (text) onTranscript(text)
     }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
+    rec.onend = () => reset()
+    rec.onerror = () => reset()
     recRef.current = rec
+
     setListening(true)
-    rec.start()
+    try {
+      rec.start()
+    } catch {
+      // start() throws if mic is busy or blocked — never leave the UI stuck.
+      reset()
+      return
+    }
+    // Watchdog: force-stop if nothing fires within 12s, so it can't freeze.
+    watchdogRef.current = setTimeout(() => {
+      try {
+        rec.stop()
+      } catch {
+        /* already stopped */
+      }
+      reset()
+    }, 12000)
   }
 
-  // Hidden on browsers without speech recognition — the textarea still works.
-  if (!supported) return null
+  if (mode === 'none') return null
+
+  if (mode === 'ios-hint') {
+    // iPhone/iPad: the on-screen keyboard's mic is the reliable dictation path.
+    return (
+      <span className={cn('inline-flex items-center gap-1.5 text-caption text-muted-foreground', className)}>
+        <Mic size={13} /> Use the keyboard mic
+      </span>
+    )
+  }
 
   return (
     <button
