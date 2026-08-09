@@ -373,3 +373,41 @@ create policy "admins write shop customers" on customers for all to authenticate
 - [ ] Deletion / "right to be forgotten" path for a customer record.
 - [ ] Confirm the anonymised repair-intelligence layer carries **no** customer
       identifiers, VINs, or shop identity before any cross-shop sharing.
+
+---
+
+## 8. Storage & scaling
+
+**One shared Supabase project for all shops — never one project per client.**
+Data is separated logically by `shop_id` + RLS, not by separate databases. This
+is standard SaaS multi-tenancy: one codebase, one DB, one deploy; each shop sees
+only its own rows/files.
+
+### Where each data type lives
+
+| Data | Service | Footprint |
+|---|---|---|
+| Text (jobs, symptoms, complaints, VIN, catalog) | Postgres tables | Negligible — a job record is a few KB |
+| Photos | Supabase Storage (one bucket) | The only meaningful consumer of space |
+
+Files are namespaced by path, e.g. `shop-{id}/job-{id}/photo-1.jpg`, so a single
+bucket cleanly holds every shop's photos, isolated by Storage RLS policies.
+
+### Image compression is the key lever (Phase 3)
+
+Photos dominate storage cost. Compress/resize **client-side before upload**
+(~1600px longest edge, ~300 KB target) — roughly 10× more mileage per GB.
+
+| | Raw phone photo | Compressed (~300 KB) |
+|---|---|---|
+| 5 photos/job | ~15 MB | ~1.5 MB |
+| 1,000 jobs | ~15 GB | ~1.5 GB |
+| 10,000 jobs | ~150 GB | ~15 GB |
+
+### Plan progression
+
+- **Free** to start (~1 GB storage / 500 MB DB — approximate; verify current limits).
+- **Pro (~US$25/mo)** when onboarding paying shops (~100 GB storage / 8 GB DB,
+  usage-based beyond).
+- Subscription revenue (admin-seat model, §3.5) comfortably covers per-shop
+  storage cost. Expand only when actually needed.
