@@ -1,50 +1,26 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Mic, Square } from 'lucide-react'
+import { Loader2, Mic, Square } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
-// Minimal typings for the Web Speech API (not in the standard TS DOM lib).
-interface SpeechResultAlternative {
-  transcript: string
-}
-interface SpeechRecognitionEventLike {
-  results: ArrayLike<ArrayLike<SpeechResultAlternative>>
-}
-interface SpeechRecognitionLike {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  start: () => void
-  stop: () => void
-  onresult: ((e: SpeechRecognitionEventLike) => void) | null
-  onend: (() => void) | null
-  onerror: (() => void) | null
-}
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike
+type Status = 'idle' | 'recording' | 'transcribing' | 'error'
 
-function getCtor(): SpeechRecognitionCtor | undefined {
-  if (typeof window === 'undefined') return undefined
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor
-    webkitSpeechRecognition?: SpeechRecognitionCtor
-  }
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition
+const MAX_SECONDS = 60
+
+function pickMimeType(): string | undefined {
+  if (typeof MediaRecorder === 'undefined') return undefined
+  // webm on Chrome/Android/desktop, mp4 on iOS Safari/Chrome.
+  const types = ['audio/webm', 'audio/mp4', 'audio/ogg']
+  return types.find((t) => MediaRecorder.isTypeSupported?.(t))
 }
 
-// iOS forces every browser onto WebKit, where webkitSpeechRecognition is
-// present but non-functional. Detect iOS and steer users to the native
-// keyboard mic instead of showing a button that silently fails.
-function isIOS(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
+function extFor(mime: string): string {
+  if (mime.includes('mp4')) return 'mp4'
+  if (mime.includes('ogg')) return 'ogg'
+  return 'webm'
 }
-
-type Mode = 'none' | 'button' | 'ios-hint'
 
 export function VoiceInput({
   onTranscript,
@@ -53,99 +29,131 @@ export function VoiceInput({
   onTranscript: (text: string) => void
   className?: string
 }) {
-  const [mode, setMode] = useState<Mode>('none')
-  const [listening, setListening] = useState(false)
-  const recRef = useRef<SpeechRecognitionLike | null>(null)
-  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [supported, setSupported] = useState(false)
+  const [status, setStatus] = useState<Status>('idle')
+  const [seconds, setSeconds] = useState(0)
+
+  const recRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (isIOS()) setMode('ios-hint')
-    else if (getCtor()) setMode('button')
-
-    return () => {
-      recRef.current?.stop()
-      if (watchdogRef.current) clearTimeout(watchdogRef.current)
-    }
+    setSupported(
+      typeof navigator !== 'undefined' &&
+        Boolean(navigator.mediaDevices?.getUserMedia) &&
+        typeof MediaRecorder !== 'undefined'
+    )
+    return () => cleanup()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function reset() {
-    setListening(false)
-    if (watchdogRef.current) {
-      clearTimeout(watchdogRef.current)
-      watchdogRef.current = null
-    }
+  function cleanup() {
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (maxTimerRef.current) clearTimeout(maxTimerRef.current)
+    streamRef.current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
   }
 
-  function toggle() {
-    if (listening) {
-      recRef.current?.stop()
-      reset()
-      return
-    }
-    const Ctor = getCtor()
-    if (!Ctor) return
-
-    const rec = new Ctor()
-    rec.lang = 'en-AU'
-    rec.continuous = false
-    rec.interimResults = false
-    rec.onresult = (e) => {
-      const text = Array.from(e.results)
-        .map((r) => r[0]?.transcript ?? '')
-        .join(' ')
-        .trim()
-      if (text) onTranscript(text)
-    }
-    rec.onend = () => reset()
-    rec.onerror = () => reset()
-    recRef.current = rec
-
-    setListening(true)
+  async function start() {
     try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      const mimeType = pickMimeType()
+      const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      chunksRef.current = []
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+      rec.onstop = () => {
+        cleanup()
+        const type = rec.mimeType || 'audio/webm'
+        const blob = new Blob(chunksRef.current, { type })
+        void transcribe(blob, type)
+      }
+      recRef.current = rec
       rec.start()
+      setSeconds(0)
+      setStatus('recording')
+      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000)
+      maxTimerRef.current = setTimeout(() => stop(), MAX_SECONDS * 1000)
     } catch {
-      // start() throws if mic is busy or blocked — never leave the UI stuck.
-      reset()
+      // Permission denied or no mic.
+      cleanup()
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 4000)
+    }
+  }
+
+  function stop() {
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (maxTimerRef.current) clearTimeout(maxTimerRef.current)
+    setStatus('transcribing')
+    try {
+      recRef.current?.stop()
+    } catch {
+      /* already stopped */
+    }
+  }
+
+  async function transcribe(blob: Blob, type: string) {
+    if (blob.size === 0) {
+      setStatus('idle')
       return
     }
-    // Watchdog: force-stop if nothing fires within 12s, so it can't freeze.
-    watchdogRef.current = setTimeout(() => {
-      try {
-        rec.stop()
-      } catch {
-        /* already stopped */
-      }
-      reset()
-    }, 12000)
+    setStatus('transcribing')
+    try {
+      const fd = new FormData()
+      fd.append('file', blob, `clip.${extFor(type)}`)
+      const res = await fetch('/api/transcribe', { method: 'POST', body: fd })
+      const data = (await res.json()) as { text?: string; error?: string }
+      if (res.ok && data.text) onTranscript(data.text)
+      setStatus(res.ok ? 'idle' : 'error')
+      if (!res.ok) setTimeout(() => setStatus('idle'), 4000)
+    } catch {
+      setStatus('error')
+      setTimeout(() => setStatus('idle'), 4000)
+    }
   }
 
-  if (mode === 'none') return null
-
-  if (mode === 'ios-hint') {
-    // iPhone/iPad: the on-screen keyboard's mic is the reliable dictation path.
-    return (
-      <span className={cn('inline-flex items-center gap-1.5 text-caption text-muted-foreground', className)}>
-        <Mic size={13} /> Use the keyboard mic
-      </span>
-    )
+  function onClick() {
+    if (status === 'recording') stop()
+    else if (status === 'idle' || status === 'error') void start()
   }
+
+  if (!supported) return null
+
+  const base =
+    'inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-button-sm transition-colors disabled:opacity-70'
 
   return (
     <button
       type="button"
-      onClick={toggle}
-      aria-pressed={listening}
+      onClick={onClick}
+      disabled={status === 'transcribing'}
+      aria-pressed={status === 'recording'}
       className={cn(
-        'inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-button-sm transition-colors',
-        listening
+        base,
+        status === 'recording'
           ? 'border-transparent bg-destructive text-white'
+          : status === 'error'
+          ? 'border-destructive text-destructive'
           : 'border-[var(--hairline)] text-foreground hover:bg-muted',
         className
       )}
     >
-      {listening ? (
+      {status === 'recording' ? (
         <>
-          <Square size={13} /> Stop
+          <Square size={13} /> Stop · {seconds}s
+        </>
+      ) : status === 'transcribing' ? (
+        <>
+          <Loader2 size={13} className="animate-spin" /> Transcribing…
+        </>
+      ) : status === 'error' ? (
+        <>
+          <Mic size={13} /> Try again
         </>
       ) : (
         <>
