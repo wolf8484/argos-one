@@ -7,6 +7,8 @@ export interface Vehicle {
   mileage?: number
   engine?: string
   trim?: string
+  drivetrain?: string
+  transmission?: string
   bodyStyle?: string
 }
 
@@ -40,6 +42,24 @@ export interface Job {
   solutions: Solution[]
 }
 
+export interface PartOffer {
+  title: string
+  merchant: string
+  price: string
+  priceValue: number | null
+  currency: string
+  link: string
+  imageUrl?: string
+  rating?: number
+  ratingCount?: number
+  delivery?: string
+}
+
+export interface PartSearchResult {
+  query: string
+  offers: PartOffer[]
+}
+
 export interface NhtsaResponse {
   Count: number
   Message: string
@@ -60,6 +80,8 @@ export interface VinDecodeResult {
   year: string
   engine: string
   trim: string
+  drivetrain: string
+  transmission: string
   bodyStyle: string
   fuelType: string
   partial?: boolean

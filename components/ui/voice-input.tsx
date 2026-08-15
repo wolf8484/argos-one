@@ -29,7 +29,11 @@ export function VoiceInput({
   onTranscript: (text: string) => void
   className?: string
 }) {
-  const [supported, setSupported] = useState(false)
+  const [supported] = useState(() =>
+    typeof navigator !== 'undefined' &&
+    Boolean(navigator.mediaDevices?.getUserMedia) &&
+    typeof MediaRecorder !== 'undefined'
+  )
   const [status, setStatus] = useState<Status>('idle')
   const [seconds, setSeconds] = useState(0)
 
@@ -40,13 +44,7 @@ export function VoiceInput({
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    setSupported(
-      typeof navigator !== 'undefined' &&
-        Boolean(navigator.mediaDevices?.getUserMedia) &&
-        typeof MediaRecorder !== 'undefined'
-    )
     return () => cleanup()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function cleanup() {

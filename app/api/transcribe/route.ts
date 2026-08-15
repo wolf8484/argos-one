@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { requireWorkshopUser } from '@/lib/server/auth'
+
 // Speech-to-text via Groq's Whisper (OpenAI-compatible endpoint).
 // The API key is server-side only — the browser records audio and posts it here.
 export async function POST(req: NextRequest) {
+  const auth = await requireWorkshopUser()
+  if ('error' in auth) return auth.error
+
   const key = process.env.GROQ_API_KEY
   if (!key) {
     return NextResponse.json({ error: 'Transcription is not configured' }, { status: 500 })

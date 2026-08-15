@@ -112,8 +112,12 @@ export default function NewJobPage() {
   }, [catalogVersion])
 
   useEffect(() => {
-    if (vehicle.make) getModelsForMake(vehicle.make).then(setModelOptions)
-    else setModelOptions([])
+    let cancelled = false
+    void (async () => {
+      const models = vehicle.make ? await getModelsForMake(vehicle.make) : []
+      if (!cancelled) setModelOptions(models)
+    })()
+    return () => { cancelled = true }
   }, [vehicle.make, catalogVersion])
 
   function onMakeChange(make: string) {
@@ -138,7 +142,10 @@ export default function NewJobPage() {
   const [photos, setPhotos] = useState<JobPhoto[]>([])
   const photoInputRef = useRef<HTMLInputElement>(null)
   const photosRef = useRef<JobPhoto[]>([])
-  photosRef.current = photos
+
+  useEffect(() => {
+    photosRef.current = photos
+  }, [photos])
 
   useEffect(() => {
     // Revoke any outstanding object URLs when leaving the flow.

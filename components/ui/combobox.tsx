@@ -87,7 +87,7 @@ export function Combobox({
         type="button"
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openMenu())}
-        aria-invalid={invalid}
+        data-invalid={invalid || undefined}
         className={cn(
           'flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-card px-3.5 text-left text-body-md text-foreground transition-colors outline-none',
           'focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-foreground/10',

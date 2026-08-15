@@ -19,6 +19,10 @@ export async function decodeVin(vin: string): Promise<VinDecodeResult> {
     .map((v, i) => (i === 0 ? `${v}L` : `${v}-cyl`))
     .join(' ')
   const trim = get('Trim')
+  const drivetrain = get('Drive Type')
+  const transmissionStyle = get('Transmission Style')
+  const transmissionSpeeds = get('Transmission Speeds')
+  const transmission = [transmissionStyle, transmissionSpeeds ? `${transmissionSpeeds}-speed` : ''].filter(Boolean).join(' ')
   const bodyStyle = get('Body Class')
   const fuelType = get('Fuel Type - Primary')
 
@@ -28,8 +32,8 @@ export async function decodeVin(vin: string): Promise<VinDecodeResult> {
   // missing Model is flagged as a partial decode rather than a failure.
   if (!make || !year) {
     const errorText = get('Error Text') || 'This VIN could not be decoded'
-    return { make: '', model: '', year: '', engine: '', trim: '', bodyStyle: '', fuelType: '', error: errorText }
+    return { make: '', model: '', year: '', engine: '', trim: '', drivetrain: '', transmission: '', bodyStyle: '', fuelType: '', error: errorText }
   }
 
-  return { make, model, year, engine, trim, bodyStyle, fuelType, partial: !model }
+  return { make, model, year, engine, trim, drivetrain, transmission, bodyStyle, fuelType, partial: !model }
 }

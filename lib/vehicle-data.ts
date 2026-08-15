@@ -10,7 +10,7 @@ export async function getAllMakes(): Promise<string[]> {
     console.error('getAllMakes failed', error)
     return []
   }
-  return (data ?? []).map((r) => r.name as string)
+  return (data ?? []).map((r: { name: string }) => r.name)
 }
 
 export async function getModelsForMake(make: string): Promise<string[]> {
@@ -31,7 +31,7 @@ export async function getModelsForMake(make: string): Promise<string[]> {
     console.error('getModelsForMake failed', error)
     return []
   }
-  return (data ?? []).map((r) => r.name as string)
+  return (data ?? []).map((r: { name: string }) => r.name)
 }
 
 export async function addCustomMake(make: string): Promise<void> {

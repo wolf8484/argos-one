@@ -1,0 +1,22 @@
+project_id = "argos-one"
+
+[auth]
+enabled = true
+site_url = "https://argos-one-mu.vercel.app"
+additional_redirect_urls = [
+  "https://argos-one-mu.vercel.app/**",
+  "http://localhost:3000/**",
+  "http://192.168.1.101:3000/**",
+]
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = true
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true

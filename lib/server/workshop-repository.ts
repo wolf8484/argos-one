@@ -1,0 +1,246 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+type Profile = { id: string; shop_id: string; full_name: string; role: string }
+
+export class WorkshopRepository {
+  constructor(private readonly supabase: SupabaseClient, private readonly profile: Profile) {}
+
+  async listJobs() {
+    const { data, error } = await this.supabase
+      .from('jobs')
+      .select(`id,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
+        customer:customers(id,full_name,phone,email),
+        vehicle:vehicles(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type),
+        dtcs:job_dtc_codes(id,code,description)`)
+      .order('updated_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  async getJob(id: string) {
+    const { data, error } = await this.supabase
+      .from('jobs')
+      .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
+        repair:repair_records!repair_records_job_id_fkey(*,steps:repair_steps(*),items:repair_items(*)),photos:job_photos(*)`)
+      .eq('id', id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async createJob(input: {
+    customer: { fullName: string; phone?: string | null; email?: string | null }
+    vehicle: Record<string, unknown>
+    bay?: string | null
+  }) {
+    const shopId = this.profile.shop_id
+    const { data: customer, error: customerError } = await this.supabase.from('customers').insert({
+      shop_id: shopId,
+      full_name: input.customer.fullName,
+      phone: input.customer.phone || null,
+      email: input.customer.email || null,
+      created_by: this.profile.id,
+    }).select().single()
+    if (customerError) throw customerError
+
+    const vehicleInput = input.vehicle as Record<string, string | number | null | undefined>
+    const { data: vehicle, error: vehicleError } = await this.supabase.from('vehicles').insert({
+      shop_id: shopId,
+      customer_id: customer.id,
+      vin: vehicleInput.vin || null,
+      year: vehicleInput.year,
+      make: vehicleInput.make,
+      model: vehicleInput.model,
+      mileage: vehicleInput.mileage ?? null,
+      engine: vehicleInput.engine || null,
+      trim: vehicleInput.trim || null,
+      drivetrain: vehicleInput.drivetrain || null,
+      transmission: vehicleInput.transmission || null,
+      body_style: vehicleInput.bodyStyle || null,
+      fuel_type: vehicleInput.fuelType || null,
+      created_by: this.profile.id,
+    }).select().single()
+    if (vehicleError) throw vehicleError
+
+    const { data: job, error: jobError } = await this.supabase.from('jobs').insert({
+      shop_id: shopId,
+      vehicle_id: vehicle.id,
+      customer_id: customer.id,
+      stage: 'assessment',
+      bay: input.bay || null,
+      assigned_to: this.profile.id,
+      created_by: this.profile.id,
+    }).select().single()
+    if (jobError) throw jobError
+    return this.getJob(job.id)
+  }
+
+  async updateJobDetails(jobId: string, input: {
+    customer: { fullName: string; phone?: string | null; email?: string | null }
+    vehicle: Record<string, unknown>
+    bay?: string | null
+  }) {
+    const { data: job, error: jobError } = await this.supabase
+      .from('jobs')
+      .select('id,customer_id,vehicle_id,stage')
+      .eq('id', jobId)
+      .single()
+    if (jobError) throw jobError
+    const vehicleInput = input.vehicle as Record<string, string | number | null | undefined>
+
+    // Imported or partially-created jobs can legitimately have no customer yet.
+    // Create that relationship on first save instead of attempting to update a
+    // null UUID, which PostgREST rejects.
+    let customerId = job.customer_id
+    if (customerId) {
+      const { error } = await this.supabase.from('customers').update({
+        full_name: input.customer.fullName,
+        phone: input.customer.phone || null,
+        email: input.customer.email || null,
+      }).eq('id', customerId).eq('shop_id', this.profile.shop_id)
+      if (error) throw error
+    } else {
+      const { data: customer, error } = await this.supabase.from('customers').insert({
+        shop_id: this.profile.shop_id,
+        full_name: input.customer.fullName,
+        phone: input.customer.phone || null,
+        email: input.customer.email || null,
+        created_by: this.profile.id,
+      }).select('id').single()
+      if (error) throw error
+      customerId = customer.id
+    }
+
+    const { error: vehicleError } = await this.supabase.from('vehicles').update({
+        vin: vehicleInput.vin || null,
+        year: vehicleInput.year,
+        make: vehicleInput.make,
+        model: vehicleInput.model,
+        mileage: vehicleInput.mileage ?? null,
+        engine: vehicleInput.engine || null,
+        trim: vehicleInput.trim || null,
+        drivetrain: vehicleInput.drivetrain || null,
+        transmission: vehicleInput.transmission || null,
+        body_style: vehicleInput.bodyStyle || null,
+        fuel_type: vehicleInput.fuelType || null,
+      }).eq('id', job.vehicle_id).eq('shop_id', this.profile.shop_id)
+    if (vehicleError) throw vehicleError
+
+    const { error: updateJobError } = await this.supabase.from('jobs').update({
+      bay: input.bay || null,
+      customer_id: customerId,
+      stage: job.stage === 'vehicle' ? 'assessment' : job.stage,
+    }).eq('id', jobId).eq('shop_id', this.profile.shop_id)
+    if (updateJobError) throw updateJobError
+    return this.getJob(jobId)
+  }
+
+  async archiveJob(jobId: string) {
+    const { error } = await this.supabase
+      .from('jobs')
+      .update({ status: 'cancelled' })
+      .eq('id', jobId)
+      .eq('shop_id', this.profile.shop_id)
+    if (error) throw error
+    return this.getJob(jobId)
+  }
+
+  async saveAssessment(jobId: string, input: { complaint: string; observations?: string | null; dtcs: string[]; nextStage: string; summary?: string | null }) {
+    const { error } = await this.supabase.from('jobs').update({
+      complaint: input.complaint,
+      observations: input.observations || null,
+      summary: input.summary || null,
+      stage: input.nextStage,
+    }).eq('id', jobId)
+    if (error) throw error
+    const { error: deleteError } = await this.supabase.from('job_dtc_codes').delete().eq('job_id', jobId)
+    if (deleteError) throw deleteError
+    if (input.dtcs.length) {
+      const { error: insertError } = await this.supabase.from('job_dtc_codes').insert(input.dtcs.map((code) => ({
+        shop_id: this.profile.shop_id, job_id: jobId, code,
+      })))
+      if (insertError) throw insertError
+    }
+    return this.getJob(jobId)
+  }
+
+  async getMatches(jobId: string) {
+    const { data, error } = await this.supabase.rpc('find_similar_repairs', { target_job_id: jobId })
+    if (error) throw error
+    if (!data?.length) return []
+    const repairIds = data.map((row: { repair_id: string }) => row.repair_id)
+    const { data: details, error: detailsError } = await this.supabase
+      .from('repair_records')
+      .select('id,steps:repair_steps(position,instruction),items:repair_items(*)')
+      .in('id', repairIds)
+    if (detailsError) throw detailsError
+    const detailMap = new Map((details ?? []).map((row) => [row.id, row]))
+    return data.map((row: { repair_id: string }) => ({ ...row, ...detailMap.get(row.repair_id) }))
+  }
+
+  async saveRepair(jobId: string, input: {
+    cause?: string | null; workPerformed: string; verificationNotes?: string | null; referenceRepairId?: string | null
+    dtcs: string[]; steps: string[]; items: Array<Record<string, unknown>>; resolve: boolean
+  }) {
+    const repairPayload = {
+      shop_id: this.profile.shop_id,
+      job_id: jobId,
+      cause: input.cause || null,
+      work_performed: input.workPerformed || null,
+      verification_notes: input.verificationNotes || null,
+      reference_repair_id: input.referenceRepairId || null,
+      verified: input.resolve,
+      completed_by: input.resolve ? this.profile.id : null,
+    }
+    const { data: repair, error } = await this.supabase.from('repair_records').upsert(repairPayload, { onConflict: 'job_id' }).select().single()
+    if (error) throw error
+
+    await Promise.all([
+      this.supabase.from('repair_steps').delete().eq('repair_id', repair.id),
+      this.supabase.from('repair_items').delete().eq('repair_id', repair.id),
+      this.supabase.from('job_dtc_codes').delete().eq('job_id', jobId),
+    ]).then((results) => results.forEach(({ error: nestedError }) => { if (nestedError) throw nestedError }))
+
+    if (input.dtcs.length) {
+      const { error: dtcError } = await this.supabase.from('job_dtc_codes').insert(input.dtcs.map((code) => ({
+        shop_id: this.profile.shop_id,
+        job_id: jobId,
+        code,
+      })))
+      if (dtcError) throw dtcError
+    }
+
+    if (input.steps.length) {
+      const { error: stepsError } = await this.supabase.from('repair_steps').insert(input.steps.map((instruction, index) => ({
+        shop_id: this.profile.shop_id, repair_id: repair.id, position: index + 1, instruction,
+      })))
+      if (stepsError) throw stepsError
+    }
+    if (input.items.length) {
+      const { error: itemsError } = await this.supabase.from('repair_items').insert(input.items.map((item) => ({
+        shop_id: this.profile.shop_id,
+        repair_id: repair.id,
+        kind: item.kind,
+        name: item.name,
+        part_number: item.partNumber || null,
+        brand: item.brand || null,
+        quantity: item.quantity,
+        unit: item.unit || null,
+        supplier: item.supplier || null,
+        price_amount: item.priceAmount ?? null,
+        currency: item.currency || 'AUD',
+        offer_url: item.offerUrl || null,
+        offer_image_url: item.offerImageUrl || null,
+      })))
+      if (itemsError) throw itemsError
+    }
+    const { error: jobError } = await this.supabase.from('jobs').update({
+      stage: input.resolve ? 'resolved' : 'repair',
+      status: input.resolve ? 'resolved' : 'open',
+      resolved_at: input.resolve ? new Date().toISOString() : null,
+      selected_reference_id: input.referenceRepairId || null,
+    }).eq('id', jobId)
+    if (jobError) throw jobError
+    return this.getJob(jobId)
+  }
+}

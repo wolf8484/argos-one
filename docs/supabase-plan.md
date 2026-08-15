@@ -1,11 +1,13 @@
 # Argos One — Supabase Backend Plan
 
-Status: **proposal, nothing built yet.** As of 2026-08-08 the app uses hardcoded
-seed data (`lib/vehicle-data.ts`), in-memory mock data (`lib/mock-data.ts`), and
-per-device `localStorage` for custom makes/models. There is no Supabase project,
-client, `.env`, or table.
+Status (updated 2026-08-09): **Phase 1 built and live.** The makes/models catalog
+runs on Supabase (`lib/vehicle-data.ts` → `lib/supabase/client.ts`), speech-to-text
+is live (`/api/transcribe`, Groq Whisper), and parts price search is built
+(`/api/parts/search`, Serper — see §9). Phases 2–4 (auth/shops, jobs/knowledge
+base, customers) remain **planned, not built** — so the Results page is still a
+static mock. `lib/mock-data.ts` still backs the Results screen.
 
-This document is the design to review before we build.
+This document is the design to review before we build the remaining phases.
 
 ---
 
@@ -411,3 +413,78 @@ Photos dominate storage cost. Compress/resize **client-side before upload**
   usage-based beyond).
 - Subscription revenue (admin-seat model, §3.5) comfortably covers per-shop
   storage cost. Expand only when actually needed.
+
+---
+
+## 9. Results page & parts price search
+
+The Results screen (Vehicle-locked header + shop-memory banner + match tabs +
+confirmed fix + parts list) is the product's core value. **Today it is entirely
+mocked** (`lib/mock-data.ts`); making it real depends on Phase 2 (auth/shops) then
+Phase 3 (jobs/repairs), because "shop memory" = querying this shop's logged repairs.
+
+### 9.1 Match tabs (decided)
+
+Keep all four tabs — they are confidence tiers of the same knowledge base, not
+redundant views:
+
+| Tab | Query slice | Trust |
+|---|---|---|
+| **Best match** | same DTC + same/near vehicle + same engine | highest |
+| **Same model** | same model, different year/engine — still this shop's history | high |
+| **Same engine** | shared engine across brands (e.g. B4204T spans Volvo/Ford) — often the most useful for AU imports | high |
+| **Web sources** | forums / TSBs when the shop has no history yet (day-one fallback so Results is never blank) | lowest |
+
+- **Auto-hide** a tab when its slice returns zero results (keep it in the design,
+  just don't render an empty tab).
+- Candidate future tier: **"Manufacturer TSBs"** — a higher-trust split of Web sources.
+
+### 9.2 Naming (decided)
+
+- Rename **"Repair sequence"** → **"What worked"** (pairs with the "Confirmed
+  cause" block above it; matches the mechanic's mental model). Caption
+  "REPAIR SEQUENCE THAT WORKED" may stay.
+
+### 9.3 Parts price search (BUILT — provider-agnostic, UI-agnostic)
+
+Each part in "Parts & consumables" has a **"Search best price"** action that
+price-scouts the web so the mechanic never leaves the app for a browser.
+
+- **Provider: Serper.dev** (Google Shopping as JSON). Chosen over scraping Google
+  directly — direct scraping violates ToS, hits CAPTCHAs, and IP-bans servers.
+  Serper returns structured offers **including product image, price, merchant,
+  and link**, which is what enables the Google-Shopping-style results sheet.
+- **Server-side only.** `SERPER_API_KEY` lives in env (never `NEXT_PUBLIC`), same
+  pattern as `GROQ_API_KEY`. The browser posts a query to our route; the key never
+  reaches the client.
+- **Australia-first.** The route sends `gl: 'au', hl: 'en'` so prices/merchants
+  bias to AU suppliers (verified: Sparesbox, Automotive Superstore, IPD, etc.).
+- **Cheapest-first**, with the OEM/part number folded into the query to sharpen
+  fitment.
+- **Fitment disclaimer stays.** Shopping results are near-matches, not
+  VIN-verified — the results sheet must keep the "Confirm fitment against the VIN
+  and supplier catalogue before ordering" banner. This is a price shortcut, not an
+  order guarantee.
+
+Files (all survive the Codex UI swap — wiring the button is the only remaining step):
+
+| File | Role |
+|---|---|
+| `app/api/parts/search/route.ts` | Server route: query → Serper → normalized `PartOffer[]`, sorted cheapest-first |
+| `lib/parts-search.ts` | Client helper `searchPartPrices(query, partNumber)` |
+| `types/index.ts` | `PartOffer`, `PartSearchResult` |
+
+**Deployment:** `SERPER_API_KEY` is configured server-side in local development
+and Vercel Production/Development.
+
+**v2 (later):** direct AU supplier feeds (Repco, Burson, Sparesbox APIs) for real
+stock + distance ("in stock · 6 km"), which a generic Shopping API can't provide.
+
+### 9.4 Env var summary
+
+| Var | Scope | Purpose | Status |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | public | Supabase | ✅ live |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public | Supabase | ✅ live |
+| `GROQ_API_KEY` | server | Whisper STT | ✅ live |
+| `SERPER_API_KEY` | server | Parts price search | ✅ local + Vercel |
