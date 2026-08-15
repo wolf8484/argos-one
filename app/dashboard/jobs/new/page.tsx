@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,12 @@ import {
   getAllMakes,
   getModelsForMake,
 } from '@/lib/vehicle-data'
+import {
+  distinctValues,
+  fetchVariants,
+  researchVariants,
+  type VehicleVariant,
+} from '@/lib/vehicle-catalog'
 import { Solution, Vehicle } from '@/types'
 import {
   ArrowLeft,
@@ -87,6 +93,47 @@ function rateBadgeVariant(rate: number): 'success' | 'warning' | 'error' {
   return 'error'
 }
 
+// A spec field that adapts to how many options the catalogue offers:
+//  • >1 option  → dropdown with a chevron (mechanic picks, e.g. auto vs manual)
+//  • exactly 1  → auto-filled, read-only, no chevron
+//  • 0 options  → manual text entry (no catalogue data for this vehicle yet)
+function SpecField({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder,
+}: {
+  label: string
+  value: string
+  options: string[]
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-caption font-semibold">{label}</label>
+      {options.length > 1 ? (
+        <Combobox
+          value={value}
+          onValueChange={onChange}
+          onAdd={onChange}
+          options={options}
+          allowAdd
+          placeholder={placeholder}
+          searchPlaceholder="Search or add…"
+        />
+      ) : options.length === 1 ? (
+        <div className="flex h-10 items-center rounded-md border border-[var(--hairline)] bg-[var(--surface-soft)] px-3.5 text-body-md text-foreground">
+          {value || options[0]}
+        </div>
+      ) : (
+        <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      )}
+    </div>
+  )
+}
+
 export default function NewJobPage() {
   const router = useRouter()
 
@@ -130,6 +177,81 @@ export default function NewJobPage() {
   function onModelChange(model: string) {
     setVehicle((v) => ({ ...v, model }))
   }
+
+  // Trim + spec catalogue (drivetrain / engine / transmission).
+  const [variants, setVariants] = useState<VehicleVariant[]>([])
+  const [trim, setTrim] = useState('')
+  const [engine, setEngine] = useState('')
+  const [drivetrain, setDrivetrain] = useState('')
+  const [transmission, setTransmission] = useState('')
+  const [specLoading, setSpecLoading] = useState(false)
+  const [researchNote, setResearchNote] = useState('')
+
+  // Load the model's variants when make+model are both set. If the catalogue has
+  // nothing, run the deep-research fallback (Serper + Groq) which caches results.
+  useEffect(() => {
+    let cancelled = false
+    const make = vehicle.make
+    const model = vehicle.model
+    setTrim('')
+    setEngine('')
+    setDrivetrain('')
+    setTransmission('')
+    setResearchNote('')
+    if (!make || !model) {
+      setVariants([])
+      return
+    }
+    setSpecLoading(true)
+    void (async () => {
+      let list = await fetchVariants(make, model)
+      if (!cancelled && list.length === 0) {
+        setResearchNote('Researching specs for this vehicle…')
+        list = await researchVariants(make, model, vehicle.year)
+        if (!cancelled) setResearchNote(list.length ? '' : 'No catalogue match — enter specs manually.')
+      }
+      if (!cancelled) {
+        setVariants(list)
+        setSpecLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+    // vehicle.year is read at run time as an assist; make/model drive reloads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicle.make, vehicle.model])
+
+  const trimOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const v of variants) {
+      if (!seen.has(v.name)) {
+        seen.add(v.name)
+        out.push(v.name)
+      }
+    }
+    return out
+  }, [variants])
+
+  // Once a trim is chosen, narrow the spec options to that trim's rows.
+  const matching = useMemo(
+    () => (trim ? variants.filter((v) => v.name === trim) : variants),
+    [variants, trim]
+  )
+  const engineOptions = useMemo(() => distinctValues(matching, 'engine'), [matching])
+  const drivetrainOptions = useMemo(() => distinctValues(matching, 'drivetrain'), [matching])
+  const transmissionOptions = useMemo(() => distinctValues(matching, 'transmission'), [matching])
+
+  // Auto-fill a spec when exactly one option exists; force a pick when several;
+  // keep any manual/VIN value when the catalogue has none.
+  useEffect(() => {
+    const pick = (opts: string[], cur: string, fallback = '') =>
+      opts.length === 1 ? opts[0] : opts.includes(cur) ? cur : opts.length === 0 ? cur || fallback : ''
+    setEngine((c) => pick(engineOptions, c, vehicle.engine ?? ''))
+    setDrivetrain((c) => pick(drivetrainOptions, c))
+    setTransmission((c) => pick(transmissionOptions, c))
+  }, [engineOptions, drivetrainOptions, transmissionOptions, vehicle.engine])
 
   // Problem step
   const [dtcInput, setDtcInput] = useState('')
@@ -345,12 +467,46 @@ export default function NewJobPage() {
             </div>
           </div>
 
-          {/* Extra decoded details, when present */}
-          {(vehicle.engine || vehicle.trim || vehicle.bodyStyle) && (
-            <div className="flex flex-wrap gap-2 text-caption">
-              {vehicle.engine && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.engine}</span>}
-              {vehicle.trim && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.trim}</span>}
-              {vehicle.bodyStyle && <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.bodyStyle}</span>}
+          {/* Trim + specifications — from the shared catalogue, researched if missing */}
+          {vehicle.make && vehicle.model && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-title-sm">Specifications</h3>
+                {specLoading && (
+                  <span className="text-caption text-muted-foreground flex items-center gap-1.5">
+                    <Loader2 size={13} className="animate-spin" /> {researchNote || 'Loading…'}
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-caption font-semibold">TRIM</label>
+                <Combobox
+                  value={trim}
+                  onValueChange={setTrim}
+                  onAdd={setTrim}
+                  options={trimOptions}
+                  allowAdd
+                  placeholder={specLoading ? 'Loading trims…' : trimOptions.length ? 'Select trim' : 'No trims — type to add'}
+                  searchPlaceholder="Search or add trim…"
+                  emptyText="No trims yet — type to add one"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <SpecField label="DRIVETRAIN" value={drivetrain} options={drivetrainOptions} onChange={setDrivetrain} placeholder="e.g. AWD" />
+                <SpecField label="ENGINE" value={engine} options={engineOptions} onChange={setEngine} placeholder="e.g. 2.0L turbo-diesel" />
+                <SpecField label="TRANSMISSION" value={transmission} options={transmissionOptions} onChange={setTransmission} placeholder="e.g. 6-speed automatic" />
+              </div>
+
+              {!specLoading && researchNote && (
+                <p className="text-body-sm text-muted-foreground">{researchNote}</p>
+              )}
+              {vehicle.bodyStyle && (
+                <div className="flex flex-wrap gap-2 text-caption">
+                  <span className="bg-[var(--surface-card)] px-2.5 py-1 rounded-md">{vehicle.bodyStyle}</span>
+                </div>
+              )}
             </div>
           )}
 

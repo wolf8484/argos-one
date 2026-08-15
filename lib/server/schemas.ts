@@ -88,3 +88,9 @@ export const catalogWriteSchema = z.object({
   drivetrain: z.string().trim().max(120).nullable().optional(),
   transmission: z.string().trim().max(120).nullable().optional(),
 })
+
+export const catalogResearchSchema = z.object({
+  make: z.string().trim().min(1).max(100),
+  model: z.string().trim().min(1).max(100),
+  year: z.number().int().min(1886).max(2200).optional(),
+})
