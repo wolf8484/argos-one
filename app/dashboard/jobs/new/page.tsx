@@ -185,10 +185,14 @@ export default function NewJobPage() {
   const [drivetrain, setDrivetrain] = useState('')
   const [transmission, setTransmission] = useState('')
   const [specLoading, setSpecLoading] = useState(false)
+  const [researching, setResearching] = useState(false)
   const [researchNote, setResearchNote] = useState('')
 
-  // Load the model's variants when make+model are both set. If the catalogue has
-  // nothing, run the deep-research fallback (Serper + Groq) which caches results.
+  // Load the model's variants when make+model are both set. The catalogue fetch
+  // is a single fast call — the trim field appears as soon as it resolves. If it
+  // came back empty, the deep-research fallback (Serper + Groq) runs afterwards,
+  // in the background, and quietly fills the field in when it finds something —
+  // it never blocks the initial render.
   useEffect(() => {
     let cancelled = false
     const make = vehicle.make
@@ -198,21 +202,30 @@ export default function NewJobPage() {
     setDrivetrain('')
     setTransmission('')
     setResearchNote('')
+    setResearching(false)
     if (!make || !model) {
       setVariants([])
       return
     }
     setSpecLoading(true)
     void (async () => {
-      let list = await fetchVariants(make, model)
-      if (!cancelled && list.length === 0) {
-        setResearchNote('Researching specs for this vehicle…')
-        list = await researchVariants(make, model, vehicle.year)
-        if (!cancelled) setResearchNote(list.length ? '' : 'No catalogue match — enter specs manually.')
-      }
-      if (!cancelled) {
-        setVariants(list)
-        setSpecLoading(false)
+      const list = await fetchVariants(make, model)
+      if (cancelled) return
+      setVariants(list)
+      setSpecLoading(false)
+      if (list.length > 0) return
+
+      // Background research — the UI is already usable (manual entry) while this runs.
+      setResearching(true)
+      setResearchNote('Researching specs for this vehicle…')
+      const researched = await researchVariants(make, model, vehicle.year)
+      if (cancelled) return
+      setResearching(false)
+      if (researched.length > 0) {
+        setVariants(researched)
+        setResearchNote('')
+      } else {
+        setResearchNote('No catalogue match — enter specs manually.')
       }
     })()
     return () => {
@@ -472,9 +485,9 @@ export default function NewJobPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-title-sm">Specifications</h3>
-                {specLoading && (
+                {(specLoading || researching) && (
                   <span className="text-caption text-muted-foreground flex items-center gap-1.5">
-                    <Loader2 size={13} className="animate-spin" /> {researchNote || 'Loading…'}
+                    <Loader2 size={13} className="animate-spin" /> {specLoading ? 'Loading…' : researchNote}
                   </span>
                 )}
               </div>
@@ -499,7 +512,7 @@ export default function NewJobPage() {
                 <SpecField label="TRANSMISSION" value={transmission} options={transmissionOptions} onChange={setTransmission} placeholder="e.g. 6-speed automatic" />
               </div>
 
-              {!specLoading && researchNote && (
+              {!specLoading && !researching && researchNote && (
                 <p className="text-body-sm text-muted-foreground">{researchNote}</p>
               )}
               {vehicle.bodyStyle && (
