@@ -467,6 +467,36 @@ async function loadCatalogVariants(make = state.vehicle.make, model = state.vehi
   }
 }
 
+// Distinct catalogue values for a spec field, narrowed to the selected trim.
+// e.g. a trim offered as manual OR automatic returns two transmission options.
+function specOptions(field) {
+  const trim = state.vehicle.trim;
+  const rows = trim
+    ? state.catalog.variants.filter((item) => item.name === trim)
+    : state.catalog.variants;
+  const seen = [];
+  rows.forEach((item) => {
+    const value = item[field];
+    if (value && !seen.includes(value)) seen.push(value);
+  });
+  return seen;
+}
+
+// Renders a spec field that adapts to how many options the catalogue offers for
+// the selected trim: several → dropdown with a chevron (mechanic picks, e.g.
+// 4-speed auto vs 5-speed manual); one → auto-filled entry; none → free entry,
+// or the provided fallback dropdown (used for drivetrain so FWD/RWD/AWD/4WD
+// stays pickable when the catalogue has nothing).
+function specFieldHtml(field, label, placeholder, fallbackOptions) {
+  const value = state.vehicle[field] || "";
+  const options = specOptions(field);
+  const asSelect = (opts) =>
+    `<label class="form-field"><span class="field-label">${label}</span><span class="select-control"><select class="select${value ? "" : " is-placeholder"}" name="${field}" aria-label="${label}"><option value=""${value ? "" : " selected"}></option>${opts.map((option) => `<option${value === option ? " selected" : ""}>${escapeHTML(option)}</option>`).join("")}</select>${icon("down")}</span></label>`;
+  if (options.length > 1) return asSelect(options);
+  if (options.length === 0 && fallbackOptions && fallbackOptions.length) return asSelect(fallbackOptions);
+  return `<label class="form-field"><span class="field-label">${label}</span><input class="input" name="${field}" value="${escapeHTML(value)}" placeholder="${placeholder}" /></label>`;
+}
+
 async function loadBackendData() {
   try {
     const { makes } = await apiRequest("/api/catalog");
@@ -1097,9 +1127,9 @@ function renderVehicle() {
         <label class="form-field"><span class="field-label">Make</span><span class="select-control"><select class="select${state.vehicle.make ? "" : " is-placeholder"}" name="make" id="vehicle-make" required aria-label="Make"><option value="" disabled${state.vehicle.make ? "" : " selected"}></option>${makes.map((make) => `<option${state.vehicle.make === make ? " selected" : ""}>${escapeHTML(make)}</option>`).join("")}</select>${icon("down")}</span></label>
         <label class="form-field"><span class="field-label">Model</span><span class="select-control"><select class="select${state.vehicle.model ? "" : " is-placeholder"}" name="model" id="vehicle-model"${state.vehicle.make ? "" : " disabled"} required aria-label="Model"><option value="" disabled${state.vehicle.model ? "" : " selected"}></option>${models.map((model) => `<option${state.vehicle.model === model ? " selected" : ""}>${escapeHTML(model)}</option>`).join("")}</select>${icon("down")}</span></label>
         <label class="form-field"><span class="field-label">Trim</span><span class="select-control"><select class="select${state.vehicle.trim ? "" : " is-placeholder"}" name="trim" id="vehicle-trim" aria-label="Trim"><option value=""${state.vehicle.trim ? "" : " selected"}></option>${variants.map((variant) => `<option${state.vehicle.trim === variant ? " selected" : ""}>${escapeHTML(variant)}</option>`).join("")}</select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Drivetrain</span><span class="select-control"><select class="select${state.vehicle.drivetrain ? "" : " is-placeholder"}" name="drivetrain" id="vehicle-drivetrain" aria-label="Drivetrain"><option value=""${state.vehicle.drivetrain ? "" : " selected"}></option>${["FWD", "RWD", "AWD", "4WD"].map((drivetrain) => `<option${state.vehicle.drivetrain === drivetrain ? " selected" : ""}>${drivetrain}</option>`).join("")}</select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Engine</span><input class="input" name="engine" value="${escapeHTML(state.vehicle.engine)}" placeholder="e.g. 2.0L turbo" /></label>
-        <label class="form-field"><span class="field-label">Transmission</span><input class="input" name="transmission" value="${escapeHTML(state.vehicle.transmission)}" placeholder="e.g. 7-speed DSG" /></label>
+        ${specFieldHtml("drivetrain", "Drivetrain", "e.g. AWD", ["FWD", "RWD", "AWD", "4WD"])}
+        ${specFieldHtml("engine", "Engine", "e.g. 2.0L turbo", null)}
+        ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
         <label class="form-field"><span class="field-label">Current mileage</span><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add make or model</button></div>
       </div>
@@ -2256,13 +2286,14 @@ document.addEventListener("change", (event) => {
     return;
   }
   if (event.target.matches("#vehicle-trim")) {
-    const variant = state.catalog.variants.find((item) => item.name === state.vehicle.trim);
-    if (variant) {
-      state.vehicle.engine = variant.engine || state.vehicle.engine;
-      state.vehicle.drivetrain = variant.drivetrain || state.vehicle.drivetrain;
-      state.vehicle.transmission = variant.transmission || state.vehicle.transmission;
-      render();
-    }
+    // Auto-fill spec fields the selected trim pins to a single value; clear those
+    // with several options so the mechanic picks (the dropdown shows a placeholder).
+    ["engine", "drivetrain", "transmission"].forEach((field) => {
+      const options = specOptions(field);
+      if (options.length === 1) state.vehicle[field] = options[0];
+      else if (options.length > 1 && !options.includes(state.vehicle[field])) state.vehicle[field] = "";
+    });
+    render();
   }
 });
 
