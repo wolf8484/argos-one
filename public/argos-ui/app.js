@@ -1826,7 +1826,7 @@ function technicianProfileSheet() {
       <nav class="profile-menu" aria-label="Technician shortcuts">
         <button class="profile-menu-button" type="button" data-action="profile-jobs">${icon("clipboard")}<span>My active jobs</span>${icon("arrow")}</button>
         <button class="profile-menu-button" type="button" data-action="profile-settings">${icon("settings")}<span>Account & workshop settings</span>${icon("arrow")}</button>
-        ${state.backendStatus === "connected" ? `<button class="profile-menu-button" type="button" data-action="sign-out">${icon("back")}<span>Sign out</span>${icon("arrow")}</button>` : `<button class="profile-menu-button" type="button" data-action="sign-in"><span>Sign in for cloud storage</span>${icon("arrow")}</button>`}
+        ${state.backendStatus === "connected" ? `<button class="profile-menu-button" type="button" data-action="sign-out">${icon("back")}<span>Sign out</span>${icon("arrow")}</button>` : `<button class="profile-menu-button" type="button" data-action="sign-in">${icon("lock")}<span>Sign in for cloud storage</span>${icon("arrow")}</button>`}
       </nav>
     </div>`);
 }
