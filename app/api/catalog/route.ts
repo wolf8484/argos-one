@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireWorkshopUser } from '@/lib/server/auth'
 import { apiError } from '@/lib/server/http'
 import { catalogWriteSchema } from '@/lib/server/schemas'
+import { researchAndCacheVariants } from '@/lib/server/vehicle-research'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
@@ -23,13 +24,31 @@ export async function GET(request: NextRequest) {
           .maybeSingle()
         if (modelError) throw modelError
         if (!modelRow) return NextResponse.json({ make, model, variants: [] })
+        const variantSelect = 'id,name,year_start,year_end,engine,drivetrain,transmission,is_custom'
         const { data, error } = await supabase
           .from('vehicle_variants')
-          .select('id,name,year_start,year_end,engine,drivetrain,transmission,is_custom')
+          .select(variantSelect)
           .eq('model_id', modelRow.id)
           .order('is_custom', { ascending: true })
           .order('name')
         if (error) throw error
+
+        // Deep-research fallback: if the catalogue has no trims for this model,
+        // research + cache them so the live app (which only calls GET) still gets
+        // populated dropdowns. Best-effort — never blocks the response on failure.
+        if ((data ?? []).length === 0) {
+          const added = await researchAndCacheVariants(supabase, make, modelRow.name, modelRow.id)
+          if (added > 0) {
+            const { data: filled } = await supabase
+              .from('vehicle_variants')
+              .select(variantSelect)
+              .eq('model_id', modelRow.id)
+              .order('is_custom', { ascending: true })
+              .order('name')
+            return NextResponse.json({ make, model: modelRow.name, variants: filled ?? [], researched: true })
+          }
+        }
+
         return NextResponse.json({ make, model: modelRow.name, variants: data ?? [] })
       }
       const { data, error } = await supabase.from('models').select('name').eq('make_id', makeRow.id).order('name')
