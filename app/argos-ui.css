@@ -26,7 +26,7 @@
   --danger: #b91c1c;
   --on-danger: #ffffff;
   --sheet-surface: #080808;
-  --sheet-backdrop: rgba(96, 96, 92, 0.24);
+  --sheet-backdrop: rgba(0, 0, 0, 0.6);
   --sheet-shadow: 0 -24px 70px rgba(0, 0, 0, 0.62);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
   --journey-shadow: 0 1px 0 var(--line), 0 14px 26px rgba(0, 0, 0, 0.72);
@@ -71,7 +71,7 @@
   --danger: #b91c1c;
   --on-danger: #ffffff;
   --sheet-surface: #f0f0f0;
-  --sheet-backdrop: rgba(28, 28, 26, 0.2);
+  --sheet-backdrop: rgba(17, 17, 17, 0.45);
   --sheet-shadow: 0 -22px 62px rgba(0, 0, 0, 0.28);
   --shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
   --journey-shadow: 0 1px 0 var(--line), 0 14px 24px rgba(0, 0, 0, 0.24);
@@ -114,10 +114,20 @@ body {
   text-rendering: geometricPrecision;
 }
 
-html.sheet-open,
+html.sheet-open {
+  overscroll-behavior: none;
+}
+
+/* Scroll-lock via position:fixed (JS sets body.style.top to -scrollY on open,
+   restores + scrolls back on close). Deliberately NOT overflow:hidden here —
+   that establishes body as a scroll container for CSS purposes and breaks
+   `position: sticky` in descendants (e.g. .topbar, .journey-nav), which would
+   otherwise appear to vanish while a sheet/modal is open. */
 body.sheet-open {
+  position: fixed;
+  right: 0;
+  left: 0;
   width: 100%;
-  overflow: hidden;
   overscroll-behavior: none;
 }
 
@@ -2785,7 +2795,7 @@ button.setting-row:focus-visible .setting-row-action {
   align-items: flex-end;
   justify-content: center;
   padding-top: calc(44px + var(--safe-top));
-  background: color-mix(in srgb, var(--sheet-backdrop) 58%, transparent);
+  background: var(--sheet-backdrop);
   opacity: 0;
   pointer-events: none;
   overscroll-behavior: contain;

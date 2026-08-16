@@ -11,6 +11,7 @@ const vinCameraInput = document.querySelector("#vin-camera-input");
 const dictationDock = document.querySelector("#dictation-dock");
 let sheetCloseTimer;
 let sheetReturnFocus = null;
+let lockedScrollY = null;
 let activeDictationButton = null;
 let activeDictationTarget = null;
 let dictationDockHideTimer;
@@ -1538,6 +1539,14 @@ function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
   if (!isRefreshing) {
     sheetReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   }
+  if (lockedScrollY === null) {
+    // Lock the body in place at its current scroll offset (rather than
+    // overflow:hidden) so position:sticky elements behind the sheet — the
+    // topbar and journey tabs — keep their normal stuck position instead of
+    // losing their scroll-container context and appearing to vanish.
+    lockedScrollY = window.scrollY;
+    document.body.style.top = `-${lockedScrollY}px`;
+  }
   document.documentElement.classList.add("sheet-open");
   document.body.classList.add("sheet-open");
   sheetLayer.classList.toggle("is-confirmation-modal", sheetClass.split(/\s+/).includes("confirmation-sheet"));
@@ -1569,6 +1578,11 @@ function closeSheet() {
     sheetLayer.classList.remove("is-confirmation-modal");
     document.documentElement.classList.remove("sheet-open");
     document.body.classList.remove("sheet-open");
+    document.body.style.top = "";
+    if (lockedScrollY !== null) {
+      window.scrollTo({ top: lockedScrollY, behavior: "instant" });
+      lockedScrollY = null;
+    }
     sheetReturnFocus?.focus({ preventScroll: true });
     sheetReturnFocus = null;
   }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240);
