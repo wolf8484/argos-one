@@ -406,6 +406,7 @@ function databaseJobToUi(row) {
     bay: row.bay || "Unassigned",
     time: timestamp ? new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(timestamp)) : "",
     resolvedAt: row.resolved_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.resolved_at)) : "",
+    updatedAt: row.updated_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.updated_at)) : "",
     technician: state.profile?.full_name || "Workshop technician",
     complaint: row.complaint || "",
     observations: row.observations || "",
@@ -1321,24 +1322,36 @@ function renderResolvedJob() {
     return;
   }
   const vehicle = jobVehicleName(job);
-  app.innerHTML = `<section class="screen workflow-shell resolved-job-shell">
-    ${taskHeader({ context: vehicle, title: "Resolved repair", backAction: "resolved-back", backLabel: "Back to jobs", status: "Resolved", statusType: "resolved" })}
-    <section class="resolved-summary" aria-label="Resolved job summary">
+  const isDeleted = job.status === "deleted";
+  // A deleted (cancelled) job never resolves, so it has no resolved_at --
+  // show when it was cancelled (updated_at) instead. Matches the "Active
+  // diagnosis" header exactly: context + title, no back button, no status
+  // chip -- this is a paused inspection, not a finished repair.
+  const header = isDeleted
+    ? taskHeader({ context: vehicle, title: "Deleted inspection" })
+    : taskHeader({ context: vehicle, title: "Resolved repair", backAction: "resolved-back", backLabel: "Back to jobs", status: "Resolved", statusType: "resolved" });
+  app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
+    ${header}
+    <section class="resolved-summary" aria-label="${isDeleted ? "Deleted job summary" : "Resolved job summary"}">
       <div><span class="section-label">Customer</span><strong>${escapeHTML(job.vehicle.customerName)}</strong>${job.vehicle.customerPhone ? `<span>${escapeHTML(job.vehicle.customerPhone)}</span>` : ""}</div>
-      <div><span class="section-label">Resolved</span><strong>${escapeHTML(job.resolvedAt)}</strong><span>${escapeHTML(job.bay)} · ${escapeHTML(job.technician)}</span></div>
-      <div><span class="section-label">Final mileage</span><strong>${escapeHTML(job.vehicle.mileage)} KM</strong>${job.vehicle.vin ? `<span>VIN ${escapeHTML(job.vehicle.vin)}</span>` : ""}</div>
+      <div><span class="section-label">${isDeleted ? "Deleted" : "Resolved"}</span><strong>${escapeHTML(isDeleted ? job.updatedAt : job.resolvedAt)}</strong><span>${escapeHTML(job.bay)} · ${escapeHTML(job.technician)}</span></div>
+      <div><span class="section-label">${isDeleted ? "Mileage" : "Final mileage"}</span><strong>${escapeHTML(job.vehicle.mileage)} KM</strong>${job.vehicle.vin ? `<span>VIN ${escapeHTML(job.vehicle.vin)}</span>` : ""}</div>
     </section>
     <div class="resolved-details">
-      ${resolvedDetail("Customer complaint", `<p>${escapeHTML(job.complaint)}</p>`)}
+      ${resolvedDetail("Customer complaint", `<p>${escapeHTML(job.complaint) || "No complaint recorded."}</p>`)}
       ${resolvedDetail("Initial observations", `<p>${escapeHTML(job.observations || "No initial observations recorded.")}</p>`)}
       ${resolvedDetail("Diagnostic trouble codes", job.dtcs.length ? `<div class="quick-row">${job.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<p class="muted">No scan codes recorded.</p>`)}
       ${resolvedDetail("What fixed it", `<p>${escapeHTML(job.cause)}</p>`)}
-      ${resolvedDetail("Work performed", `<ol class="resolved-steps">${job.workPerformed.map((step) => `<li>${escapeHTML(step)}</li>`).join("")}</ol>`)}
-      ${resolvedDetail("Parts & consumables", `<div class="resolved-parts">${job.parts.map((part) => `<div><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""} · QTY ${escapeHTML(part.quantity)}</span></div>`).join("")}</div>`)}
+      ${resolvedDetail("Work performed", job.workPerformed.length ? `<ol class="resolved-steps">${job.workPerformed.map((step) => `<li>${escapeHTML(step)}</li>`).join("")}</ol>` : `<p class="muted">No work performed recorded.</p>`)}
+      ${resolvedDetail("Parts & consumables", job.parts.length ? `<div class="resolved-parts">${job.parts.map((part) => `<div><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""} · QTY ${escapeHTML(part.quantity)}</span></div>`).join("")}</div>` : `<p class="muted">No parts or consumables recorded.</p>`)}
       ${resolvedDetail("Verification", `<p>${escapeHTML(job.verification)}</p>`)}
       ${resolvedDetail("Previous repair reference", `<p>${escapeHTML(job.reference)}</p>`)}
       ${resolvedDetail("Repair photos", resolvedPhotoGallery())}
     </div>
+    ${isDeleted ? `<div class="action-dock resolved-actions span-2">
+      <button class="secondary-button full" type="button" data-action="restore-job" data-job-id="${job.id}">${icon("back")} Restore job</button>
+      <button class="danger-button full" type="button" data-action="delete-forever" data-job-id="${job.id}">${icon("trash")} Delete forever</button>
+    </div>` : ""}
   </section>`;
 }
 
@@ -1646,6 +1659,48 @@ function deleteRepairRecord() {
   closeSheet();
   setRoute("home");
   showToast("Repair moved to Deleted jobs.");
+}
+
+// Un-cancels a deleted job and drops the mechanic back into the workflow at
+// whichever step it was cancelled from (openJob() already resumes a job at
+// job.resume based on its saved stage -- restoring just needs status back to
+// "open" first so that routing treats it as a normal in-progress job again).
+function restoreJob() {
+  const jobId = state.selectedJobId;
+  const job = jobRecords.find((record) => record.id === jobId);
+  if (!job) return;
+  return apiRequest(`/api/jobs/${jobId}/restore`, { method: "POST" })
+    .then(({ job: restored }) => {
+      const restoredJob = databaseJobToUi(restored);
+      const index = jobRecords.findIndex((entry) => entry.id === restoredJob.id);
+      if (index >= 0) jobRecords[index] = restoredJob;
+      showToast("Job restored.");
+      openJob(restoredJob.id);
+    })
+    .catch((error) => showToast(error.message));
+}
+
+function deleteForeverConfirmation() {
+  const jobId = state.selectedJobId;
+  openSheet(`<div class="confirmation-content">
+    <h2>Delete this job forever?</h2>
+    <p>This permanently removes the job, its notes, DTCs and repair record. This cannot be undone.</p>
+    <div class="confirmation-actions">
+      <button class="secondary-button full" type="button" data-action="close-sheet">Keep job</button>
+      <button class="danger-button full" type="button" data-action="confirm-delete-forever" data-job-id="${jobId}">${icon("trash")} Delete forever</button>
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm permanent deletion" });
+}
+
+function deleteForever(jobId) {
+  return apiRequest(`/api/jobs/${jobId}/purge`, { method: "DELETE" })
+    .then(() => {
+      jobRecords = jobRecords.filter((job) => job.id !== jobId);
+      closeSheet();
+      setRoute("jobs");
+      showToast("Job permanently deleted.");
+    })
+    .catch((error) => showToast(error.message));
 }
 
 function photoViewerSheet(scope, requestedIndex = 0) {
@@ -2042,6 +2097,9 @@ document.addEventListener("click", (event) => {
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
     if (action === "resolved-back") return setRoute("jobs");
+    if (action === "restore-job") return restoreJob();
+    if (action === "delete-forever") return deleteForeverConfirmation();
+    if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
     if (action === "filter-jobs") {
       const searchInput = document.querySelector("#job-search");
       if (searchInput) state.jobSearch = searchInput.value;
@@ -2120,7 +2178,14 @@ document.addEventListener("click", (event) => {
     }
     if (action === "confirm-delete-repair") {
       if (!isPersistedJobId(state.currentJobId)) return deleteRepairRecord();
-      return apiRequest(`/api/jobs/${state.currentJobId}`, { method: "DELETE" })
+      // Flush the current repair draft (cause/work performed/verification/
+      // parts/DTCs) BEFORE cancelling -- archiveJob only flips status, it
+      // never touches repair_records, so without this the mechanic's
+      // in-progress notes at the repair step would be silently lost.
+      clearTimeout(repairAutosaveTimer);
+      return persistRepair(false)
+        .catch(() => {}) // best-effort: still cancel even if the flush failed
+        .then(() => apiRequest(`/api/jobs/${state.currentJobId}`, { method: "DELETE" }))
         .then(({ job }) => {
           const archivedJob = databaseJobToUi(job);
           const index = jobRecords.findIndex((entry) => entry.id === archivedJob.id);

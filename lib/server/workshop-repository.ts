@@ -145,6 +145,35 @@ export class WorkshopRepository {
     return this.getJob(jobId)
   }
 
+  // Un-cancels a job. `stage` is left untouched by archiveJob, so the job
+  // resumes exactly where it was cancelled (e.g. back at the repair step)
+  // with whatever assessment/repair data was already saved.
+  async restoreJob(jobId: string) {
+    const { error } = await this.supabase
+      .from('jobs')
+      .update({ status: 'open' })
+      .eq('id', jobId)
+      .eq('shop_id', this.profile.shop_id)
+      .eq('status', 'cancelled')
+    if (error) throw error
+    return this.getJob(jobId)
+  }
+
+  // Hard delete. jobs -> job_dtc_codes/repair_records/job_photos all cascade
+  // via FK (repair_records -> repair_steps/repair_items cascade further).
+  // vehicles/customers are NOT touched (jobs.vehicle_id is ON DELETE RESTRICT
+  // and customer_id is ON DELETE SET NULL) since they may be shared with
+  // other jobs for the same car/customer.
+  async purgeJob(jobId: string) {
+    const { error } = await this.supabase
+      .from('jobs')
+      .delete()
+      .eq('id', jobId)
+      .eq('shop_id', this.profile.shop_id)
+      .eq('status', 'cancelled')
+    if (error) throw error
+  }
+
   async saveAssessment(jobId: string, input: { complaint: string; observations?: string | null; dtcs: string[]; nextStage: string; summary?: string | null }) {
     const { error } = await this.supabase.from('jobs').update({
       complaint: input.complaint,

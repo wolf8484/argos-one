@@ -10,7 +10,7 @@ export default function DashboardPage() {
     const script = document.createElement('script')
     // Keep the UI runtime cacheable while ensuring remote tablets do not reuse
     // the pre-hydration build that rendered only the persistent navigation.
-    script.src = '/argos-ui/app.js?v=20260817-modal-scroll-lock-1'
+    script.src = '/argos-ui/app.js?v=20260817-deleted-job-restore-1'
     script.dataset.argosUi = 'true'
     document.body.appendChild(script)
   }, [])

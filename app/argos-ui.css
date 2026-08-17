@@ -2084,6 +2084,11 @@ button.journey-item:active {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.action-dock.resolved-actions {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 24px;
+}
+
 .field-actions,
 .recorded-part-actions,
 .suggested-part-actions,
@@ -4070,6 +4075,10 @@ body.dictation-active .toast {
 
   .action-dock.vehicle-actions > .primary-button {
     order: -1;
+  }
+
+  .action-dock.resolved-actions {
+    grid-template-columns: 1fr;
   }
 
   .match-selector {
