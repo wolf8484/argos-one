@@ -1207,6 +1207,13 @@ function renderProblem() {
         <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
       </div>
+      <div class="form-field repair-dtc-field">
+        <div class="field-header"><span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
+        <div class="field-actions dtc-actions">
+          <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add scan code</span></button>
+          <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}</span>`).join("")}</div>
+        </div>
+      </div>
       <div class="form-field">
         <span class="field-label intake-section-title">Arrival photos <span class="optional-label">(optional)</span></span>
         <div class="photo-panel"><button class="add-photo" type="button" data-action="add-photo">${icon("camera")}<span>Open camera</span></button>${photoStrip(state.photos, "inspection", "Arrival photo")}</div>
