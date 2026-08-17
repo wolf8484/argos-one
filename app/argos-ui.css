@@ -2390,12 +2390,13 @@ button.journey-item:active {
   min-width: min(280px, 100%);
   min-height: 188px;
   flex-direction: column;
-  padding: 18px 72px 18px 18px;
+  padding: 20px;
   border: 0;
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
-  transition: background-color 160ms ease, color 160ms ease;
+  box-shadow: none;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .match-option:hover,
@@ -2406,6 +2407,7 @@ button.journey-item:active {
 .match-option.is-selected {
   background: var(--surface-2);
   color: var(--text);
+  box-shadow: 0 0 0 2px var(--accent-fill) inset;
 }
 
 .match-option.is-selected:hover,
@@ -2452,6 +2454,7 @@ button.journey-item:active {
   min-width: 0;
   flex-direction: column;
   margin-top: auto;
+  padding-right: 56px;
 }
 
 .match-option-state {
@@ -2469,8 +2472,8 @@ button.journey-item:active {
 
 .match-option-action {
   position: absolute;
-  right: 18px;
-  bottom: 18px;
+  right: 20px;
+  bottom: 20px;
   display: grid;
   place-items: center;
   width: 44px;
@@ -4169,6 +4172,10 @@ body.dictation-active .toast {
   .match-option {
     min-height: 174px;
     padding: 14px 62px 14px 14px;
+  }
+
+  .match-option-copy {
+    padding-right: 0;
   }
 
   .match-option-score {
