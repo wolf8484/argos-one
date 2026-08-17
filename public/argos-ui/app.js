@@ -1276,14 +1276,6 @@ function renderRepairRecord() {
     </aside>` : ""}
 
     <form id="repair-form" class="repair-form">
-      <div class="form-field repair-dtc-field">
-        <div class="field-header"><span class="field-label">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
-        <div class="field-actions dtc-actions">
-          <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add scan code</span></button>
-          <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}</span>`).join("")}</div>
-        </div>
-      </div>
-
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
         <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea></div>
