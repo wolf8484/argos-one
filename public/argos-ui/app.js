@@ -895,7 +895,7 @@ function workflowJourney(currentStep) {
     [4, "Repair"],
   ];
   const unlockedStep = Math.max(currentStep, state.workflowUnlockedStep || 1);
-  return `<nav class="journey-nav" aria-label="Inspection progress">${stages.map(([step, label]) => {
+  return `<nav class="journey-nav" aria-label="Job progress">${stages.map(([step, label]) => {
     const isSkipped = step === 3 && unlockedStep >= 4 && !state.repairReferenceEnabled;
     const isComplete = step < unlockedStep && !isSkipped;
     if (step === currentStep) return `<span class="journey-item is-current${isComplete ? " is-complete" : ""}" aria-current="step">${isComplete ? icon("check") : ""}<span>${label}</span></span>`;
@@ -937,7 +937,7 @@ function resultsTaskHeader() {
 function repairRecordHeader() {
   return taskHeader({
     context: vehicleSearchContext(),
-    title: "Active diagnosis",
+    title: "Active job",
   });
 }
 
@@ -947,15 +947,15 @@ function renderHome() {
   const allJobsCount = jobRecords.length;
   const activeJob = jobRecords.find((job) => job.id === state.activeJobId && job.status === "open");
   const repairLibraryCount = libraryRecords.length;
-  const resumeTitle = "Resume inspection";
+  const resumeTitle = "Resume job";
   const resumeTile = activeJob
     ? `<button type="button" class="control-tile" data-action="open-job" data-job-id="${activeJob.id}" aria-label="${resumeTitle} for ${jobVehicleName(activeJob)}">
         <span class="tile-icon">${icon("wrench")}</span>
         <span class="tile-copy"><strong>${resumeTitle}</strong><small>${jobVehicleName(activeJob)}</small></span>
       </button>`
-    : `<button type="button" class="control-tile" data-route="new" aria-label="Start a new inspection">
+    : `<button type="button" class="control-tile" data-route="new" aria-label="Start a new job">
         <span class="tile-icon">${icon("wrench")}</span>
-        <span class="tile-copy"><strong>No active inspection</strong><small>Ready for the next vehicle</small></span>
+        <span class="tile-copy"><strong>No active job</strong><small>Ready for the next vehicle</small></span>
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
     <div class="home-status-block">
@@ -970,7 +970,7 @@ function renderHome() {
     <div class="control-grid" aria-label="Workshop controls">
       <button type="button" class="control-tile is-primary" data-route="new">
         <span class="tile-icon">${icon("plus")}</span>
-        <span class="tile-copy"><strong>New inspection</strong><small>Vehicle &amp; complaint</small></span>
+        <span class="tile-copy"><strong>New job</strong><small>Vehicle &amp; complaint</small></span>
       </button>
       ${resumeTile}
       <button type="button" class="control-tile" data-route="jobs">
@@ -1340,10 +1340,10 @@ function renderResolvedJob() {
   const isDeleted = job.status === "deleted";
   // A deleted (cancelled) job never resolves, so it has no resolved_at --
   // show when it was cancelled (updated_at) instead. Matches the "Active
-  // diagnosis" header exactly: context + title, no back button, no status
-  // chip -- this is a paused inspection, not a finished repair.
+  // job" header exactly: context + title, no back button, no status
+  // chip -- this is a paused job, not a finished repair.
   const header = isDeleted
-    ? taskHeader({ context: vehicle, title: "Deleted inspection" })
+    ? taskHeader({ context: vehicle, title: "Deleted job" })
     : taskHeader({ context: vehicle, title: "Resolved repair", backAction: "resolved-back", backLabel: "Back to jobs", status: "Resolved", statusType: "resolved" });
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
@@ -1888,7 +1888,7 @@ function calendarSheet() {
       <section class="calendar-agenda" aria-live="polite">
         <span class="micro-label">${selectedLabel}</span>
         <h3>${activeDays.has(selectedDay) ? "3 workshop bookings" : "No scheduled bookings"}</h3>
-        <p>${activeDays.has(selectedDay) ? "Bay activity, inspections and completed repairs for the selected day." : "The workshop schedule is clear for this date."}</p>
+        <p>${activeDays.has(selectedDay) ? "Bay activity, jobs and completed repairs for the selected day." : "The workshop schedule is clear for this date."}</p>
       </section>
     </div>`);
 }
@@ -1931,7 +1931,7 @@ function catalogEditorSheet() {
 }
 
 function dtcEditorSheet() {
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Active diagnosis</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Active job</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><form id="dtc-editor-form" class="form-grid">
       <label class="form-field"><span class="field-label">Diagnostic trouble code</span><input class="input caps-text" name="dtc-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. P0171" maxlength="7" required /></label>
       <button class="primary-button full" type="submit">${icon("plus")} Add code</button>
@@ -2260,7 +2260,7 @@ document.addEventListener("click", (event) => {
     if (action === "log-fix") {
       state.repairReferenceEnabled = true;
       openRepairRecord();
-      return showToast("Selected repair reference saved to this diagnosis.");
+      return showToast("Selected repair reference saved to this job.");
     }
     if (action === "save-research") { closeSheet(); return showToast("Research notes saved with source links."); }
     if (action === "select-price") {
@@ -2448,7 +2448,7 @@ document.addEventListener("submit", (event) => {
     closeSheet();
     render();
     queueRepairAutosave();
-    return showToast(`${code} added to the active diagnosis.`);
+    return showToast(`${code} added to the active job.`);
   }
   if (event.target.id === "repair-form") {
     syncRepairRecord(event.target);
