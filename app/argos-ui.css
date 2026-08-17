@@ -679,7 +679,18 @@ main:focus {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 18px;
+  padding-bottom: 24px;
+}
+
+@media (max-width: 500px) {
+  .section-heading {
+    flex-wrap: wrap;
+  }
+
+  .section-heading .view-all-button {
+    flex: 1 0 100%;
+    justify-content: center;
+  }
 }
 
 .section-label,

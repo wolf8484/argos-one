@@ -981,8 +981,8 @@ function renderHome() {
 
     <div class="home-jobs-section">
       <div class="section-heading">
-        <div><h2>In progress</h2></div>
-        <button class="secondary-button view-all-button" type="button" data-route="jobs">View all ${icon("arrow")}</button>
+        <div><h2>Currently active</h2></div>
+        <button class="secondary-button view-all-button" type="button" data-action="view-active-jobs">View all ${icon("arrow")}</button>
       </div>
       <div class="job-list">
         ${openJobs.slice(0, 3).map(jobCard).join("")}
@@ -2111,6 +2111,11 @@ document.addEventListener("click", (event) => {
     if (action === "restore-job") return restoreJob();
     if (action === "delete-forever") return deleteForeverConfirmation();
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
+    if (action === "view-active-jobs") {
+      state.jobFilter = "open";
+      setRoute("jobs");
+      return;
+    }
     if (action === "filter-jobs") {
       const searchInput = document.querySelector("#job-search");
       if (searchInput) state.jobSearch = searchInput.value;
