@@ -901,26 +901,23 @@ main:focus {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  padding: 3px 0;
-  color: var(--accent);
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #92400e;
   font-size: 14px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.status-chip::before {
-  width: 7px;
-  height: 7px;
-  margin-right: 8px;
-  background: currentColor;
-  content: "";
-}
-
 .status-chip.resolved {
-  color: #34e321;
+  background: #dcfce7;
+  color: #166534;
 }
 
 .status-chip.deleted {
-  color: #fb5c5c;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .job-filters {
