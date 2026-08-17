@@ -903,21 +903,21 @@ main:focus {
   min-height: 26px;
   padding: 3px 10px;
   border-radius: 6px;
-  background: #78350f;
-  color: #f0f0f0;
+  background: #386fd3;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .status-chip.resolved {
-  background: #14532d;
-  color: #f0f0f0;
+  background: #007d3b;
+  color: #ffffff;
 }
 
 .status-chip.deleted {
-  background: #7f1d1d;
-  color: #f0f0f0;
+  background: #d90026;
+  color: #ffffff;
 }
 
 .job-filters {
