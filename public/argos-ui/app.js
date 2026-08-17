@@ -913,31 +913,26 @@ function vehicleTaskHeader() {
 
 function problemTaskHeader() {
   return taskHeader({
-    context: vehicleSearchContext(),
-    title: "Initial assessment",
+    context: "Initial assessment",
+    title: vehicleName(),
   });
 }
 
-function vehicleSearchContext() {
-  return [
-    `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`,
-    ...state.dtcs,
-  ].join(" · ");
+function vehicleName() {
+  return `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
 }
 
 function resultsTaskHeader() {
   return taskHeader({
-    context: vehicleSearchContext(),
-    title: "Useful repairs",
-    status: `${repairMatches.length} found`,
-    statusType: "count",
+    context: `Useful repairs · ${repairMatches.length} found`,
+    title: vehicleName(),
   });
 }
 
 function repairRecordHeader() {
   return taskHeader({
-    context: vehicleSearchContext(),
-    title: "Repair details",
+    context: "Repair details",
+    title: vehicleName(),
   });
 }
 
@@ -1344,7 +1339,7 @@ function renderResolvedJob() {
   // chip -- this is a paused job, not a finished repair.
   const header = isDeleted
     ? taskHeader({ context: vehicle, title: "Deleted job" })
-    : taskHeader({ context: vehicle, title: "Resolved repair", backAction: "resolved-back", backLabel: "Back to jobs", status: "Resolved", statusType: "resolved" });
+    : taskHeader({ context: vehicle, title: "Resolved repair", status: "Resolved", statusType: "resolved" });
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="resolved-summary" aria-label="${isDeleted ? "Deleted job summary" : "Resolved job summary"}">
@@ -2111,7 +2106,6 @@ document.addEventListener("click", (event) => {
     if (action === "workflow-back") return state.step > 1 ? setStep(state.step - 1) : setRoute("home");
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
-    if (action === "resolved-back") return setRoute("jobs");
     if (action === "restore-job") return restoreJob();
     if (action === "delete-forever") return deleteForeverConfirmation();
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
