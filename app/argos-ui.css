@@ -339,7 +339,7 @@ main:focus {
 .screen {
   width: min(100%, var(--content));
   margin: 0 auto;
-  padding: 22px var(--gutter) 52px;
+  padding: 24px 16px;
 }
 
 .screen.screen-enter {
@@ -3953,10 +3953,6 @@ body.dictation-active .toast {
 }
 
 @media (min-width: 860px) {
-  .screen {
-    padding-top: 34px;
-  }
-
   .home-status-block {
     padding-top: 12px;
   }
@@ -4289,10 +4285,6 @@ body.dictation-active .toast {
 }
 
 @media (max-width: 420px) {
-  .screen {
-    padding-top: 18px;
-  }
-
   .home-metric {
     min-height: 140px;
   }
