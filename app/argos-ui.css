@@ -1216,6 +1216,26 @@ main:focus {
   color: var(--text);
 }
 
+@media (max-width: 500px) {
+  .task-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .task-header.has-back {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .task-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-top: 10px;
+  }
+
+  .task-header.has-back .task-status {
+    grid-column: 2 / -1;
+  }
+}
+
 .journey-nav {
   position: sticky;
   z-index: 35;
