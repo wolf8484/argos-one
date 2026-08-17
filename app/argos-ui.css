@@ -1951,8 +1951,8 @@ button.journey-item:active {
 }
 
 .repair-dtc-field {
-  padding: 16px;
-  background: var(--surface-2);
+  padding: 0;
+  background: none;
 }
 
 .dtc-chip.caps-text {
