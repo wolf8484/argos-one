@@ -913,7 +913,7 @@ function vehicleTaskHeader() {
 
 function problemTaskHeader() {
   return taskHeader({
-    context: "",
+    context: vehicleSearchContext(),
     title: "Initial assessment",
   });
 }
@@ -985,8 +985,8 @@ function renderHome() {
 
     <div class="home-jobs-section">
       <div class="section-heading">
-        <div><h2>Active jobs</h2></div>
-        <button class="secondary-button view-all-button" type="button" data-route="jobs">View all jobs ${icon("arrow")}</button>
+        <div><h2>In progress</h2></div>
+        <button class="secondary-button view-all-button" type="button" data-route="jobs">View all ${icon("arrow")}</button>
       </div>
       <div class="job-list">
         ${openJobs.slice(0, 3).map(jobCard).join("")}
