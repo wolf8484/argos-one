@@ -2403,11 +2403,14 @@ button.journey-item:active {
   background: var(--surface-3);
 }
 
-.match-option.is-selected,
+.match-option.is-selected {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
 .match-option.is-selected:hover,
 .match-option.is-selected:focus-visible {
-  background: var(--accent-fill);
-  color: var(--on-accent);
+  background: var(--surface-3);
 }
 
 .match-option-top {
@@ -2430,7 +2433,7 @@ button.journey-item:active {
 }
 
 .match-option.is-selected .match-option-rank {
-  color: #303030;
+  color: var(--muted-strong);
 }
 
 .match-option-score {
@@ -2442,10 +2445,6 @@ button.journey-item:active {
 
 .match-option-score .percent-symbol {
   color: var(--accent);
-}
-
-.match-option.is-selected .match-option-score .percent-symbol {
-  color: var(--on-accent);
 }
 
 .match-option-copy {
@@ -2468,10 +2467,6 @@ button.journey-item:active {
   height: 15px;
 }
 
-.match-option.is-selected .match-option-state {
-  color: #080808;
-}
-
 .match-option-action {
   position: absolute;
   right: 18px;
@@ -2492,7 +2487,7 @@ button.journey-item:active {
 }
 
 .match-option.is-selected .match-option-action {
-  background: rgba(17, 17, 17, 0.12);
+  background: var(--accent-fill);
   color: var(--on-accent);
 }
 
@@ -2524,10 +2519,6 @@ button.journey-item:active {
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.3;
-}
-
-.match-option.is-selected .match-option-evidence {
-  color: #303030;
 }
 
 .selected-repair {
