@@ -776,9 +776,24 @@ main:focus {
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.job-status-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.job-date {
+  color: #9b9b97;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .job-vehicle {
@@ -910,6 +925,23 @@ main:focus {
 
 .job-filters {
   margin-bottom: 24px;
+}
+
+@media (max-width: 720px) {
+  .job-filters.job-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .job-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .job-filters .quick-chip {
+    flex: 0 0 auto;
+  }
 }
 
 .jobs-search-field {

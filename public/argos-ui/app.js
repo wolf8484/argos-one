@@ -208,6 +208,10 @@ function rememberActiveJob(id) {
   } catch (_) {}
 }
 
+function shortDate(iso) {
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" }).format(new Date(iso));
+}
+
 function jobVehicleName(job) {
   return `${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`;
 }
@@ -405,6 +409,9 @@ function databaseJobToUi(row) {
     },
     bay: row.bay || "Unassigned",
     time: timestamp ? new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(timestamp)) : "",
+    createdAtShort: row.created_at ? shortDate(row.created_at) : "",
+    resolvedAtShort: row.resolved_at ? shortDate(row.resolved_at) : "",
+    updatedAtShort: row.updated_at ? shortDate(row.updated_at) : "",
     resolvedAt: row.resolved_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.resolved_at)) : "",
     updatedAt: row.updated_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.updated_at)) : "",
     technician: state.profile?.full_name || "Workshop technician",
@@ -990,10 +997,18 @@ function renderHome() {
 
 function jobCard(job, { hidden = false } = {}) {
   const statusLabel = job.status === "deleted" ? "Deleted" : job.status === "resolved" ? "Resolved" : "Active";
+  const dateLabel = job.status === "deleted"
+    ? (job.updatedAtShort ? `Deleted ${job.updatedAtShort}` : "")
+    : job.status === "resolved"
+      ? (job.resolvedAtShort ? `Resolved ${job.resolvedAtShort}` : "")
+      : (job.createdAtShort ? `Started ${job.createdAtShort}` : "");
   return `<button class="job-card" data-status="${job.status}" data-action="open-job" data-job-id="${job.id}" data-job-search="${escapeHTML(jobSearchText(job))}"${hidden ? " hidden" : ""} type="button" aria-label="${job.status === "open" ? "Resume" : `View ${statusLabel.toLowerCase()} job for`} ${jobVehicleName(job)}">
     <span class="job-card-main">
       <span class="job-card-top">
-        <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
+        <span class="job-status-group">
+          <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
+          ${dateLabel ? `<span class="job-date">${escapeHTML(dateLabel)}</span>` : ""}
+        </span>
         <span class="job-bay">${job.bay.toUpperCase()}</span>
       </span>
       <span class="job-vehicle">${jobVehicleName(job)}</span>
