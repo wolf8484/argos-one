@@ -920,7 +920,7 @@ main:focus {
 }
 
 .status-chip.deleted {
-  color: var(--muted);
+  color: #fb5c5c;
 }
 
 .job-filters {

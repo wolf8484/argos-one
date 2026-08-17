@@ -998,9 +998,9 @@ function renderHome() {
 function jobCard(job, { hidden = false } = {}) {
   const statusLabel = job.status === "deleted" ? "Deleted" : job.status === "resolved" ? "Resolved" : "Active";
   const dateLabel = job.status === "deleted"
-    ? (job.updatedAtShort ? `Deleted ${job.updatedAtShort}` : "")
+    ? job.updatedAtShort
     : job.status === "resolved"
-      ? (job.resolvedAtShort ? `Resolved ${job.resolvedAtShort}` : "")
+      ? job.resolvedAtShort
       : (job.createdAtShort ? `Started ${job.createdAtShort}` : "");
   return `<button class="job-card" data-status="${job.status}" data-action="open-job" data-job-id="${job.id}" data-job-search="${escapeHTML(jobSearchText(job))}"${hidden ? " hidden" : ""} type="button" aria-label="${job.status === "open" ? "Resume" : `View ${statusLabel.toLowerCase()} job for`} ${jobVehicleName(job)}">
     <span class="job-card-main">
