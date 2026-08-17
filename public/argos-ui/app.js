@@ -51,6 +51,7 @@ const state = {
     engine: "",
     drivetrain: "",
     transmission: "",
+    registration: "",
     customerName: "",
     customerFirstName: "",
     customerLastName: "",
@@ -1113,7 +1114,7 @@ function renderSettings() {
 function renderVehicle() {
   // Catalogue and VIN responses may omit optional specifications. Keep every
   // form value string-safe so an absent value never renders as "undefined".
-  ["vin", "year", "make", "model", "trim", "drivetrain", "engine", "transmission", "mileage"].forEach((key) => {
+  ["vin", "year", "make", "model", "trim", "drivetrain", "engine", "transmission", "registration", "mileage"].forEach((key) => {
     state.vehicle[key] = String(state.vehicle[key] || "");
   });
   const makes = [state.vehicle.make, ...state.catalog.makes, "Volvo", "Toyota", "Ford", "Honda", "BMW"].filter((value, index, values) => value && values.indexOf(value) === index);
@@ -1142,6 +1143,7 @@ function renderVehicle() {
         ${specFieldHtml("drivetrain", "Drivetrain", "e.g. AWD", ["FWD", "RWD", "AWD", "4WD"])}
         ${specFieldHtml("engine", "Engine", "e.g. 2.0L turbo", null)}
         ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
+        <label class="form-field"><span class="field-label">Registration <span class="muted">(optional)</span></span><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
         <label class="form-field"><span class="field-label">Current mileage</span><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add make or model</button></div>
       </div>
@@ -1427,7 +1429,7 @@ function render() {
 
 function syncVehicle(form) {
   const data = new FormData(form);
-  ["vin", "year", "make", "model", "mileage", "trim", "engine", "drivetrain", "transmission", "customerFirstName", "customerLastName", "customerPhone", "customerEmail"].forEach((key) => {
+  ["vin", "year", "make", "model", "mileage", "trim", "engine", "drivetrain", "transmission", "registration", "customerFirstName", "customerLastName", "customerPhone", "customerEmail"].forEach((key) => {
     state.vehicle[key] = String(data.get(key) || "").trim();
   });
   state.vehicle.customerName = customerFullName();
