@@ -343,6 +343,14 @@ function icon(name, label = "") {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${label ? `aria-label="${label}" role="img"` : 'aria-hidden="true"'}>${icons[name] || ""}</svg>`;
 }
 
+const materialIcons = {
+  resumeJob: '<path d="M358.5-373.23q-93.81 0-159.48-65.67-65.67-65.67-65.67-159.48 0-16.3 2.27-32.34 2.27-16.05 7.96-31.05 3.37-8.23 9.6-12.83 6.24-4.6 14.11-6.67 7.86-2.08 15.71.14 7.84 2.21 14.27 8.75l106.04 105.46 87.46-86.66-105.38-105.77q-6.41-6.35-8.53-14.38-2.13-8.03-.2-15.76t6.37-13.91q4.43-6.18 12.66-9.71 14.81-6.08 30.8-8.66t31.99-2.58q93.93 0 159.96 66.03 66.02 66.03 66.02 159.94 0 25.26-4.77 47.07t-14.31 42.16l217.08 215.81q24.16 24.27 24.16 59.42 0 35.15-24.33 59.3-24.51 24.35-59.21 23.95-34.69-.41-59.04-24.87L447.88-392.31q-21.15 9.16-43 14.12-21.86 4.96-46.38 4.96Zm-.08-55.96q26.09 0 52.07-8.06 25.97-8.06 47.74-24.17l246.46 246.77q7.43 7.61 18.62 7.71 11.19.1 19.11-7.92 7.93-8.02 7.93-19.12 0-11.1-7.93-19.21L495.65-499.35q16.54-21.07 24.7-46.51 8.15-25.45 8.15-52.52 0-66.54-48.75-118.74-48.75-52.19-123.94-49.77l90.42 90.43q10.35 10.34 10.1 24.09t-10.6 24.17L326.69-511.96q-10.5 10.04-24.17 9.79-13.67-.25-23.71-10.29L191-600.27q-1.46 78.92 50.86 125 52.33 46.08 116.56 46.08Zm110.23-60.62Z"/>',
+};
+
+function materialIcon(name, label = "") {
+  return `<svg viewBox="0 -960 960 960" fill="currentColor" ${label ? `aria-label="${label}" role="img"` : 'aria-hidden="true"'}>${materialIcons[name] || ""}</svg>`;
+}
+
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
 }
@@ -946,11 +954,11 @@ function renderHome() {
   const resumeTitle = "Resume job";
   const resumeTile = activeJob
     ? `<button type="button" class="control-tile" data-action="open-job" data-job-id="${activeJob.id}" aria-label="${resumeTitle} for ${jobVehicleName(activeJob)}">
-        <span class="tile-icon">${icon("wrench")}</span>
+        <span class="tile-icon">${materialIcon("resumeJob")}</span>
         <span class="tile-copy"><strong>${resumeTitle}</strong><small>${jobVehicleName(activeJob)}</small></span>
       </button>`
     : `<button type="button" class="control-tile" data-route="new" aria-label="Start a new job">
-        <span class="tile-icon">${icon("wrench")}</span>
+        <span class="tile-icon">${materialIcon("resumeJob")}</span>
         <span class="tile-copy"><strong>No active job</strong><small>Ready for the next vehicle</small></span>
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
