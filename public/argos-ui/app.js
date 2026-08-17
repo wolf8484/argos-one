@@ -1936,9 +1936,9 @@ function catalogEditorSheet() {
 }
 
 function dtcEditorSheet() {
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Active job</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="eyebrow">${vehicleName()}</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><form id="dtc-editor-form" class="form-grid">
-      <label class="form-field"><span class="field-label">Diagnostic trouble code</span><input class="input caps-text" name="dtc-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. P0171" maxlength="7" required /></label>
+      <label class="form-field"><span class="field-label">Diagnostic trouble code</span><input class="input caps-text" name="dtc-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. P0171" required /></label>
       <button class="primary-button full" type="submit">${icon("plus")} Add code</button>
     </form></div>`);
   setTimeout(() => document.querySelector('[name="dtc-code"]')?.focus(), 50);
@@ -2452,7 +2452,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "dtc-editor-form") {
     const data = new FormData(event.target);
     const code = String(data.get("dtc-code") || "").trim().toUpperCase().replace(/\s+/g, "");
-    if (!/^[PBCU][0-9A-F]{4,6}$/.test(code)) return showToast("Enter a valid code, such as P0171.");
+    if (!code) return showToast("Enter a code.");
     if (!state.dtcs.includes(code)) state.dtcs.push(code);
     closeSheet();
     render();

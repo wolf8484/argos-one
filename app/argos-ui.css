@@ -2887,11 +2887,11 @@ button.setting-row:focus-visible .setting-row-action {
    it with the plain selector gives the two rules a real cascade difference an
    optimizer can't safely fold together, which survives minification. */
 .sheet-layer {
-  -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
 }
 
 :where(.sheet-layer) {
-  backdrop-filter: blur(22px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
 }
 
 /* Frosted glass needs backdrop-filter to read; without it the lighter tint
