@@ -1260,10 +1260,10 @@ function renderRepairRecord() {
 
     <form id="repair-form" class="repair-form">
       <div class="form-field repair-dtc-field">
-        <span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span>
-        <div class="quick-row" id="dtc-row">
-          ${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}</span>`).join("")}
+        <div class="field-header"><span class="field-label">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
+        <div class="field-actions dtc-actions">
           <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add scan code</span></button>
+          <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}</span>`).join("")}</div>
         </div>
       </div>
 
@@ -1339,7 +1339,7 @@ function renderResolvedJob() {
   // chip -- this is a paused job, not a finished repair.
   const header = isDeleted
     ? taskHeader({ context: vehicle, title: "Deleted job" })
-    : taskHeader({ context: vehicle, title: "Resolved repair", status: "Resolved", statusType: "resolved" });
+    : taskHeader({ context: "Repair details", title: vehicleName(), status: "Resolved", statusType: "resolved" });
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="resolved-summary" aria-label="${isDeleted ? "Deleted job summary" : "Resolved job summary"}">
