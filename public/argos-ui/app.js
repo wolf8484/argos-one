@@ -235,7 +235,7 @@ let repairMatches = [
     rank: "01",
     label: "Best match",
     percent: "92",
-    evidence: "Same model · same code",
+    evidence: ["Same model", "Same fault code (P0171)"],
     vehicle: "2019 Volvo V60 · P0171",
     meta: "78,240 KM · B4204T ENGINE · REPAIRED 14 MAR 2026 · J. MORRIS",
     cause: "Replaced a cracked PCV diaphragm and hardened breather hose that caused an air leak when warm.",
@@ -256,7 +256,7 @@ let repairMatches = [
     rank: "02",
     label: "Next closest",
     percent: "76",
-    evidence: "Same engine family",
+    evidence: ["Same engine family"],
     vehicle: "2021 Volvo XC60 · lean idle",
     meta: "91,600 KM · B4204T ENGINE · REPAIRED 21 JUN 2026 · A. NGUYEN",
     cause: "Replaced the intake manifold gasket at cylinder 1 after a warm-engine smoke test confirmed the leak.",
@@ -280,7 +280,7 @@ function repairMatchPercent(repair) {
 
 function repairMatchEvidence(repair) {
   if (state.dtcs.length) return repair.evidence;
-  return repair.id === "primary" ? "Same model · similar symptoms" : "Same engine family · similar symptoms";
+  return repair.id === "primary" ? ["Same model", "Similar symptoms"] : ["Same engine family", "Similar symptoms"];
 }
 
 const icons = {
@@ -449,7 +449,7 @@ function databaseMatchToUi(row, index) {
     rank: String(index + 1).padStart(2, "0"),
     label: index === 0 ? "Best match" : "Next closest",
     percent: String(Math.min(99, Math.max(1, row.score || 1))),
-    evidence: (row.evidence || []).join(" · ") || "Related workshop repair",
+    evidence: row.evidence && row.evidence.length ? row.evidence : ["Related workshop repair"],
     vehicle: row.vehicle_label || "Previous workshop repair",
     meta: row.repaired_at ? `REPAIRED ${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)).toUpperCase()}` : "VERIFIED SHOP REPAIR",
     cause: row.cause || row.work_performed || "Open the repair record for details.",
@@ -1239,7 +1239,7 @@ function renderResults() {
 
     <section class="selected-repair" aria-labelledby="selected-repair-heading" aria-live="polite">
       <div class="selected-repair-head">
-        <div><span class="section-label">Selected repair · ${selected.rank}</span><h2 id="selected-repair-heading">${selected.vehicle}</h2><span class="evidence-chip">${selectedEvidence}</span><span class="match-meta">${selected.meta}</span></div>
+        <div><span class="section-label">Selected repair · ${selected.rank}</span><h2 id="selected-repair-heading">${selected.vehicle}</h2><ul class="evidence-checklist">${selectedEvidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul><span class="match-meta">${selected.meta}</span></div>
         <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
       </div>
       <section class="result-detail-section" aria-labelledby="what-fixed-label">
@@ -1379,7 +1379,7 @@ function matchOption(repair, isSelected) {
   const evidence = repairMatchEvidence(repair);
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
     <span class="match-option-top"><span class="match-option-rank">${repair.rank}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
-    <span class="match-option-copy"><span class="match-option-state">${isSelected ? "Selected" : "View repair"}</span><strong>${repair.label}</strong><span class="match-option-vehicle">${repair.vehicle}</span><span class="match-option-evidence">${evidence}</span></span>
+    <span class="match-option-copy"><span class="match-option-state">${isSelected ? "Selected" : "View repair"}</span><strong>${repair.label}</strong><span class="match-option-vehicle">${repair.vehicle}</span><span class="match-option-evidence">${evidence.join(" · ")}</span></span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
 }

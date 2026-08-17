@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { generateMatchInsights } from '@/lib/server/repair-match-insights'
+
 type Profile = { id: string; shop_id: string; full_name: string; role: string }
 
 export class WorkshopRepository {
@@ -204,7 +206,50 @@ export class WorkshopRepository {
       .in('id', repairIds)
     if (detailsError) throw detailsError
     const detailMap = new Map((details ?? []).map((row) => [row.id, row]))
-    return data.map((row: { repair_id: string }) => ({ ...row, ...detailMap.get(row.repair_id) }))
+    const insightsByRepair = await this.getMatchInsights(jobId, data.slice(0, 2))
+    return data.map((row: { repair_id: string; evidence: string[] }) => ({
+      ...row,
+      ...detailMap.get(row.repair_id),
+      evidence: [...(row.evidence ?? []), ...(insightsByRepair.get(row.repair_id) ?? [])],
+    }))
+  }
+
+  // AI-authored reasons (e.g. "Similar warm-idle symptoms") are cached per
+  // (job, repair) pairing in repair_match_insights, computed only for the
+  // top-ranked candidates and only on first view.
+  private async getMatchInsights(
+    jobId: string,
+    topCandidates: Array<{ repair_id: string; cause: string | null; work_performed: string | null }>,
+  ) {
+    const result = new Map<string, string[]>()
+    if (!topCandidates.length) return result
+    const { data: job, error: jobError } = await this.supabase.from('jobs').select('complaint,observations').eq('id', jobId).single()
+    if (jobError || !job?.complaint) return result
+    const repairIds = topCandidates.map((row) => row.repair_id)
+    const { data: cached } = await this.supabase
+      .from('repair_match_insights')
+      .select('repair_id,insights')
+      .eq('job_id', jobId)
+      .in('repair_id', repairIds)
+    const cachedMap = new Map((cached ?? []).map((row) => [row.repair_id, row.insights as string[]]))
+    for (const row of cachedMap) result.set(row[0], row[1])
+
+    const uncached = topCandidates.filter((row) => !cachedMap.has(row.repair_id))
+    if (!uncached.length) return result
+
+    await Promise.all(uncached.map(async (row) => {
+      const insights = await generateMatchInsights(job.complaint, job.observations, row.cause, row.work_performed)
+      result.set(row.repair_id, insights)
+      if (insights.length) {
+        await this.supabase.from('repair_match_insights').insert({
+          job_id: jobId,
+          repair_id: row.repair_id,
+          shop_id: this.profile.shop_id,
+          insights,
+        })
+      }
+    }))
+    return result
   }
 
   async saveRepair(jobId: string, input: {

@@ -2555,27 +2555,30 @@ button.journey-item:active {
   font-size: 0.75em;
 }
 
-.evidence-chip {
-  display: inline-flex;
-  gap: 8px;
-  min-height: 24px;
-  align-items: center;
-  margin-top: 14px;
+.evidence-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
   margin-bottom: 0;
-  padding: 3px 7px;
-  border: 0;
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: var(--caps-size);
-  letter-spacing: 0;
-  text-transform: uppercase;
+  padding: 0;
+  list-style: none;
 }
 
-.evidence-chip::before {
-  width: 7px;
-  height: 7px;
-  background: var(--accent);
-  content: "";
+.evidence-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.evidence-checklist svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  stroke-width: 2.4;
+  color: var(--accent);
 }
 
 .match-meta {
