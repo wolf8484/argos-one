@@ -974,7 +974,7 @@ function renderHome() {
     <div class="control-grid" aria-label="Workshop controls">
       <button type="button" class="control-tile is-primary" data-route="new">
         <span class="tile-icon">${icon("plus")}</span>
-        <span class="tile-copy"><strong>New job</strong><small>Vehicle &amp; complaint</small></span>
+        <span class="tile-copy"><strong>New job</strong><small>Start inspection</small></span>
       </button>
       ${resumeTile}
       <button type="button" class="control-tile" data-route="jobs">
