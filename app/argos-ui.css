@@ -980,7 +980,10 @@ main:focus {
 }
 
 .task-status.is-resolved {
-  color: var(--text);
+  border-radius: 6px;
+  background: #007d3b;
+  color: #ffffff;
+  font-weight: 500;
 }
 
 .resolved-job-shell {

@@ -937,7 +937,7 @@ function resultsTaskHeader() {
 function repairRecordHeader() {
   return taskHeader({
     context: vehicleSearchContext(),
-    title: "Active job",
+    title: "Repair details",
   });
 }
 
