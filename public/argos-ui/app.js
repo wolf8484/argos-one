@@ -1339,7 +1339,7 @@ function renderResolvedJob() {
   // chip -- this is a paused job, not a finished repair.
   const header = isDeleted
     ? taskHeader({ context: vehicle, title: "Deleted job" })
-    : taskHeader({ context: "Repair details", title: vehicleName(), status: "Resolved", statusType: "resolved" });
+    : taskHeader({ context: "Repair details", title: vehicle, status: "Resolved", statusType: "resolved" });
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="resolved-summary" aria-label="${isDeleted ? "Deleted job summary" : "Resolved job summary"}">
