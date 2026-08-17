@@ -683,6 +683,14 @@ main:focus {
 }
 
 @media (max-width: 500px) {
+  h1 {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
   .section-heading {
     flex-wrap: wrap;
   }
