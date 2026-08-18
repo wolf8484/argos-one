@@ -1351,10 +1351,6 @@ button.journey-item:active {
 }
 
 /* Repair record */
-.repair-record-shell {
-  padding-bottom: 70px;
-}
-
 .repair-record-shell .journey-nav {
   margin-bottom: 40px;
 }
@@ -3096,11 +3092,6 @@ button.setting-row:focus-visible .setting-row-action {
 .complete-job-check-item.is-done .complete-job-check-icon {
   border-color: #22c55e;
   color: #22c55e;
-}
-
-.complete-job-check-item.is-pending .complete-job-check-icon {
-  border-color: var(--danger);
-  color: var(--danger);
 }
 
 .complete-job-check-item strong {

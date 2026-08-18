@@ -1310,7 +1310,7 @@ function renderRepairRecord() {
     <form id="repair-form" class="repair-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
-        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…" required>${escapeHTML(state.repair.workNotes)}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -1322,12 +1322,12 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?" required>${escapeHTML(state.repair.verificationNotes)}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <div class="form-field">
-        <span class="field-label">Repair photos</span>
+        <span class="field-label">Repair photos <span class="optional-label">(optional)</span></span>
         <div class="photo-panel"><button class="add-photo" type="button" data-action="add-photo">${icon("camera")}<span>Open camera</span></button>${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
       </div>
@@ -1527,6 +1527,31 @@ function syncRepairRecord(form) {
   state.repair.verificationNotes = String(data.get("verificationNotes") || "").trim();
 }
 
+function validateRepairCompletion(form) {
+  const workField = form.querySelector("#repair-notes");
+  if (!state.repair.workNotes) {
+    workField?.setCustomValidity("Record the work performed before completing this job.");
+    workField?.reportValidity();
+    workField?.setCustomValidity("");
+    showToast("Add the work performed before completing this job.");
+    return false;
+  }
+  if (!state.repair.parts.length) {
+    document.querySelector(".repair-parts-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    showToast("Add at least one part or consumable before completing this job.");
+    return false;
+  }
+  const verificationField = form.querySelector("#repair-verification");
+  if (!state.repair.verificationNotes) {
+    verificationField?.setCustomValidity("Add verification notes before completing this job.");
+    verificationField?.reportValidity();
+    verificationField?.setCustomValidity("");
+    showToast("Add verification notes before completing this job.");
+    return false;
+  }
+  return true;
+}
+
 function openRepairRecord() {
   state.route = "repair";
   state.savedJourney = { route: "repair", step: 4 };
@@ -1672,15 +1697,15 @@ function completeJobConfirmation() {
     { label: "Work performed", detail: "Tests, steps and adjustments recorded", done: Boolean(state.repair.workNotes) },
     { label: "Parts & consumables", detail: partsCount ? `${partsCount} item${partsCount === 1 ? "" : "s"} added to this repair` : "No parts added yet", done: partsCount > 0 },
     { label: "Verification notes", detail: "How you confirmed the repair was successful", done: Boolean(state.repair.verificationNotes) },
-    { label: "Repair photos", optional: true, detail: photosCount ? `${photosCount} photo${photosCount === 1 ? "" : "s"} attached` : "No photos attached", done: true },
+    { label: "Repair photos", optional: true, detail: photosCount ? `${photosCount} photo${photosCount === 1 ? "" : "s"} attached` : "No photos attached", done: photosCount > 0 },
   ];
   openSheet(`<div class="confirmation-content complete-job-confirmation">
     <span class="repair-job-number">JOB AO-260809-04</span>
     <h2>Ready to complete?</h2>
     <div class="complete-job-vehicle">${escapeHTML(vehicleLine)}</div>
     <ul class="complete-job-checklist">
-      ${checklist.map((item) => `<li class="complete-job-check-item${item.done ? " is-done" : " is-pending"}">
-        <span class="complete-job-check-icon">${icon(item.done ? "check" : "close")}</span>
+      ${checklist.map((item) => `<li class="complete-job-check-item${item.done ? " is-done" : ""}">
+        <span class="complete-job-check-icon">${icon("check")}</span>
         <span>
           <strong>${escapeHTML(item.label)}${item.optional ? ` <em>(optional)</em>` : ""}</strong>
           <span>${escapeHTML(item.detail)}</span>
@@ -2544,6 +2569,7 @@ document.addEventListener("submit", (event) => {
   }
   if (event.target.id === "repair-form") {
     syncRepairRecord(event.target);
+    if (!validateRepairCompletion(event.target)) return;
     return completeJobConfirmation();
   }
 });
