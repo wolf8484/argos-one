@@ -932,7 +932,7 @@ function vehicleName() {
 }
 
 function vehicleMoustache() {
-  return [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
+  return [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
 }
 
 function resultsTaskHeader() {
