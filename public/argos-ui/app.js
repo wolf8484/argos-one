@@ -1332,7 +1332,7 @@ function renderRepairRecord() {
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
       </div>
 
-      <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="delete-repair">${icon("trash")} Delete repair</button><button class="primary-button full" type="submit">${icon("save")} Save repair record</button></div>
+      <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="delete-repair">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
     </form>
   </section>`;
 }
