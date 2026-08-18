@@ -2494,7 +2494,7 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 16px;
   padding: 0;
   list-style: none;
 }
@@ -2553,7 +2553,7 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 12px;
+  margin-top: 16px;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.4;

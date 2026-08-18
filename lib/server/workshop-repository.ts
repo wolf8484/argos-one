@@ -210,8 +210,21 @@ export class WorkshopRepository {
     return data.map((row: { repair_id: string; evidence: string[] }) => ({
       ...row,
       ...detailMap.get(row.repair_id),
-      evidence: [...(row.evidence ?? []), ...(insightsByRepair.get(row.repair_id) ?? [])],
+      evidence: this.ensureMinEvidence([...(row.evidence ?? []), ...(insightsByRepair.get(row.repair_id) ?? [])]),
     }))
+  }
+
+  // Weak candidates can surface with fewer than 2 SQL/AI reasons (e.g. no
+  // fault code overlap and no specific AI insight). The checklist UI reads
+  // oddly with a single bullet, so pad with generic reasons to keep 2 minimum.
+  private ensureMinEvidence(evidence: string[]) {
+    const fallbacks = ['Ranked among closest matches', 'Similar overall repair profile']
+    const result = [...evidence]
+    for (const fallback of fallbacks) {
+      if (result.length >= 2) break
+      if (!result.includes(fallback)) result.push(fallback)
+    }
+    return result
   }
 
   // AI-authored reasons (e.g. "Similar warm-idle symptoms") are cached per
