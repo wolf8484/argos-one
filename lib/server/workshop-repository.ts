@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
+import { generateRepairSummary } from '@/lib/server/repair-summary'
 
 type Profile = { id: string; shop_id: string; full_name: string; role: string }
 
@@ -23,7 +24,7 @@ export class WorkshopRepository {
     const { data, error } = await this.supabase
       .from('jobs')
       .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
-        repair:repair_records!repair_records_job_id_fkey(*,steps:repair_steps(*),items:repair_items(*)),photos:job_photos(*)`)
+        repair:repair_records!repair_records_job_id_fkey(*,items:repair_items(*)),photos:job_photos(*)`)
       .eq('id', id)
       .single()
     if (error) throw error
@@ -202,7 +203,7 @@ export class WorkshopRepository {
     const repairIds = data.map((row: { repair_id: string }) => row.repair_id)
     const { data: details, error: detailsError } = await this.supabase
       .from('repair_records')
-      .select('id,steps:repair_steps(position,instruction),items:repair_items(*)')
+      .select('id,items:repair_items(*)')
       .in('id', repairIds)
     if (detailsError) throw detailsError
     const detailMap = new Map((details ?? []).map((row) => [row.id, row]))
@@ -266,13 +267,18 @@ export class WorkshopRepository {
   }
 
   async saveRepair(jobId: string, input: {
-    cause?: string | null; workPerformed: string; verificationNotes?: string | null; referenceRepairId?: string | null
-    dtcs: string[]; steps: string[]; items: Array<Record<string, unknown>>; resolve: boolean
+    workPerformed: string; verificationNotes?: string | null; referenceRepairId?: string | null
+    dtcs: string[]; items: Array<Record<string, unknown>>; resolve: boolean
   }) {
+    // repair_records.cause holds an AI-generated summary of work_performed +
+    // verification_notes, not a mechanic-entered diagnosis -- there's no UI
+    // for the latter. Only (re)generated at completion time so drafts don't
+    // burn API calls on text that's still being edited.
+    const repairSummary = input.resolve ? await generateRepairSummary(input.workPerformed, input.verificationNotes) : null
     const repairPayload = {
       shop_id: this.profile.shop_id,
       job_id: jobId,
-      cause: input.cause || null,
+      cause: repairSummary,
       work_performed: input.workPerformed || null,
       verification_notes: input.verificationNotes || null,
       reference_repair_id: input.referenceRepairId || null,
@@ -283,6 +289,8 @@ export class WorkshopRepository {
     if (error) throw error
 
     await Promise.all([
+      // repair_steps is no longer written to (see comment above) -- this
+      // clears out any synthetic steps a previous save may have left behind.
       this.supabase.from('repair_steps').delete().eq('repair_id', repair.id),
       this.supabase.from('repair_items').delete().eq('repair_id', repair.id),
       this.supabase.from('job_dtc_codes').delete().eq('job_id', jobId),
@@ -297,12 +305,6 @@ export class WorkshopRepository {
       if (dtcError) throw dtcError
     }
 
-    if (input.steps.length) {
-      const { error: stepsError } = await this.supabase.from('repair_steps').insert(input.steps.map((instruction, index) => ({
-        shop_id: this.profile.shop_id, repair_id: repair.id, position: index + 1, instruction,
-      })))
-      if (stepsError) throw stepsError
-    }
     if (input.items.length) {
       const { error: itemsError } = await this.supabase.from('repair_items').insert(input.items.map((item) => ({
         shop_id: this.profile.shop_id,

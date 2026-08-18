@@ -56,12 +56,10 @@ export const repairItemSchema = z.object({
 })
 
 export const repairSchema = z.object({
-  cause: nullableText,
   workPerformed: z.string().trim().max(20000).default(''),
   verificationNotes: nullableText,
   dtcs: z.array(z.string().trim().toUpperCase().regex(/^[A-Z][0-9A-Z]{4,6}$/)).max(30).default([]),
   referenceRepairId: z.string().uuid().nullable().optional(),
-  steps: z.array(z.string().trim().min(1).max(4000)).max(100).default([]),
   items: z.array(repairItemSchema).max(200).default([]),
   resolve: z.boolean().default(false),
 })

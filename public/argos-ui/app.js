@@ -142,13 +142,8 @@ let jobRecords = [
     observations: "No exhaust leak found. Rear oxygen-sensor response remained slow after the engine reached operating temperature.",
     summary: "Check-engine light with no noticeable power loss. Rear oxygen-sensor response remained slow after reaching operating temperature.",
     dtcs: ["P0420"],
-    cause: "Catalytic-converter efficiency was below specification after oxygen-sensor operation and exhaust integrity were verified.",
-    workPerformed: [
-      "Checked the exhaust system for leaks and damage.",
-      "Verified front and rear oxygen-sensor activity at operating temperature.",
-      "Replaced the catalytic converter and both sealing gaskets.",
-      "Cleared adaptations and completed the manufacturer drive cycle.",
-    ],
+    repairSummary: "Catalytic-converter efficiency was below specification after oxygen-sensor operation and exhaust integrity were verified.",
+    workPerformed: "Checked the exhaust system for leaks and damage, then verified front and rear oxygen-sensor activity at operating temperature. Replaced the catalytic converter and both sealing gaskets, cleared adaptations and completed the manufacturer drive cycle.",
     parts: [
       { name: "Catalytic converter assembly", type: "Part", number: "18160-5BA-A00", quantity: "1" },
       { name: "Exhaust flange gasket", type: "Part", number: "18212-SA7-003", quantity: "2" },
@@ -168,8 +163,8 @@ let jobRecords = [
     observations: "Charging voltage dropped under electrical load.",
     summary: "Battery warning appeared intermittently. Charging voltage dropped below specification when electrical load increased.",
     dtcs: [],
-    cause: "Alternator output dropped below specification under load.",
-    workPerformed: ["Load-tested the charging system.", "Replaced the alternator.", "Verified charging voltage under full electrical load."],
+    repairSummary: "Alternator output dropped below specification under load.",
+    workPerformed: "Load-tested the charging system, replaced the alternator and verified charging voltage under full electrical load.",
     parts: [{ name: "Alternator assembly", type: "Part", number: "23700AA940", quantity: "1" }],
     verification: "Charging voltage remained stable during the final road test.",
     reference: "No previous repair reference used",
@@ -186,8 +181,8 @@ let jobRecords = [
     observations: "Inner front pads were below service limit.",
     summary: "Front brakes produced a grinding sound at low speed. The inner front pads were found below the service limit.",
     dtcs: [],
-    cause: "Front brake pads were worn through on the inner edges.",
-    workPerformed: ["Inspected braking system.", "Replaced front pads and rotors.", "Road-tested and rechecked wheel torque."],
+    repairSummary: "Front brake pads were worn through on the inner edges.",
+    workPerformed: "Inspected the braking system, replaced the front pads and rotors, then road-tested and rechecked wheel torque.",
     parts: [{ name: "Front brake pad and rotor set", type: "Part", number: "K0Y1-33-28Z", quantity: "1" }],
     verification: "Braking was smooth and quiet during the final road test.",
     reference: "2020 Mazda CX-5 · front brake wear",
@@ -243,13 +238,9 @@ let repairMatches = [
     transmission: "8-speed auto",
     mileageLabel: "78,240 km",
     repairedDateLabel: "14 Mar 2026",
-    cause: "Replaced a cracked PCV diaphragm and hardened breather hose that caused an air leak when warm.",
-    steps: [
-      "Smoke-tested intake after engine reached operating temperature.",
-      "Isolated leak at oil filter housing PCV diaphragm and breather elbow.",
-      "Replaced diaphragm kit and breather hose; cleaned throttle body.",
-      "Reset adaptations, road-tested 18 km and verified fuel trims below +4%.",
-    ],
+    repairSummary: "PCV system air leak caused by a cracked diaphragm and hardened breather hose. Both components were replaced and the throttle body cleaned.",
+    workPerformed: "Smoke-tested the intake after the engine reached operating temperature. Isolated the leak to the oil filter housing PCV diaphragm and breather elbow. Replaced the diaphragm kit and hardened breather hose, cleaned the throttle body and reset adaptations.",
+    verificationNotes: "Road-tested for 18 km and confirmed fuel trims remained below +4%. Idle remained stable after reaching operating temperature.",
     parts: [
       ["PCV diaphragm repair kit", "VOLVO / RKX-027 · QTY 1", "pcv"],
       ["Crankcase breather hose", "VOLVO 31430923 · QTY 1", "hose"],
@@ -269,13 +260,9 @@ let repairMatches = [
     transmission: "8-speed auto",
     mileageLabel: "91,600 km",
     repairedDateLabel: "21 Jun 2026",
-    cause: "Replaced the intake manifold gasket at cylinder 1 after a warm-engine smoke test confirmed the leak.",
-    steps: [
-      "Verified positive trims at idle and near-normal trims above 2,500 RPM.",
-      "Smoke-tested the warm engine and isolated the leak at the cylinder 1 runner.",
-      "Removed the intake manifold and replaced the complete gasket set.",
-      "Reset adaptations, road-tested and verified fuel trims below +5%.",
-    ],
+    repairSummary: "Intake manifold air leak at the cylinder 1 runner caused by a failed gasket. The complete gasket set was replaced.",
+    workPerformed: "Verified positive trims at idle and near-normal trims above 2,500 RPM. Smoke-tested the warm engine and isolated the leak at the cylinder 1 runner. Removed the intake manifold and replaced the complete gasket set.",
+    verificationNotes: "Reset adaptations, road-tested the vehicle and confirmed fuel trims remained below +5%.",
     parts: [
       ["Intake manifold gasket set", "VOLVO 31375429 · QTY 1", "gasket"],
       ["Throttle body cleaner", "CONSUMABLE · 180 ML", "cleaner"],
@@ -409,7 +396,6 @@ function databaseJobToUi(row) {
   const customer = relatedRecord(row.customer) || {};
   const repair = relatedRecord(row.repair) || {};
   const dtcs = (row.dtcs || []).map((entry) => typeof entry === "string" ? entry : entry.code).filter(Boolean);
-  const repairedSteps = (repair.steps || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((step) => step.instruction);
   const repairedItems = (repair.items || []).map((item) => ({
     name: item.name, type: item.kind === "consumable" ? "Consumable" : "Part", number: item.part_number || "",
     quantity: String(item.quantity || 1), supplier: item.supplier || "", price: item.price_amount == null ? "" : `${item.currency || "AUD"} ${Number(item.price_amount).toFixed(2)}`,
@@ -440,8 +426,8 @@ function databaseJobToUi(row) {
     summary: row.summary || "",
     dtcs,
     resume: stageResume(row.stage),
-    cause: repair.cause || "No confirmed cause recorded.",
-    workPerformed: repairedSteps.length ? repairedSteps : String(repair.work_performed || "").split(/\n+/).map((line) => line.trim()).filter(Boolean),
+    repairSummary: repair.cause || "",
+    workPerformed: repair.work_performed || "",
     parts: repairedItems,
     verification: repair.verification_notes || "No verification notes recorded.",
     reference: repair.reference_repair_id ? "Previous repair reference saved" : "No previous repair reference used",
@@ -468,8 +454,9 @@ function databaseMatchToUi(row, index) {
     transmission: row.vehicle_transmission || "",
     mileageLabel: row.vehicle_mileage ? `${Number(row.vehicle_mileage).toLocaleString()} km` : "",
     repairedDateLabel: row.repaired_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)) : "",
-    cause: row.cause || row.work_performed || "Open the repair record for details.",
-    steps: (row.steps || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((step) => step.instruction),
+    repairSummary: row.cause || "",
+    workPerformed: row.work_performed || "",
+    verificationNotes: row.verification_notes || "",
     parts: items,
   };
 }
@@ -637,14 +624,11 @@ async function loadJobPhotos(jobId) {
 
 function repairPayload(resolve = false) {
   const selected = repairMatches.find((repair) => repair.id === state.selectedRepair);
-  const steps = state.repair.workNotes.split(/\n+/).map((line) => line.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean);
   return {
-    cause: null,
     workPerformed: state.repair.workNotes,
     verificationNotes: state.repair.verificationNotes || null,
     dtcs: state.dtcs,
     referenceRepairId: selected && /^[0-9a-f-]{36}$/i.test(selected.id) ? selected.id : null,
-    steps,
     items: state.repair.parts.map((part) => ({
       kind: part.type === "Consumable" ? "consumable" : "part", name: part.name, partNumber: part.number || null,
       quantity: Number(part.quantity || 1), supplier: part.supplier || null,
@@ -1269,13 +1253,17 @@ function renderResults() {
       </div>
     </section>
     <section class="selected-repair" aria-live="polite">
-      <section class="result-detail-section" aria-labelledby="what-fixed-label">
-        <span class="section-label result-section-label" id="what-fixed-label">What fixed it</span>
-        <div class="diagnosis-box"><p>${selected.cause}</p></div>
+      ${selected.repairSummary ? `<section class="result-detail-section" aria-labelledby="repair-summary-label">
+        <span class="section-label result-section-label" id="repair-summary-label">Repair summary <span class="optional-label">(AI-generated)</span></span>
+        <div class="repair-summary-box"><p>${escapeHTML(selected.repairSummary)}</p></div>
+      </section>` : ""}
+      <section class="result-detail-section" aria-labelledby="work-performed-label">
+        <span class="section-label result-section-label" id="work-performed-label">Work performed</span>
+        <div class="repair-summary-box"><p>${escapeHTML(selected.workPerformed || "No work performed recorded.")}</p></div>
       </section>
-      <section class="result-detail-section" aria-labelledby="repair-steps-label">
-        <span class="section-label result-section-label" id="repair-steps-label">Repair steps</span>
-        <div class="repair-steps-panel"><ol class="repair-steps">${selected.steps.map((step, index) => `<li><span class="repair-step-index">${index + 1}.</span><span>${step}</span></li>`).join("")}</ol></div>
+      <section class="result-detail-section" aria-labelledby="verification-label">
+        <span class="section-label result-section-label" id="verification-label">Verification</span>
+        <div class="repair-summary-box"><p>${escapeHTML(selected.verificationNotes || "No verification notes recorded.")}</p></div>
       </section>
       <section class="result-detail-section" aria-labelledby="parts-used-label">
         <div class="parts-heading result-section-head"><span class="section-label" id="parts-used-label">Parts & consumables used</span><span class="parts-item-count">${selected.parts.length} items</span></div>
@@ -1392,10 +1380,10 @@ function renderResolvedJob() {
       ${resolvedDetail("Customer complaint", `<p>${escapeHTML(job.complaint) || "No complaint recorded."}</p>`)}
       ${resolvedDetail("Initial observations", `<p>${escapeHTML(job.observations || "No initial observations recorded.")}</p>`)}
       ${resolvedDetail("Diagnostic trouble codes", job.dtcs.length ? `<div class="quick-row">${job.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<p class="muted">No scan codes recorded.</p>`)}
-      ${resolvedDetail("What fixed it", `<p>${escapeHTML(job.cause)}</p>`)}
-      ${resolvedDetail("Work performed", job.workPerformed.length ? `<ol class="resolved-steps">${job.workPerformed.map((step) => `<li>${escapeHTML(step)}</li>`).join("")}</ol>` : `<p class="muted">No work performed recorded.</p>`)}
-      ${resolvedDetail("Parts & consumables", job.parts.length ? `<div class="resolved-parts">${job.parts.map((part) => `<div><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""} · QTY ${escapeHTML(part.quantity)}</span></div>`).join("")}</div>` : `<p class="muted">No parts or consumables recorded.</p>`)}
+      ${job.repairSummary ? resolvedDetail("Repair summary (AI-generated)", `<p>${escapeHTML(job.repairSummary)}</p>`) : ""}
+      ${resolvedDetail("Work performed", `<p>${escapeHTML(job.workPerformed || "No work performed recorded.")}</p>`)}
       ${resolvedDetail("Verification", `<p>${escapeHTML(job.verification)}</p>`)}
+      ${resolvedDetail("Parts & consumables", job.parts.length ? `<div class="resolved-parts">${job.parts.map((part) => `<div><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""} · QTY ${escapeHTML(part.quantity)}</span></div>`).join("")}</div>` : `<p class="muted">No parts or consumables recorded.</p>`)}
       ${resolvedDetail("Previous repair reference", `<p>${escapeHTML(job.reference)}</p>`)}
       ${resolvedDetail("Repair photos", resolvedPhotoGallery())}
     </div>

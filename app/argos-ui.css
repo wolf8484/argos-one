@@ -1060,17 +1060,6 @@ main:focus {
   margin: 0;
 }
 
-.resolved-steps {
-  display: grid;
-  margin: 0;
-  padding-left: 28px;
-  gap: 12px;
-}
-
-.resolved-steps li::marker {
-  color: var(--accent);
-}
-
 .resolved-parts {
   display: grid;
   gap: 12px;
@@ -2623,13 +2612,13 @@ button.journey-item:active {
   line-height: 1.4;
 }
 
-.diagnosis-box {
+.repair-summary-box {
   padding: 20px;
   border: 0;
   background: var(--surface-2);
 }
 
-.diagnosis-box p {
+.repair-summary-box p {
   color: var(--text);
   font-size: var(--copy-size);
   line-height: 1.45;
@@ -2653,35 +2642,6 @@ button.journey-item:active {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-}
-
-.repair-steps-panel {
-  padding: 18px 20px;
-  background: var(--surface-2);
-}
-
-.repair-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.repair-steps li {
-  display: flex;
-  gap: 8px;
-  color: var(--muted-strong);
-  font-size: var(--copy-size);
-  line-height: 1.5;
-}
-
-.repair-steps li + li {
-  margin-top: 10px;
-}
-
-.repair-step-index {
-  flex: none;
-  color: var(--muted-strong);
-  font-variant-numeric: tabular-nums;
 }
 
 .parts-panel {
