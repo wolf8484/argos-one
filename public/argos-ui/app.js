@@ -1302,7 +1302,7 @@ function renderRepairRecord() {
         ${jobSpecRows.map((row) => `<span>${escapeHTML(row)}</span>`).join("")}
       </div>
       <div class="repair-job-meta">
-        <span class="repair-job-number">AO-260809-04</span>
+        <span class="repair-job-number">JOB AO-260809-04</span>
         <span class="repair-job-bay">Bay 03</span>
       </div>
     </div>
