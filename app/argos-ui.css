@@ -1360,8 +1360,7 @@ button.journey-item:active {
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 18px 18px 18px 16px;
-  border-left: 2px solid var(--accent-fill);
+  padding: 18px;
   background: var(--surface-2);
 }
 
@@ -1394,14 +1393,6 @@ button.journey-item:active {
 .repair-job-number,
 .repair-job-bay {
   color: var(--muted-strong);
-  font-size: var(--caps-size);
-  text-transform: uppercase;
-}
-
-.repair-status {
-  padding: 8px 10px;
-  border: 1px solid var(--accent);
-  color: var(--text);
   font-size: var(--caps-size);
   text-transform: uppercase;
 }

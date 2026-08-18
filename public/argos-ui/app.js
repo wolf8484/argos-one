@@ -1299,7 +1299,6 @@ function renderRepairRecord() {
       <div class="repair-job-meta">
         <span class="repair-job-number">AO-260809-04</span>
         <span class="repair-job-bay">Bay 03</span>
-        <span class="repair-status">In progress</span>
       </div>
     </div>
 
