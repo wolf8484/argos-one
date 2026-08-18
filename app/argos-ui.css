@@ -1371,15 +1371,15 @@ button.journey-item:active {
 }
 
 .repair-job-strip strong {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .repair-job-strip div > span:last-child {
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--muted-strong);
-  font-size: var(--caps-size);
+  font-size: 16px;
 }
 
 .repair-status {
@@ -1924,12 +1924,8 @@ button.journey-item:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 148px;
-  min-width: 148px;
-  max-width: 148px;
   min-height: 52px;
-  flex: 0 0 148px;
-  padding: 0 12px;
+  padding: 0 24px;
   gap: 8px;
   border: 1px solid var(--secondary-border);
   border-radius: 0;
@@ -2445,7 +2441,7 @@ button.journey-item:active {
 .match-option.is-selected {
   background: var(--surface-2);
   color: var(--text);
-  box-shadow: 0 0 0 2px var(--accent-fill) inset;
+  box-shadow: 0 0 0 1px var(--accent-fill) inset;
 }
 
 .match-option.is-selected:hover,
