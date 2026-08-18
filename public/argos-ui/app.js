@@ -1298,7 +1298,7 @@ function renderRepairRecord() {
     <form id="repair-form" class="repair-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
-        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…" required>${escapeHTML(state.repair.workNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -1310,7 +1310,7 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?" required>${escapeHTML(state.repair.verificationNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -1518,6 +1518,7 @@ function syncRepairRecord(form) {
 function validateRepairCompletion(form) {
   const workField = form.querySelector("#repair-notes");
   if (!state.repair.workNotes) {
+    workField?.scrollIntoView({ behavior: "smooth", block: "center" });
     workField?.setCustomValidity("Record the work performed before completing this job.");
     workField?.reportValidity();
     workField?.setCustomValidity("");
@@ -1526,6 +1527,7 @@ function validateRepairCompletion(form) {
   }
   const verificationField = form.querySelector("#repair-verification");
   if (!state.repair.verificationNotes) {
+    verificationField?.scrollIntoView({ behavior: "smooth", block: "center" });
     verificationField?.setCustomValidity("Add verification notes before completing this job.");
     verificationField?.reportValidity();
     verificationField?.setCustomValidity("");
