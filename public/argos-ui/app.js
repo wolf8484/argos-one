@@ -891,7 +891,7 @@ function scrollToNextView() {
 function taskHeader({ context, title, backAction = "", backLabel = "Go back", status = "", statusType = "saved" }) {
   return `<header class="task-header${backAction ? " has-back" : ""}">
     ${backAction ? `<button class="task-back" type="button" data-action="${backAction}" aria-label="${backLabel}">${icon("back")}</button>` : ""}
-    <div class="task-header-copy${context ? "" : " is-title-only"}">${context ? `<span class="task-context">${context}</span>` : ""}<h1>${title}</h1></div>
+    <div class="task-header-copy${context ? "" : " is-title-only"}"><h1>${title}</h1>${context ? `<span class="task-context">${context}</span>` : ""}</div>
     ${status ? `<span class="task-status is-${statusType}">${statusType === "saved" ? '<span class="task-status-dot" aria-hidden="true"></span>' : ""}${status}</span>` : ""}
   </header>`;
 }

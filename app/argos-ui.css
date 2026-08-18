@@ -1184,6 +1184,7 @@ main:focus {
 .task-context {
   display: block;
   overflow: hidden;
+  margin-top: 6px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.25;
@@ -1193,12 +1194,7 @@ main:focus {
 }
 
 .task-header-copy h1 {
-  margin-top: 6px;
   font-size: clamp(22px, 4vw, 28px);
-}
-
-.task-header-copy.is-title-only h1 {
-  margin-top: 0;
 }
 
 .task-status {
