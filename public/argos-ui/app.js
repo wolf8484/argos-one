@@ -1303,7 +1303,7 @@ function renderRepairRecord() {
       </div>
 
       <section class="repair-parts-section" aria-labelledby="repair-parts-heading">
-        <div class="repair-section-head"><span class="section-label" id="repair-parts-heading">Parts & consumables</span></div>
+        <div class="repair-section-head"><span class="section-label" id="repair-parts-heading">Parts & consumables <span class="optional-label">(optional)</span></span></div>
         ${repairPartsTable()}
         <button class="secondary-button add-parts-button" type="button" data-action="open-parts-editor">${icon("plus")} Add parts & consumables</button>
       </section>
@@ -1524,11 +1524,6 @@ function validateRepairCompletion(form) {
     showToast("Add the work performed before completing this job.");
     return false;
   }
-  if (!state.repair.parts.length) {
-    document.querySelector(".repair-parts-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    showToast("Add at least one part or consumable before completing this job.");
-    return false;
-  }
   const verificationField = form.querySelector("#repair-verification");
   if (!state.repair.verificationNotes) {
     verificationField?.setCustomValidity("Add verification notes before completing this job.");
@@ -1683,7 +1678,7 @@ function completeJobConfirmation() {
   const photosCount = state.repair.photos.length;
   const checklist = [
     { label: "Work performed", detail: "Tests, steps and adjustments recorded", done: Boolean(state.repair.workNotes) },
-    { label: "Parts & consumables", detail: partsCount ? `${partsCount} item${partsCount === 1 ? "" : "s"} added to this repair` : "No parts added yet", done: partsCount > 0 },
+    { label: "Parts & consumables", optional: true, detail: partsCount ? `${partsCount} item${partsCount === 1 ? "" : "s"} added to this repair` : "No parts added yet", done: partsCount > 0 },
     { label: "Verification notes", detail: "How you confirmed the repair was successful", done: Boolean(state.repair.verificationNotes) },
     { label: "Repair photos", optional: true, detail: photosCount ? `${photosCount} photo${photosCount === 1 ? "" : "s"} attached` : "No photos attached", done: photosCount > 0 },
   ];
