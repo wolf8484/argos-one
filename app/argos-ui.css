@@ -1355,6 +1355,14 @@ button.journey-item:active {
   padding-bottom: 70px;
 }
 
+.repair-record-shell .journey-nav {
+  margin-bottom: 40px;
+}
+
+.repair-job-strip {
+  margin-bottom: 40px;
+}
+
 .repair-job-strip {
   display: flex;
   align-items: flex-start;
