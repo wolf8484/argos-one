@@ -1390,7 +1390,12 @@ button.journey-item:active {
   text-align: right;
 }
 
-.repair-job-number,
+.repair-job-number {
+  color: var(--accent);
+  font-size: var(--caps-size);
+  text-transform: uppercase;
+}
+
 .repair-job-bay {
   color: var(--muted-strong);
   font-size: var(--caps-size);

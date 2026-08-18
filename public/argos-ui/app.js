@@ -1307,12 +1307,6 @@ function renderRepairRecord() {
       </div>
     </div>
 
-    ${state.repairReferenceEnabled ? `<button class="repair-reference-link" type="button" data-action="repair-back" aria-label="View reference repair ${selected.vehicle}">
-      ${icon("book")}
-      <span>Reference: ${selected.vehicle}</span>
-      <span class="repair-reference-view">View${icon("arrow")}</span>
-    </button>` : ""}
-
     <form id="repair-form" class="repair-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
