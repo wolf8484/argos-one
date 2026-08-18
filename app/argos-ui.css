@@ -1149,7 +1149,7 @@ main:focus {
   align-items: center;
   gap: 16px;
   min-height: 76px;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
 }
 
 .task-header.has-back {
@@ -1248,7 +1248,7 @@ main:focus {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 2px;
-  margin: -12px 0 30px;
+  margin: -12px 0 40px;
   background: var(--bg);
   scrollbar-width: none;
   transition: box-shadow 160ms ease;

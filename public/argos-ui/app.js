@@ -1174,7 +1174,7 @@ function renderVehicle() {
 function vehicleContext(score = "") {
   const specifications = [state.vehicle.mileage && `${state.vehicle.mileage} KM`, state.vehicle.trim, state.vehicle.engine, state.vehicle.drivetrain, state.vehicle.transmission].filter(Boolean);
   return `<section class="vehicle-context" aria-label="Locked vehicle details">
-    <div class="vehicle-context-main"><span class="vehicle-context-status">${icon("lock")}<span>Vehicle locked</span></span><div class="vehicle-name">${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</div><div class="vehicle-data">${specifications.map(escapeHTML).join(" · ")}</div></div>
+    <div class="vehicle-context-main"><div class="vehicle-name">${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</div><div class="vehicle-data">${specifications.map(escapeHTML).join(" · ")}</div></div>
     ${score ? `<div class="vehicle-score" aria-label="${score} percent vehicle data confidence">${score}<span class="percent-symbol">%</span></div>` : ""}
   </section>`;
 }
