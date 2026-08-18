@@ -1664,6 +1664,45 @@ function deleteRepairConfirmation() {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm repair deletion" });
 }
 
+function completeJobConfirmation() {
+  const dtcSummary = state.dtcs.join(", ");
+  const vehicleLine = [`${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`, dtcSummary].filter(Boolean).join(" · ");
+  const mileageLine = state.vehicle.mileage ? `${state.vehicle.mileage} km` : "";
+  const partsCount = state.repair.parts.length;
+  const photosCount = state.repair.photos.length;
+  const checklist = [
+    { label: "Work performed", detail: "Tests, steps and adjustments recorded", done: Boolean(state.repair.workNotes) },
+    { label: "Parts & consumables", detail: partsCount ? `${partsCount} item${partsCount === 1 ? "" : "s"} added to this repair` : "No parts added yet", done: partsCount > 0 },
+    { label: "Verification notes", detail: "How you confirmed the repair was successful", done: Boolean(state.repair.verificationNotes) },
+    { label: "Repair photos", optional: true, detail: photosCount ? `${photosCount} photo${photosCount === 1 ? "" : "s"} attached` : "No photos attached", done: true },
+  ];
+  openSheet(`<div class="confirmation-content complete-job-confirmation">
+    <span class="repair-job-number">JOB AO-260809-04</span>
+    <h2>Ready to complete?</h2>
+    <div class="complete-job-vehicle">
+      <span>${escapeHTML(vehicleLine)}</span>
+      ${mileageLine ? `<span>${escapeHTML(mileageLine)}</span>` : ""}
+    </div>
+    <ul class="complete-job-checklist">
+      ${checklist.map((item) => `<li class="complete-job-check-item${item.done ? " is-done" : ""}">
+        <span class="complete-job-check-icon">${icon("check")}</span>
+        <span>
+          <strong>${escapeHTML(item.label)}${item.optional ? ` <em>(optional)</em>` : ""}</strong>
+          <span>${escapeHTML(item.detail)}</span>
+        </span>
+      </li>`).join("")}
+    </ul>
+    <div class="complete-job-note">
+      ${icon("info")}
+      <span>Completing this job will mark it as Resolved and add it to the Repair Library.</span>
+    </div>
+    <div class="confirmation-actions">
+      <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
+      <button class="primary-button full" type="button" data-action="confirm-complete-job">${icon("check")} Complete & resolve</button>
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet complete-job-sheet", ariaLabel: "Confirm job completion" });
+}
+
 function cancelJobConfirmation() {
   openSheet(`<div class="confirmation-content">
     <h2>Cancel this job?</h2>
@@ -2258,6 +2297,16 @@ document.addEventListener("click", (event) => {
         })
         .catch((error) => showToast(error.message));
     }
+    if (action === "confirm-complete-job") {
+      return persistRepair(true).then((job) => {
+        state.selectedJobId = job.id;
+        state.route = "resolved";
+        closeSheet();
+        updateNavigation();
+        render();
+        showToast("Repair record saved and job marked resolved.");
+      }).catch((error) => showToast(error.message));
+    }
     if (action === "open-parts-editor") {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
@@ -2500,14 +2549,7 @@ document.addEventListener("submit", (event) => {
   }
   if (event.target.id === "repair-form") {
     syncRepairRecord(event.target);
-    return persistRepair(true).then((job) => {
-      state.selectedJobId = job.id;
-      state.route = "resolved";
-      closeSheet();
-      updateNavigation();
-      render();
-      showToast("Repair record saved and job marked resolved.");
-    }).catch((error) => showToast(error.message));
+    return completeJobConfirmation();
   }
 });
 

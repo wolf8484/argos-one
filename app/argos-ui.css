@@ -3050,6 +3050,104 @@ button.setting-row:focus-visible .setting-row-action {
   margin-top: 26px;
 }
 
+.complete-job-confirmation .repair-job-number {
+  display: block;
+}
+
+.complete-job-vehicle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--copy-size);
+}
+
+.complete-job-vehicle span:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.complete-job-vehicle span:last-child {
+  color: var(--muted-strong);
+}
+
+.complete-job-checklist {
+  display: grid;
+  gap: 18px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.complete-job-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.complete-job-check-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.complete-job-check-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.complete-job-check-item.is-done .complete-job-check-icon {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.complete-job-check-item strong {
+  display: block;
+  font-weight: 600;
+}
+
+.complete-job-check-item strong em {
+  color: var(--muted-strong);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.complete-job-check-item > span:last-child > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted-strong);
+  font-size: var(--copy-size);
+}
+
+.complete-job-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted-strong);
+  font-size: var(--copy-size);
+  line-height: 1.5;
+}
+
+.complete-job-note svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  color: var(--muted-strong);
+}
+
 .danger-button {
   display: inline-flex;
   align-items: center;
