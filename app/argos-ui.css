@@ -2388,7 +2388,6 @@ button.journey-item:active {
   position: relative;
   display: flex;
   min-width: min(280px, 100%);
-  min-height: 188px;
   flex-direction: column;
   padding: 20px;
   border: 0;
@@ -2449,7 +2448,7 @@ button.journey-item:active {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  margin-top: auto;
+  margin-top: 24px;
   padding-right: 56px;
 }
 
@@ -2495,7 +2494,7 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 12px;
   padding: 0;
   list-style: none;
 }
@@ -2523,7 +2522,7 @@ button.journey-item:active {
 
 .selected-repair-box {
   padding: 18px 18px 18px 16px;
-  border-left: 3px solid var(--accent-fill);
+  border-left: 2px solid var(--accent-fill);
   background: var(--surface-2);
 }
 
@@ -4142,7 +4141,6 @@ body.dictation-active .toast {
   }
 
   .match-option {
-    min-height: 174px;
     padding: 14px 62px 14px 14px;
   }
 
