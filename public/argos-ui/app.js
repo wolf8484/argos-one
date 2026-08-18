@@ -1377,9 +1377,10 @@ function renderResolvedJob() {
 function matchOption(repair, isSelected) {
   const percent = repairMatchPercent(repair);
   const evidence = repairMatchEvidence(repair);
+  const vehicleName = repair.vehicle.split(" · ")[0];
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
     <span class="match-option-top"><span class="match-option-rank">${repair.rank}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
-    <span class="match-option-copy"><span class="match-option-state">${isSelected ? "Selected" : "View repair"}</span><strong>${repair.label}</strong><span class="match-option-vehicle">${repair.vehicle}</span><span class="match-option-evidence">${evidence.join(" · ")}</span></span>
+    <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul></span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
 }
