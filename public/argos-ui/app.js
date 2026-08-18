@@ -1288,13 +1288,18 @@ function renderResults() {
 
 function renderRepairRecord() {
   const selected = repairMatches.find((repair) => repair.id === state.selectedRepair) || repairMatches[0];
+  const jobSpecRows = [
+    state.vehicle.trim,
+    [state.vehicle.drivetrain, state.vehicle.engine].filter(Boolean).join(" · "),
+    [state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : "", ...state.dtcs].filter(Boolean).join(" · "),
+  ].filter(Boolean);
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
     ${repairRecordHeader()}
     ${workflowJourney(4)}
     <div class="repair-job-strip">
       <div class="repair-job-info">
         <strong>${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</strong>
-        <span>${[`${state.vehicle.mileage} KM`, ...state.dtcs].join(" · ")}</span>
+        ${jobSpecRows.map((row) => `<span>${escapeHTML(row)}</span>`).join("")}
       </div>
       <div class="repair-job-meta">
         <span class="repair-job-number">AO-260809-04</span>
