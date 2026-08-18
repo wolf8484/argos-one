@@ -1183,14 +1183,11 @@ main:focus {
 
 .task-context {
   display: block;
-  overflow: hidden;
   margin-top: 8px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.25;
-  text-overflow: ellipsis;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 
 .task-header-copy h1 {
@@ -1237,6 +1234,10 @@ main:focus {
 
   .task-header.has-back .task-status {
     grid-column: 2 / -1;
+  }
+
+  .task-context {
+    font-size: 12px;
   }
 }
 
