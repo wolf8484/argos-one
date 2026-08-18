@@ -1356,30 +1356,46 @@ button.journey-item:active {
 }
 
 .repair-job-strip {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 20px;
-  min-height: 104px;
-  padding: 18px;
+  padding: 18px 18px 18px 16px;
+  border-left: 2px solid var(--accent-fill);
   background: var(--surface-2);
 }
 
-.repair-job-strip strong,
-.repair-job-strip span {
-  display: block;
+.repair-job-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
 }
 
-.repair-job-strip strong {
-  margin-top: 8px;
+.repair-job-info strong {
   font-size: 20px;
   font-weight: 600;
 }
 
-.repair-job-strip div > span:last-child {
+.repair-job-info span {
   margin-top: 4px;
   color: var(--muted-strong);
   font-size: 16px;
+}
+
+.repair-job-meta {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: right;
+}
+
+.repair-job-number,
+.repair-job-bay {
+  color: var(--muted-strong);
+  font-size: var(--caps-size);
+  text-transform: uppercase;
 }
 
 .repair-status {
@@ -4213,13 +4229,16 @@ body.dictation-active .toast {
   }
 
   .repair-job-strip {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 12px;
-    padding: 16px;
+    padding: 16px 16px 16px 14px;
   }
 
-  .repair-status {
-    justify-self: start;
+  .repair-job-meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    text-align: left;
   }
 
   .repair-reference-link {

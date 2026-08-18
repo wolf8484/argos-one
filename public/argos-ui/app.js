@@ -1292,8 +1292,15 @@ function renderRepairRecord() {
     ${repairRecordHeader()}
     ${workflowJourney(4)}
     <div class="repair-job-strip">
-      <div><span class="micro-label">Job AO-260809-04 · Bay 03</span><strong>${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</strong><span>${[`${state.vehicle.mileage} KM`, ...state.dtcs].join(" · ")}</span></div>
-      <span class="repair-status">In progress</span>
+      <div class="repair-job-info">
+        <strong>${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</strong>
+        <span>${[`${state.vehicle.mileage} KM`, ...state.dtcs].join(" · ")}</span>
+      </div>
+      <div class="repair-job-meta">
+        <span class="repair-job-number">AO-260809-04</span>
+        <span class="repair-job-bay">Bay 03</span>
+        <span class="repair-status">In progress</span>
+      </div>
     </div>
 
     ${state.repairReferenceEnabled ? `<button class="repair-reference-link" type="button" data-action="repair-back" aria-label="View reference repair ${selected.vehicle}">
