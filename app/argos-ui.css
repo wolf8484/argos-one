@@ -818,6 +818,7 @@ main:focus {
 .job-vehicle {
   color: var(--heading);
   font-size: 20px;
+  font-weight: 600;
   line-height: 1.25;
 }
 
@@ -2598,11 +2599,13 @@ button.journey-item:active {
 
 .repair-steps {
   margin: 0;
-  padding-left: 24px;
+  padding: 0;
+  list-style: none;
 }
 
 .repair-steps li {
-  padding-left: 6px;
+  display: flex;
+  gap: 8px;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.5;
@@ -2612,8 +2615,9 @@ button.journey-item:active {
   margin-top: 10px;
 }
 
-.repair-steps li::marker {
-  color: var(--accent);
+.repair-step-index {
+  flex: none;
+  color: var(--muted-strong);
   font-variant-numeric: tabular-nums;
 }
 

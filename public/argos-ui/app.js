@@ -1274,7 +1274,7 @@ function renderResults() {
       </section>
       <section class="result-detail-section" aria-labelledby="repair-steps-label">
         <span class="section-label result-section-label" id="repair-steps-label">Repair steps</span>
-        <div class="repair-steps-panel"><ol class="repair-steps">${selected.steps.map((step) => `<li>${step}</li>`).join("")}</ol></div>
+        <div class="repair-steps-panel"><ol class="repair-steps">${selected.steps.map((step, index) => `<li><span class="repair-step-index">${index + 1}.</span><span>${step}</span></li>`).join("")}</ol></div>
       </section>
       <section class="result-detail-section" aria-labelledby="parts-used-label">
         <div class="parts-heading result-section-head"><span class="section-label" id="parts-used-label">Parts & consumables used</span><span class="parts-item-count">${selected.parts.length} items</span></div>
