@@ -1291,7 +1291,7 @@ function renderRepairRecord() {
   const jobSpecRows = [
     state.vehicle.trim,
     [state.vehicle.drivetrain, state.vehicle.engine].filter(Boolean).join(" · "),
-    [state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : "", ...state.dtcs].filter(Boolean).join(" · "),
+    [state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · "),
   ].filter(Boolean);
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
     ${repairRecordHeader()}
