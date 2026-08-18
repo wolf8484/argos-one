@@ -3028,11 +3028,11 @@ button.setting-row:focus-visible .setting-row-action {
 .confirmation-content {
   width: 100%;
   margin: 0 auto;
-  padding: 28px;
+  padding: 24px;
 }
 
 .confirmation-content h2 {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .confirmation-content p {
@@ -3047,7 +3047,7 @@ button.setting-row:focus-visible .setting-row-action {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .complete-job-confirmation .repair-job-number {
@@ -3055,28 +3055,18 @@ button.setting-row:focus-visible .setting-row-action {
 }
 
 .complete-job-vehicle {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   margin-top: 16px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
-  font-size: var(--copy-size);
-}
-
-.complete-job-vehicle span:first-child {
   color: var(--text);
+  font-size: var(--copy-size);
   font-weight: 600;
-}
-
-.complete-job-vehicle span:last-child {
-  color: var(--muted-strong);
 }
 
 .complete-job-checklist {
   display: grid;
-  gap: 18px;
-  margin: 20px 0 0;
+  gap: 16px;
+  margin: 24px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -3091,21 +3081,26 @@ button.setting-row:focus-visible .setting-row-action {
   display: grid;
   flex: none;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border: 1.5px solid var(--line-strong);
   border-radius: 50%;
   color: var(--muted);
 }
 
 .complete-job-check-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .complete-job-check-item.is-done .complete-job-check-icon {
   border-color: #22c55e;
   color: #22c55e;
+}
+
+.complete-job-check-item.is-pending .complete-job-check-icon {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .complete-job-check-item strong {
@@ -3121,8 +3116,8 @@ button.setting-row:focus-visible .setting-row-action {
 
 .complete-job-check-item > span:last-child > span {
   display: block;
-  margin-top: 2px;
-  color: var(--muted-strong);
+  margin-top: 4px;
+  color: #9b9b97;
   font-size: var(--copy-size);
 }
 
@@ -4267,20 +4262,21 @@ body.dictation-active .toast {
     display: none;
   }
 
-  .action-dock.intake-actions {
+  .action-dock.intake-actions,
+  .action-dock.vehicle-actions,
+  .action-dock.resolved-actions,
+  .action-dock.repair-action-dock,
+  .confirmation-actions {
     grid-template-columns: 1fr;
   }
 
-  .action-dock.vehicle-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .action-dock.vehicle-actions > .primary-button {
+  .action-dock.intake-actions > .primary-button,
+  .action-dock.vehicle-actions > .primary-button,
+  .action-dock.resolved-actions > .primary-button,
+  .action-dock.repair-action-dock > .primary-button,
+  .confirmation-actions > .primary-button,
+  .confirmation-actions > .danger-button {
     order: -1;
-  }
-
-  .action-dock.resolved-actions {
-    grid-template-columns: 1fr;
   }
 
   .match-selector {
@@ -4413,15 +4409,6 @@ body.dictation-active .toast {
 
   .add-parts-button {
     width: 100%;
-  }
-
-  .action-dock.repair-action-dock {
-    grid-template-columns: 1fr;
-  }
-
-  .action-dock.intake-actions > .primary-button,
-  .repair-action-dock > .primary-button {
-    order: -1;
   }
 }
 

@@ -1665,9 +1665,7 @@ function deleteRepairConfirmation() {
 }
 
 function completeJobConfirmation() {
-  const dtcSummary = state.dtcs.join(", ");
-  const vehicleLine = [`${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`, dtcSummary].filter(Boolean).join(" · ");
-  const mileageLine = state.vehicle.mileage ? `${state.vehicle.mileage} km` : "";
+  const vehicleLine = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
   const partsCount = state.repair.parts.length;
   const photosCount = state.repair.photos.length;
   const checklist = [
@@ -1679,13 +1677,10 @@ function completeJobConfirmation() {
   openSheet(`<div class="confirmation-content complete-job-confirmation">
     <span class="repair-job-number">JOB AO-260809-04</span>
     <h2>Ready to complete?</h2>
-    <div class="complete-job-vehicle">
-      <span>${escapeHTML(vehicleLine)}</span>
-      ${mileageLine ? `<span>${escapeHTML(mileageLine)}</span>` : ""}
-    </div>
+    <div class="complete-job-vehicle">${escapeHTML(vehicleLine)}</div>
     <ul class="complete-job-checklist">
-      ${checklist.map((item) => `<li class="complete-job-check-item${item.done ? " is-done" : ""}">
-        <span class="complete-job-check-icon">${icon("check")}</span>
+      ${checklist.map((item) => `<li class="complete-job-check-item${item.done ? " is-done" : " is-pending"}">
+        <span class="complete-job-check-icon">${icon(item.done ? "check" : "close")}</span>
         <span>
           <strong>${escapeHTML(item.label)}${item.optional ? ` <em>(optional)</em>` : ""}</strong>
           <span>${escapeHTML(item.detail)}</span>
