@@ -237,7 +237,12 @@ let repairMatches = [
     percent: "92",
     evidence: ["Same model", "Same fault code (P0171)"],
     vehicle: "2019 Volvo V60 · P0171",
-    meta: "78,240 KM · B4204T ENGINE · REPAIRED 14 MAR 2026 · J. MORRIS",
+    trim: "T5 Momentum",
+    drivetrain: "FWD",
+    engine: "B4204T",
+    transmission: "8-speed auto",
+    mileageLabel: "78,240 km",
+    repairedDateLabel: "14 Mar 2026",
     cause: "Replaced a cracked PCV diaphragm and hardened breather hose that caused an air leak when warm.",
     steps: [
       "Smoke-tested intake after engine reached operating temperature.",
@@ -258,7 +263,12 @@ let repairMatches = [
     percent: "76",
     evidence: ["Same engine family"],
     vehicle: "2021 Volvo XC60 · lean idle",
-    meta: "91,600 KM · B4204T ENGINE · REPAIRED 21 JUN 2026 · A. NGUYEN",
+    trim: "B5 Momentum",
+    drivetrain: "AWD",
+    engine: "B4204T",
+    transmission: "8-speed auto",
+    mileageLabel: "91,600 km",
+    repairedDateLabel: "21 Jun 2026",
     cause: "Replaced the intake manifold gasket at cylinder 1 after a warm-engine smoke test confirmed the leak.",
     steps: [
       "Verified positive trims at idle and near-normal trims above 2,500 RPM.",
@@ -451,7 +461,12 @@ function databaseMatchToUi(row, index) {
     percent: String(Math.min(99, Math.max(1, row.score || 1))),
     evidence: row.evidence && row.evidence.length ? row.evidence : ["Related workshop repair"],
     vehicle: row.vehicle_label || "Previous workshop repair",
-    meta: row.repaired_at ? `REPAIRED ${new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)).toUpperCase()}` : "VERIFIED SHOP REPAIR",
+    trim: row.vehicle_trim || "",
+    drivetrain: row.vehicle_drivetrain || "",
+    engine: row.vehicle_engine || "",
+    transmission: row.vehicle_transmission || "",
+    mileageLabel: row.vehicle_mileage ? `${Number(row.vehicle_mileage).toLocaleString()} km` : "",
+    repairedDateLabel: row.repaired_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)) : "",
     cause: row.cause || row.work_performed || "Open the repair record for details.",
     steps: (row.steps || []).slice().sort((a, b) => (a.position || 0) - (b.position || 0)).map((step) => step.instruction),
     parts: items,
@@ -1227,7 +1242,12 @@ function renderProblem() {
 function renderResults() {
   const selected = repairMatches.find((repair) => repair.id === state.selectedRepair) || repairMatches[0];
   const selectedPercent = repairMatchPercent(selected);
-  const selectedEvidence = repairMatchEvidence(selected);
+  const selectedVehicleName = selected.vehicle.split(" · ")[0];
+  const specRows = [
+    [selected.trim, selected.drivetrain],
+    [selected.engine, selected.transmission],
+    [selected.mileageLabel, selected.repairedDateLabel ? `Repaired ${selected.repairedDateLabel}` : ""],
+  ].map((parts) => parts.filter(Boolean).join(" · ")).filter(Boolean);
   const repairCountClass = repairMatches.length === 1 ? "has-one" : repairMatches.length === 2 ? "has-two" : "has-many";
   app.innerHTML = `<section class="screen workflow-shell">
     ${resultsTaskHeader()}
@@ -1237,11 +1257,17 @@ function renderResults() {
       ${repairMatches.map((repair) => matchOption(repair, repair.id === selected.id)).join("")}
     </div>
 
-    <section class="selected-repair" aria-labelledby="selected-repair-heading" aria-live="polite">
-      <div class="selected-repair-head">
-        <div><span class="section-label">Selected repair · ${selected.rank}</span><h2 id="selected-repair-heading">${selected.vehicle}</h2><ul class="evidence-checklist">${selectedEvidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul><span class="match-meta">${selected.meta}</span></div>
-        <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
+    <section class="result-detail-section" aria-labelledby="selected-repair-heading-label">
+      <span class="section-label result-section-label" id="selected-repair-heading-label">Selected repair · ${selected.rank}</span>
+      <div class="selected-repair-box">
+        <div class="selected-repair-top">
+          <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
+          <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
+        </div>
+        <div class="selected-repair-specs">${specRows.map((row) => `<span>${row}</span>`).join("")}</div>
       </div>
+    </section>
+    <section class="selected-repair" aria-live="polite">
       <section class="result-detail-section" aria-labelledby="what-fixed-label">
         <span class="section-label result-section-label" id="what-fixed-label">What fixed it</span>
         <div class="diagnosis-box"><p>${selected.cause}</p></div>

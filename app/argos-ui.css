@@ -2521,18 +2521,20 @@ button.journey-item:active {
   margin-top: 0;
 }
 
-.selected-repair-head {
+.selected-repair-box {
+  padding: 18px 18px 18px 16px;
+  border-left: 3px solid var(--accent-fill);
+  background: var(--surface-2);
+}
+
+.selected-repair-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 10px;
-  padding: 18px;
-  background: var(--surface-2);
 }
 
-.selected-repair-head h2 {
-  margin-top: 6px;
+.selected-repair-top h2 {
   font-size: 20px;
 }
 
@@ -2548,40 +2550,14 @@ button.journey-item:active {
   font-size: 0.75em;
 }
 
-.evidence-checklist {
+.selected-repair-specs {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
-  margin-bottom: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.evidence-checklist li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text);
-  font-size: 18px;
-}
-
-.evidence-checklist svg {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  stroke-width: 2.4;
-  color: var(--accent);
-}
-
-.match-meta {
-  display: block;
-  margin-top: 10px;
-  color: var(--muted);
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: var(--caps-size);
-  line-height: 1.45;
-  letter-spacing: 0;
+  gap: 4px;
+  margin-top: 12px;
+  color: var(--muted-strong);
+  font-size: var(--copy-size);
+  line-height: 1.4;
 }
 
 .diagnosis-box {
@@ -2600,7 +2576,7 @@ button.journey-item:active {
   margin-top: 40px;
 }
 
-.selected-repair-head + .result-detail-section {
+.result-detail-section + .selected-repair {
   margin-top: 40px;
 }
 
@@ -4182,9 +4158,12 @@ body.dictation-active .toast {
     font-size: var(--copy-size);
   }
 
-  .selected-repair-head {
+  .selected-repair-box {
+    padding: 16px 16px 16px 14px;
+  }
+
+  .selected-repair-top {
     display: block;
-    padding: 16px;
   }
 
   .selected-match-value {
