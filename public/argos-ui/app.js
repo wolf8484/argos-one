@@ -1226,7 +1226,7 @@ function renderProblem() {
         <div class="field-header"><span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
         <div class="field-actions dtc-actions">
           <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add scan code</span></button>
-          <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}</span>`).join("")}</div>
+          <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}<button class="dtc-chip-remove" type="button" data-action="remove-dtc" data-code="${code}" aria-label="Remove ${code}">${icon("close")}</button></span>`).join("")}</div>
         </div>
       </div>
       <div class="form-field">
@@ -1405,7 +1405,7 @@ function matchOption(repair, isSelected) {
   const evidence = repairMatchEvidence(repair);
   const vehicleName = repair.vehicle.split(" · ")[0];
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
-    <span class="match-option-top"><span class="match-option-rank">${repair.rank}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
+    <span class="match-option-top"><span class="match-option-rank">${repair.rank}${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : ""}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
     <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul></span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
@@ -2219,6 +2219,13 @@ document.addEventListener("click", (event) => {
     }
     if (action === "add-dtc") {
       return dtcEditorSheet();
+    }
+    if (action === "remove-dtc") {
+      const code = actionButton.dataset.code;
+      state.dtcs = state.dtcs.filter((entry) => entry !== code);
+      render();
+      queueRepairAutosave();
+      return showToast(`${code} removed.`);
     }
     if (action === "repair-back") return returnToResults();
     if (action === "delete-repair") {

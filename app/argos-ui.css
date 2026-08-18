@@ -1962,12 +1962,34 @@ button.journey-item:active {
 .dtc-chip {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 8px 0 12px;
   background: var(--surface-3);
   color: var(--heading);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   line-height: 1;
+}
+
+.dtc-chip-remove {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-strong);
+}
+
+.dtc-chip-remove svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dtc-chip-remove:hover,
+.dtc-chip-remove:focus-visible {
+  color: var(--heading);
 }
 
 .repair-dtc-field {
@@ -2423,6 +2445,9 @@ button.journey-item:active {
 }
 
 .match-option-rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--muted-strong);
   font-size: var(--caps-size);
   font-weight: 400;
@@ -2432,6 +2457,11 @@ button.journey-item:active {
 
 .match-option.is-selected .match-option-rank {
   color: var(--muted-strong);
+}
+
+.match-option-best {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .match-option-score {
