@@ -922,7 +922,7 @@ function vehicleTaskHeader() {
 
 function problemTaskHeader() {
   return taskHeader({
-    context: "Initial assessment",
+    context: vehicleMoustache(),
     title: vehicleName(),
   });
 }
@@ -931,16 +931,20 @@ function vehicleName() {
   return `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
 }
 
+function vehicleMoustache() {
+  return [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
+}
+
 function resultsTaskHeader() {
   return taskHeader({
-    context: `Useful repairs · ${repairMatches.length} found`,
+    context: vehicleMoustache(),
     title: vehicleName(),
   });
 }
 
 function repairRecordHeader() {
   return taskHeader({
-    context: "Repair details",
+    context: vehicleMoustache(),
     title: vehicleName(),
   });
 }
