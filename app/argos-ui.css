@@ -1366,9 +1366,7 @@ button.journey-item:active {
 }
 
 .repair-job-strip strong,
-.repair-job-strip span,
-.repair-reference strong,
-.repair-reference span {
+.repair-job-strip span {
   display: block;
 }
 
@@ -1392,23 +1390,47 @@ button.journey-item:active {
   text-transform: uppercase;
 }
 
-.repair-reference {
-  display: grid;
-  gap: 8px;
+.repair-reference-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
   margin: 2px 0 34px;
-  padding: 16px 18px;
+  padding: 14px 16px;
+  border: 0;
   background: var(--surface);
+  color: var(--text);
+  font-size: var(--copy-size);
+  text-align: left;
 }
 
-.repair-reference strong {
-  font-size: var(--copy-size);
+.repair-reference-link svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--accent);
+}
+
+.repair-reference-link > span:first-of-type {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repair-reference-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  color: var(--accent);
   font-weight: 500;
 }
 
-.repair-reference > span:last-child {
-  color: var(--muted-strong);
-  font-size: var(--copy-size);
-  line-height: 1.45;
+.repair-reference-view svg {
+  width: 16px;
+  height: 16px;
 }
 
 .repair-form {
@@ -2455,7 +2477,7 @@ button.journey-item:active {
 
 .match-option-best {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .match-option-score {
@@ -4204,9 +4226,9 @@ body.dictation-active .toast {
     justify-self: start;
   }
 
-  .repair-reference {
+  .repair-reference-link {
     margin-bottom: 30px;
-    padding: 14px 16px;
+    padding: 12px 14px;
   }
 
 

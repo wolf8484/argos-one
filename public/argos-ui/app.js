@@ -320,6 +320,7 @@ const icons = {
   lock: '<rect x="5" y="10" width="14" height="11" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
   sparkles: '<path d="m12 2 1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4Z"/><path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8Z"/><path d="m5 14 .8 1.7 1.7.8-1.7.8L5 19l-.8-1.7-1.7-.8 1.7-.8Z"/>',
   send: '<path d="m3 11 18-8-8 18-2-7Z"/><path d="m11 14 10-11"/>',
+  book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5V5.5Z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5V5.5Z"/>',
 };
 
 const filledIcons = {
@@ -1295,11 +1296,11 @@ function renderRepairRecord() {
       <span class="repair-status">In progress</span>
     </div>
 
-    ${state.repairReferenceEnabled ? `<aside class="repair-reference" aria-label="Selected historical repair reference">
-      <span class="micro-label">Reference repair ${selected.rank} · ${repairMatchPercent(selected)}% match</span>
-      <strong>${selected.vehicle}</strong>
-      <span>${selected.cause}</span>
-    </aside>` : ""}
+    ${state.repairReferenceEnabled ? `<button class="repair-reference-link" type="button" data-action="repair-back" aria-label="View reference repair ${selected.vehicle}">
+      ${icon("book")}
+      <span>Reference: ${selected.vehicle}</span>
+      <span class="repair-reference-view">View${icon("arrow")}</span>
+    </button>` : ""}
 
     <form id="repair-form" class="repair-form">
       <div class="form-field">
