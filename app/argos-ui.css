@@ -1590,6 +1590,11 @@ button.journey-item:active {
   min-width: 0;
 }
 
+.repair-action-dock button svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* Parts editor */
 .parts-editor-section + .parts-editor-section {
   margin-top: 40px;
