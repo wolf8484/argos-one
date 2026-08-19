@@ -1752,7 +1752,7 @@ button.journey-item:active {
 }
 
 .field-label {
-  margin-bottom: 9px;
+  margin-bottom: 12px;
 }
 
 .field-label .muted,
@@ -2632,9 +2632,7 @@ button.journey-item:active {
 }
 
 .repair-summary-box {
-  padding: 20px;
   border: 0;
-  background: var(--surface-3);
 }
 
 .repair-summary-box p {
@@ -2649,7 +2647,7 @@ button.journey-item:active {
 
 .result-section-label,
 .result-section-head {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .result-section-head {
