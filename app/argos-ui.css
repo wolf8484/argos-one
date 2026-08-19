@@ -2118,11 +2118,17 @@ button.journey-item:active {
 }
 
 .photo-panel {
-  display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
-  gap: 8px;
+  display: block;
   min-height: 116px;
   background: transparent;
+}
+
+.photo-actions {
+  margin-top: 12px;
+}
+
+.photo-actions .dictate-button {
+  flex: 1;
 }
 
 .photo-upload-hint {
@@ -2133,26 +2139,6 @@ button.journey-item:active {
   line-height: 1.4;
   letter-spacing: 0;
   text-transform: none;
-}
-
-.add-photo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 116px;
-  padding: 12px;
-  flex-direction: column;
-  gap: 8px;
-  border: 1px solid var(--secondary-border);
-  background: transparent;
-  color: var(--text);
-  font-size: var(--copy-size);
-}
-
-.add-photo svg {
-  width: 28px;
-  height: 28px;
-  color: var(--accent);
 }
 
 .photo-strip {
@@ -2329,7 +2315,6 @@ button.journey-item:active {
 .part-button:active,
 .dictate-button:not(.is-listening):active,
 .enhance-button:not(.is-enhancing):active,
-.add-photo:active,
 .vin-camera:active {
   background: var(--surface-3);
 }
@@ -3426,7 +3411,6 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .dictate-button:not(.is-listening),
 :root[data-theme="light"] .enhance-button:not(.is-enhancing),
 :root[data-theme="light"] .add-dtc-button,
-:root[data-theme="light"] .add-photo,
 :root[data-theme="light"] .vin-camera,
 :root[data-theme="light"] .calendar-nav,
 :root[data-theme="light"] .recorded-part-actions button {
@@ -3440,7 +3424,6 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .dictate-button:not(.is-listening) svg,
 :root[data-theme="light"] .enhance-button:not(.is-enhancing) svg,
 :root[data-theme="light"] .add-dtc-button svg,
-:root[data-theme="light"] .add-photo svg,
 :root[data-theme="light"] .vin-camera svg,
 :root[data-theme="light"] .calendar-nav svg,
 :root[data-theme="light"] .recorded-part-actions button svg {
@@ -3471,7 +3454,6 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .dictate-button:not(.is-listening):active,
 :root[data-theme="light"] .enhance-button:not(.is-enhancing):active,
 :root[data-theme="light"] .add-dtc-button:active,
-:root[data-theme="light"] .add-photo:active,
 :root[data-theme="light"] .vin-camera:active,
 :root[data-theme="light"] .calendar-nav:active,
 :root[data-theme="light"] .recorded-part-actions button:active {
@@ -3578,7 +3560,6 @@ button.setting-row:focus-visible .setting-row-action {
   .dictate-button:not(.is-listening):hover,
   .enhance-button:not(.is-enhancing):hover,
   .add-dtc-button:hover,
-  .add-photo:hover,
   .vin-camera:hover,
   .secondary-button:hover,
   .web-button:hover,
@@ -3594,7 +3575,6 @@ button.setting-row:focus-visible .setting-row-action {
   :root[data-theme="light"] .dictate-button:not(.is-listening):hover,
   :root[data-theme="light"] .enhance-button:not(.is-enhancing):hover,
   :root[data-theme="light"] .add-dtc-button:hover,
-  :root[data-theme="light"] .add-photo:hover,
   :root[data-theme="light"] .vin-camera:hover,
   :root[data-theme="light"] .calendar-nav:hover,
   :root[data-theme="light"] .recorded-part-actions button:hover {
@@ -3979,6 +3959,14 @@ button.setting-row:focus-visible .setting-row-action {
   overflow: hidden;
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   pointer-events: none;
+}
+
+.transition-block-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 109;
+  background: transparent;
+  cursor: wait;
 }
 
 .top-progress-bar::after {

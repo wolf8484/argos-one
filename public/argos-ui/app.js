@@ -214,8 +214,7 @@ function jobVehicleName(job) {
 }
 
 function jobSummary(job) {
-  if (job.summary) return job.summary;
-  return [job.complaint, job.observations].filter(Boolean).join(" · ");
+  return job.complaint || job.summary || job.observations || "";
 }
 
 function jobSearchText(job) {
@@ -291,6 +290,7 @@ const icons = {
   down: '<path d="m6 9 6 6 6-6"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
   camera: '<path d="M3 8h4l2-3h6l2 3h4v11H3Z"/><circle cx="12" cy="13" r="3.5"/>',
+  upload: '<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   mic: '<rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/>',
   scan: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/>',
@@ -873,15 +873,22 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove("is-visible"), 2600);
 }
 
-function showTopProgressBar() {
-  if (document.querySelector(".top-progress-bar")) return;
-  const bar = document.createElement("div");
-  bar.className = "top-progress-bar";
-  document.body.appendChild(bar);
+function showTopProgressBar({ blocking = false } = {}) {
+  if (!document.querySelector(".top-progress-bar")) {
+    const bar = document.createElement("div");
+    bar.className = "top-progress-bar";
+    document.body.appendChild(bar);
+  }
+  if (blocking && !document.querySelector(".transition-block-overlay")) {
+    const overlay = document.createElement("div");
+    overlay.className = "transition-block-overlay";
+    document.body.appendChild(overlay);
+  }
 }
 
 function hideTopProgressBar() {
   document.querySelector(".top-progress-bar")?.remove();
+  document.querySelector(".transition-block-overlay")?.remove();
 }
 
 function setButtonLoading(button, label) {
@@ -1236,6 +1243,10 @@ function photoStrip(photos, scope, label) {
   </div>`;
 }
 
+function photoActionButtons() {
+  return `<div class="field-actions photo-actions"><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="camera">${icon("camera")}<span>Take photo</span></button><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="upload">${icon("upload")}<span>Upload photo</span></button></div>`;
+}
+
 function renderProblem() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${problemTaskHeader()}
@@ -1260,7 +1271,8 @@ function renderProblem() {
       </div>
       <div class="form-field">
         <span class="field-label intake-section-title">Arrival photos <span class="optional-label">(optional)</span></span>
-        <div class="photo-panel"><button class="add-photo" type="button" data-action="add-photo">${icon("camera")}<span>Open camera</span></button>${photoStrip(state.photos, "inspection", "Arrival photo")}</div>
+        <div class="photo-panel">${photoStrip(state.photos, "inspection", "Arrival photo")}</div>
+        ${photoActionButtons()}
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
       </div>
       <div class="action-dock intake-actions"><button class="secondary-button full" type="submit">${icon("search")} Show similar repairs</button><button class="primary-button full" type="button" data-action="proceed-to-diagnosis" aria-label="Save assessment and continue directly to repair">Save & continue ${icon("arrow")}</button></div>
@@ -1361,7 +1373,8 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <span class="field-label">Repair photos <span class="optional-label">(optional)</span></span>
-        <div class="photo-panel"><button class="add-photo" type="button" data-action="add-photo">${icon("camera")}<span>Open camera</span></button>${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
+        <div class="photo-panel">${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
+        ${photoActionButtons()}
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
       </div>
 
@@ -2272,9 +2285,11 @@ async function webResearchSheet() {
   showTopProgressBar();
   try {
     const result = await apiRequest("/api/research", { method: "POST", body: JSON.stringify({ jobId: state.currentJobId || undefined, query, vehicle, dtcs: state.dtcs, complaint: state.complaint, observations: state.notes }) });
+    if (sheetLayer.hidden) return;
     lastResearchResult = { synthesis: result.synthesis, sources: Array.isArray(result.sources) ? result.sources : [] };
     renderResearchSourceList();
   } catch (error) {
+    if (sheetLayer.hidden) return;
     openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
   } finally {
     hideTopProgressBar();
@@ -2388,7 +2403,7 @@ document.addEventListener("click", (event) => {
       const form = document.querySelector("#problem-form");
       if (form) syncProblem(form);
       if (!validateAssessment(form)) return;
-      showTopProgressBar();
+      showTopProgressBar({ blocking: true });
       setButtonLoading(actionButton, "Saving…");
       return persistAssessment("repair").then(() => {
         state.repairReferenceEnabled = false;
@@ -2406,6 +2421,8 @@ document.addEventListener("click", (event) => {
       const repairForm = document.querySelector("#repair-form");
       if (repairForm) syncRepairRecord(repairForm);
       photoInput.dataset.photoScope = state.route === "repair" ? "repair" : "inspection";
+      if (actionButton.dataset.photoMode === "upload") photoInput.removeAttribute("capture");
+      else photoInput.setAttribute("capture", "environment");
       photoInput.value = "";
       return photoInput.click();
     }
@@ -2502,7 +2519,7 @@ document.addEventListener("click", (event) => {
     if (action === "close-sheet") return closeSheet();
     if (action === "web-research") return webResearchSheet();
     if (action === "log-fix") {
-      showTopProgressBar();
+      showTopProgressBar({ blocking: true });
       setButtonLoading(actionButton, "Saving…");
       state.repairReferenceEnabled = true;
       openRepairRecord();
@@ -2671,7 +2688,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
-    showTopProgressBar();
+    showTopProgressBar({ blocking: true });
     setButtonLoading(submitButton, "Saving…");
     return persistVehicleDetails().then(() => {
       state.savedJourney = { route: "new", step: 2 };
@@ -2687,7 +2704,7 @@ document.addEventListener("submit", (event) => {
     syncProblem(event.target);
     if (!validateAssessment(event.target)) return;
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
-    showTopProgressBar();
+    showTopProgressBar({ blocking: true });
     setButtonLoading(submitButton, "Searching…");
     return persistAssessment("similar_repairs").then(async () => {
       state.repairReferenceEnabled = true;
