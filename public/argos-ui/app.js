@@ -1261,7 +1261,7 @@ function renderResults() {
     <section class="selected-repair-card" aria-live="polite" aria-labelledby="selected-repair-heading-label">
       <div class="selected-repair-top">
         <span class="section-label result-section-label selected-repair-eyebrow${selected.rank === "01" ? " is-best" : ""}" id="selected-repair-heading-label">${selected.rank === "01" ? "Best match" : `Repair ${selected.rank}`}</span>
-        <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span></span>
+        <span class="selected-match-value${selected.rank === "01" ? " is-best" : ""}">${selectedPercent}<span class="percent-symbol">%</span></span>
       </div>
       <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
       <div class="selected-repair-specs">
