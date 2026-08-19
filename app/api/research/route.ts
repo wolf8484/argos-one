@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', temperature: 0.1, max_completion_tokens: 1200,
+        model: 'openai/gpt-oss-120b', temperature: 0.1, max_completion_tokens: 1200,
         messages: [
           { role: 'system', content: 'You are assisting a qualified automotive technician. Summarize only the supplied search extracts. Clearly distinguish likely diagnostic directions from confirmed facts, mention safety-critical uncertainty, tell the mechanic to verify against official service information, and cite source numbers in square brackets. Never invent torque values, procedures, part fitment or diagnoses.' },
           { role: 'user', content: `Vehicle: ${input.vehicle || 'not supplied'}\nDTCs: ${input.dtcs.join(', ') || 'none supplied'}\nComplaint: ${input.complaint || 'not supplied'}\nObservations: ${input.observations || 'not supplied'}\nResearch request: ${input.query}\n\nSearch extracts:\n${sourceText || 'No results'}` },
