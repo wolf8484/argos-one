@@ -1188,7 +1188,7 @@ main:focus {
 
 .task-context {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   margin-top: 8px;
   color: #c3c3c3;
@@ -1201,6 +1201,7 @@ main:focus {
   width: 16px;
   height: 16px;
   flex: none;
+  margin-top: 2px;
 }
 
 .task-context span {
@@ -2127,10 +2128,6 @@ button.journey-item:active {
   margin-top: 12px;
 }
 
-.photo-actions .dictate-button {
-  flex: 1;
-}
-
 .photo-upload-hint {
   margin: 8px 0 0;
   color: #c3c3c3;
@@ -2187,6 +2184,16 @@ button.journey-item:active {
   display: block;
   border: 1px dashed var(--line-strong);
   background: color-mix(in srgb, var(--surface-3) 42%, var(--surface-2));
+}
+
+.photo-strip.is-empty {
+  background: transparent;
+}
+
+.photo-slot-empty {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
 }
 
 .photo-thumb {

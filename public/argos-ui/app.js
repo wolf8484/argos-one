@@ -928,6 +928,17 @@ function updateStickyJourney() {
   journey.classList.toggle("is-stuck", window.scrollY > 0 && journey.getBoundingClientRect().top <= stickyTop + 1);
 }
 
+function scrollJourneyIntoView() {
+  const journey = app.querySelector(".journey-nav");
+  if (!journey) return;
+  const current = journey.querySelector(".journey-item.is-current");
+  if (!current) return;
+  const currentStep = Number(current.dataset.journeyStep);
+  if (currentStep <= 1) journey.scrollLeft = 0;
+  else if (currentStep === 2) journey.scrollLeft = current.offsetLeft;
+  else journey.scrollLeft = journey.scrollWidth;
+}
+
 function scrollToNextView() {
   const documentHeight = document.documentElement.scrollHeight;
   const maximumScroll = Math.max(0, documentHeight - window.innerHeight);
@@ -954,7 +965,7 @@ function workflowJourney(currentStep) {
   return `<nav class="journey-nav" aria-label="Job progress">${stages.map(([step, label]) => {
     const isSkipped = step === 3 && unlockedStep >= 4 && !state.repairReferenceEnabled;
     const isComplete = step < unlockedStep && !isSkipped;
-    if (step === currentStep) return `<span class="journey-item is-current${isComplete ? " is-complete" : ""}" aria-current="step">${isComplete ? icon("check") : ""}<span>${label}</span></span>`;
+    if (step === currentStep) return `<span class="journey-item is-current${isComplete ? " is-complete" : ""}" data-journey-step="${step}" aria-current="step">${isComplete ? icon("check") : ""}<span>${label}</span></span>`;
     if (isSkipped) return `<button class="journey-item is-skipped" type="button" data-journey-step="3" aria-label="Similar repairs skipped; open this stage"><span>${label}</span></button>`;
     if (step <= unlockedStep) {
       return `<button class="journey-item ${isComplete ? "is-complete" : "is-available"}" type="button" data-journey-step="${step}">${isComplete ? icon("check") : ""}<span>${label}</span></button>`;
@@ -1236,6 +1247,9 @@ function photoUrl(photo) {
 }
 
 function photoStrip(photos, scope, label) {
+  if (!photos.length) {
+    return `<div class="photo-strip is-empty" aria-label="${label} gallery"><span class="photo-slot photo-slot-empty" aria-hidden="true"></span></div>`;
+  }
   const emptySlots = Math.max(1, 3 - photos.length);
   return `<div class="photo-strip" aria-label="${label} gallery">
     ${photos.map((photo, index) => `<button class="photo-thumb-button" type="button" data-action="view-photo" data-photo-scope="${scope}" data-photo-index="${index}" aria-label="Open photo ${index + 1} of ${photos.length}"><img src="${escapeHTML(photoUrl(photo))}" alt="${label} ${index + 1}" class="photo-thumb" /><span class="photo-number" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span></button>`).join("")}
@@ -1244,7 +1258,7 @@ function photoStrip(photos, scope, label) {
 }
 
 function photoActionButtons() {
-  return `<div class="field-actions photo-actions"><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="camera">${icon("camera")}<span>Take photo</span></button><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="upload">${icon("upload")}<span>Upload photo</span></button></div>`;
+  return `<div class="field-actions photo-actions"><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="camera">${icon("camera")}<span>Take photo</span></button><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="upload">${icon("upload")}<span>Upload file</span></button></div>`;
 }
 
 function renderProblem() {
@@ -1272,8 +1286,8 @@ function renderProblem() {
       <div class="form-field">
         <span class="field-label intake-section-title">Arrival photos <span class="optional-label">(optional)</span></span>
         <div class="photo-panel">${photoStrip(state.photos, "inspection", "Arrival photo")}</div>
-        ${photoActionButtons()}
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
+        ${photoActionButtons()}
       </div>
       <div class="action-dock intake-actions"><button class="secondary-button full" type="submit">${icon("search")} Show similar repairs</button><button class="primary-button full" type="button" data-action="proceed-to-diagnosis" aria-label="Save assessment and continue directly to repair">Save & continue ${icon("arrow")}</button></div>
     </form>
@@ -1374,8 +1388,8 @@ function renderRepairRecord() {
       <div class="form-field">
         <span class="field-label">Repair photos <span class="optional-label">(optional)</span></span>
         <div class="photo-panel">${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
-        ${photoActionButtons()}
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
+        ${photoActionButtons()}
       </div>
 
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="delete-repair">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
@@ -1510,6 +1524,7 @@ function render() {
     restoreMatchCarouselPosition();
     updateScrollCue();
     updateStickyJourney();
+    scrollJourneyIntoView();
   });
 }
 
