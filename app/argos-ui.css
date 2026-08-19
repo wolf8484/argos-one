@@ -1186,7 +1186,7 @@ main:focus {
   align-items: center;
   gap: 4px;
   margin-top: 8px;
-  color: #e0e0dc;
+  color: #9b9b97;
   font-size: var(--caps-size);
   line-height: 1.25;
   text-transform: uppercase;
@@ -1379,7 +1379,7 @@ button.journey-item:active {
 
 .repair-job-info span {
   margin-top: 4px;
-  color: var(--muted-strong);
+  color: #9b9b97;
   font-size: 16px;
 }
 
@@ -2584,7 +2584,7 @@ button.journey-item:active {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--text);
+  color: #9b9b97;
   font-size: var(--copy-size);
   line-height: 1.3;
 }
@@ -2647,7 +2647,7 @@ button.journey-item:active {
 
 .selected-repair-specs {
   margin-top: 8px;
-  color: var(--muted-strong);
+  color: #9b9b97;
   font-size: var(--copy-size);
   line-height: 1.4;
 }
@@ -2679,7 +2679,7 @@ button.journey-item:active {
 }
 
 .repair-summary-box p {
-  color: var(--text);
+  color: #9b9b97;
   font-size: var(--copy-size);
   line-height: 1.6;
 }
