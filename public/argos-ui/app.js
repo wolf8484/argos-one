@@ -873,6 +873,33 @@ function showToast(message) {
   showToast.timer = setTimeout(() => toast.classList.remove("is-visible"), 2600);
 }
 
+function showTopProgressBar() {
+  if (document.querySelector(".top-progress-bar")) return;
+  const bar = document.createElement("div");
+  bar.className = "top-progress-bar";
+  document.body.appendChild(bar);
+}
+
+function hideTopProgressBar() {
+  document.querySelector(".top-progress-bar")?.remove();
+}
+
+function setButtonLoading(button, label) {
+  if (!button || button.dataset.loading === "true") return;
+  button.dataset.loading = "true";
+  button.dataset.originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `<span class="button-spinner" aria-hidden="true"></span><span>${label}</span>`;
+}
+
+function resetButtonLoading(button) {
+  if (!button || button.dataset.loading !== "true") return;
+  button.disabled = false;
+  button.innerHTML = button.dataset.originalHtml;
+  delete button.dataset.loading;
+  delete button.dataset.originalHtml;
+}
+
 function updateScrollCue() {
   if (!scrollCue) return;
   const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
@@ -2632,16 +2659,25 @@ document.addEventListener("submit", (event) => {
   event.preventDefault();
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
+    const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+    showTopProgressBar();
+    setButtonLoading(submitButton, "Saving…");
     return persistVehicleDetails().then(() => {
       state.savedJourney = { route: "new", step: 2 };
       state.workflowUnlockedStep = Math.max(state.workflowUnlockedStep, 2);
       showToast("Vehicle and customer saved to the workshop cloud.");
       setStep(2);
-    }).catch((error) => showToast(error.status === 401 ? "Sign in to create and save this job." : error.message));
+    }).catch((error) => {
+      resetButtonLoading(submitButton);
+      showToast(error.status === 401 ? "Sign in to create and save this job." : error.message);
+    }).finally(() => hideTopProgressBar());
   }
   if (event.target.id === "problem-form") {
     syncProblem(event.target);
     if (!validateAssessment(event.target)) return;
+    const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+    showTopProgressBar();
+    setButtonLoading(submitButton, "Searching…");
     return persistAssessment("similar_repairs").then(async () => {
       state.repairReferenceEnabled = true;
       state.savedJourney = { route: "new", step: 3 };
@@ -2649,7 +2685,10 @@ document.addEventListener("submit", (event) => {
       showToast("Assessment saved. Searching verified workshop repairs…");
       await loadRepairMatches();
       setStep(3);
-    }).catch((error) => showToast(error.message));
+    }).catch((error) => {
+      resetButtonLoading(submitButton);
+      showToast(error.message);
+    }).finally(() => hideTopProgressBar());
   }
   if (event.target.id === "catalog-editor-form") {
     const data = new FormData(event.target);
