@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'openai/gpt-oss-20b',
         temperature: 0.1,
         max_completion_tokens: 800,
         messages: [
