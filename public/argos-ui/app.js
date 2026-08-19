@@ -309,6 +309,7 @@ const icons = {
   send: '<path d="m3 11 18-8-8 18-2-7Z"/><path d="m11 14 10-11"/>',
   book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5V5.5Z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5V5.5Z"/>',
   steeringWheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5v4.3M6.9 15.3l3.4-2.1M17.1 15.3l-3.4-2.1"/>',
+  car: '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
 };
 
@@ -943,7 +944,7 @@ function vehicleName() {
 
 function vehicleMoustache() {
   const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
-  return specs ? `${icon("steeringWheel")}<span>${specs}</span>` : "";
+  return specs ? `${icon("car")}<span>${specs}</span>` : "";
 }
 
 function resultsTaskHeader() {
@@ -1264,7 +1265,7 @@ function renderResults() {
       </div>
       <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
       <div class="selected-repair-specs">
-        ${specRows.length ? `<span class="selected-repair-spec-line">${icon("steeringWheel")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
+        ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
         ${repairedLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(repairedLabel)}</span></span>` : ""}
       </div>
 

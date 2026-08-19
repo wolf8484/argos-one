@@ -1184,7 +1184,7 @@ main:focus {
 .task-context {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   margin-top: 8px;
   color: #e0e0dc;
   font-size: var(--caps-size);
