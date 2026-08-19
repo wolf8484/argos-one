@@ -1210,12 +1210,12 @@ function renderProblem() {
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Customer complaint</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea><button class="see-original-button" type="button" data-see-original="complaint" hidden>See original</button></div>
+        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea><button class="see-original-button" type="button" data-see-original="complaint" hidden>Show original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="complaint">${icon("sparkles")} AI enhance</button></div>
       </div>
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="notes">Initial observations <span class="optional-label">(optional)</span></label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>See original</button></div>
+        <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>Show original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
       </div>
       <div class="form-field repair-dtc-field">
@@ -1309,7 +1309,7 @@ function renderRepairRecord() {
     <form id="repair-form" class="repair-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
-        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>See original</button></div>
+        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>Show original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -1321,7 +1321,7 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>See original</button></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>Show original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
       </div>
 

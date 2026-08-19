@@ -1856,13 +1856,13 @@ button.journey-item:active {
 .see-original-button {
   position: absolute;
   z-index: 3;
-  right: 22px;
-  bottom: 10px;
-  padding: 4px 10px;
+  right: 16px;
+  bottom: 16px;
+  padding: 8px 12px;
   border: 1px solid var(--secondary-border);
-  border-radius: 999px;
+  border-radius: 0px;
   background: var(--surface-2);
-  color: var(--muted);
+  color: #e0e0dc;
   font-size: 12px;
   line-height: 1.4;
 }
