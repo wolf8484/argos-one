@@ -1199,7 +1199,6 @@ function renderProblem() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${problemTaskHeader()}
     ${workflowJourney(2)}
-    ${vehicleContext()}
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Customer complaint</label></div>
