@@ -2630,18 +2630,19 @@ button.journey-item:active {
   color: #e0e0dc;
   font-size: var(--caps-size);
   font-weight: 500;
+  line-height: 1.25;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .selected-match-value.is-best {
-  color: var(--accent);
   font-weight: 400;
 }
 
 .selected-match-value .percent-symbol {
   margin-right: 4px;
   font-size: 0.75em;
+  color: #e0e0dc;
 }
 
 .selected-repair-specs {
