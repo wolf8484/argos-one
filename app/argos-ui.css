@@ -1743,6 +1743,12 @@ button.journey-item:active {
   min-width: 0;
 }
 
+@media (min-width: 501px) {
+  .catalog-add-button {
+    width: auto;
+  }
+}
+
 .customer-details-heading {
   margin-top: 16px;
 }

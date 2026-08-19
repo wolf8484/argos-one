@@ -1169,7 +1169,7 @@ function renderVehicle() {
         ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
         <label class="form-field"><span class="field-label">Registration <span class="muted">(optional)</span></span><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
         <label class="form-field"><span class="field-label">Current mileage</span><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
-        <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add make or model</button></div>
+        <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add new vehicle</button></div>
       </div>
       <div class="customer-details-heading span-2"><h2>Customer details</h2></div>
       <div class="customer-details-grid span-2">
