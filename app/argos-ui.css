@@ -1711,6 +1711,7 @@ button.journey-item:active {
 /* Vehicle identity is grouped into deliberate three-field rows. */
 .vehicle-details-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
 }
 
 /* Secondary actions attached to a field share one control rhythm globally. */
