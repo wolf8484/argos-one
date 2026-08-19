@@ -706,7 +706,7 @@ main:focus {
 .micro-label,
 .eyebrow {
   display: block;
-  color: var(--muted);
+  color: #e0e0dc;
   font-size: var(--caps-size);
   font-weight: 400;
   line-height: 1.25;
