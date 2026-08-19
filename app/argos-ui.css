@@ -175,14 +175,9 @@ p {
 
 h1,
 h2,
-h3 {
-  color: var(--heading);
-}
-
-h1,
-h2,
 h3,
 strong {
+  color: var(--heading);
   font-weight: 600;
 }
 
@@ -655,6 +650,7 @@ main:focus {
 }
 
 .tile-copy strong {
+  color: inherit;
   font-size: 20px;
   line-height: 1.05;
 }
@@ -3788,14 +3784,53 @@ button.setting-row:focus-visible .setting-row-action {
 }
 
 .source-card p {
-  margin-top: 8px;
-  color: var(--muted-strong);
+  margin-top: 16px;
+  color: #c3c3c3;
   font-size: var(--copy-size);
   line-height: 1.45;
 }
 
 .source-card.internal {
   background: var(--surface-3);
+}
+
+.synthesis-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.synthesis-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.synthesis-accordion summary svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform 160ms ease;
+}
+
+.synthesis-accordion[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.synthesis-heading {
+  display: block;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+.synthesis-heading:first-child {
+  margin-top: 0;
+}
+
+.synthesis-line {
+  display: block;
+  margin-bottom: 12px;
 }
 
 .sheet-head-with-back {

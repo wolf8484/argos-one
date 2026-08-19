@@ -2170,16 +2170,43 @@ function markdownTableToBullets(text) {
   return out.join("\n");
 }
 
-function formatResearchSynthesis(rawText, sourceCount) {
-  const withBullets = markdownTableToBullets(rawText || "");
-  const escaped = escapeHTML(withBullets);
+function formatResearchSynthesisLine(line, sourceCount) {
+  const normalized = line.replace(/【(\d+)[^\d】]*】/g, "[$1]");
+  const escaped = escapeHTML(normalized);
   const bolded = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  const linked = bolded.replace(/\[(\d+)\]/g, (match, num) => {
+  return bolded.replace(/\[(\d+)\]/g, (match, num) => {
     const index = Number(num) - 1;
     if (index < 0 || index >= sourceCount) return match;
     return `<button class="citation-link" type="button" data-action="open-research-source" data-source-index="${index}">[${num}]</button>`;
   });
-  return linked.replace(/\n{2,}/g, "<br><br>").replace(/\n/g, "<br>");
+}
+
+function formatResearchSynthesis(rawText, sourceCount) {
+  const lines = markdownTableToBullets(rawText || "").split("\n");
+  const blocks = [];
+  let buffer = [];
+  const flush = () => {
+    if (buffer.length) {
+      blocks.push(`<span class="synthesis-line">${buffer.join("<br>")}</span>`);
+      buffer = [];
+    }
+  };
+  lines.forEach((rawLine) => {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      flush();
+      return;
+    }
+    const headingMatch = trimmed.match(/^\*\*(.+)\*\*$/);
+    if (headingMatch) {
+      flush();
+      blocks.push(`<strong class="synthesis-heading">${formatResearchSynthesisLine(headingMatch[1], sourceCount)}</strong>`);
+    } else {
+      buffer.push(formatResearchSynthesisLine(trimmed, sourceCount));
+    }
+  });
+  flush();
+  return blocks.join("");
 }
 
 function sourceDomain(url) {
@@ -2194,7 +2221,7 @@ function renderResearchSourceList() {
   const { sources, synthesis } = lastResearchResult;
   openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
-      <div class="source-card internal"><span class="micro-label">AI synthesis with source citations</span><h3>Research summary</h3><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></div>
+      <details class="source-card internal synthesis-accordion"><summary class="micro-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
       <div class="source-list">${sources.map((source, index) => `<button class="source-list-item" type="button" data-action="open-research-source" data-source-index="${index}"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></button>`).join("")}</div>
       <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
     </div>`);
