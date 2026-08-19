@@ -3854,6 +3854,10 @@ button.setting-row:focus-visible .setting-row-action {
   margin-bottom: 12px;
 }
 
+.results-heading-count {
+  color: var(--accent);
+}
+
 .source-list {
   margin-top: 16px;
   display: flex;
@@ -3887,7 +3891,7 @@ button.setting-row:focus-visible .setting-row-action {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -3951,7 +3955,7 @@ button.setting-row:focus-visible .setting-row-action {
 }
 
 .source-list-snippet {
-  color: var(--muted-strong);
+  color: #c3c3c3;
   font-size: var(--copy-size);
   line-height: 1.45;
 }

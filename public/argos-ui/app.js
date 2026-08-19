@@ -2220,14 +2220,19 @@ function sourceDomain(url) {
   }
 }
 
+function researchVehicleMoustache() {
+  const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission].filter(Boolean).join(" · ");
+  return specs ? `${icon("car")}<span>${escapeHTML(specs)}</span>` : "";
+}
+
 function renderResearchSourceList() {
   const { sources, synthesis } = lastResearchResult;
-  const vehicleName = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`.trim();
-  const sourceCountLabel = `External research · ${sources.length} source${sources.length === 1 ? "" : "s"}`;
-  openSheet(`<div class="sheet-head"><div><h2>Web repair tips</h2>${vehicleName ? `<span class="task-context">${icon("car")}<span>${escapeHTML(vehicleName)}</span></span>` : ""}</div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  const moustache = researchVehicleMoustache();
+  const resultCount = `${sources.length} result${sources.length === 1 ? "" : "s"}`;
+  openSheet(`<div class="sheet-head"><div><h2>Web repair tips</h2>${moustache ? `<span class="task-context">${moustache}</span>` : ""}</div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
       <details class="source-card internal synthesis-accordion"><summary class="micro-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
-      <span class="section-label results-heading">${escapeHTML(sourceCountLabel)}</span>
+      <span class="section-label results-heading">External research · <strong class="results-heading-count">${escapeHTML(resultCount)}</strong></span>
       <div class="source-list">${sources.map((source) => `<a class="source-list-item" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer"><span class="source-list-main"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></span><span class="source-list-external" aria-hidden="true">${icon("externalLink")}</span></a>`).join("")}</div>
       <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
     </div>`);
