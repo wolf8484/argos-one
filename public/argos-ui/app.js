@@ -1278,7 +1278,7 @@ function renderResults() {
         <div class="parts-panel always-visible">${selected.parts.map(([name, number, key]) => partRow(name, number, key)).join("")}</div>
       </div>
     </section>
-    <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${icon("wrench")} Save & start repair</button><button class="web-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
+    <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button><button class="web-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
   </section>`;
 }
 
