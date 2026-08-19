@@ -719,17 +719,6 @@ main:focus {
   text-transform: uppercase;
 }
 
-.eyebrow-below {
-  margin-top: 6px;
-  color: #c3c3c3;
-  font-weight: 400;
-}
-
-.eyebrow-below strong {
-  color: #c3c3c3;
-  font-weight: 400;
-}
-
 .section-heading h2 {
   margin-top: 5px;
 }
@@ -3859,11 +3848,21 @@ button.setting-row:focus-visible .setting-row-action {
   margin-bottom: 12px;
 }
 
+.results-heading {
+  display: block;
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
 .source-list {
   margin-top: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.results-heading + .source-list {
+  margin-top: 0;
 }
 
 .source-list-item {
