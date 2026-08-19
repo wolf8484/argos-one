@@ -2611,8 +2611,8 @@ button.journey-item:active {
 .selected-repair-top {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 .selected-repair-eyebrow.is-best {
