@@ -2269,12 +2269,15 @@ async function webResearchSheet() {
   const vehicle = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
   const query = [state.complaint, state.notes].filter(Boolean).join(" ").slice(0, 450) || "diagnostic repair guidance";
   openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Searching repair sources…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Researching ${escapeHTML(vehicle)} and cross-checking sources</span></div></div>`);
+  showTopProgressBar();
   try {
     const result = await apiRequest("/api/research", { method: "POST", body: JSON.stringify({ jobId: state.currentJobId || undefined, query, vehicle, dtcs: state.dtcs, complaint: state.complaint, observations: state.notes }) });
     lastResearchResult = { synthesis: result.synthesis, sources: Array.isArray(result.sources) ? result.sources : [] };
     renderResearchSourceList();
   } catch (error) {
     openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
+  } finally {
+    hideTopProgressBar();
   }
 }
 
