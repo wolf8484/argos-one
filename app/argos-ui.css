@@ -1890,7 +1890,8 @@ button.journey-item:active {
 
 .input::placeholder,
 .textarea::placeholder {
-  color: var(--muted);
+  color: #c3c3c3;
+  font-style: italic;
   opacity: 1;
 }
 
