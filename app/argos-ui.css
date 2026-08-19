@@ -708,7 +708,7 @@ main:focus {
   display: block;
   color: #e0e0dc;
   font-size: var(--caps-size);
-  font-weight: 400;
+  font-weight: 500;
   line-height: 1.25;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -1989,7 +1989,7 @@ button.journey-item:active {
 }
 
 .intake-section-title {
-  color: var(--muted);
+  color: #e0e0dc;
 }
 
 .optional-label {
