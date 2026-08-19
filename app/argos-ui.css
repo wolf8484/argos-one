@@ -291,6 +291,15 @@ h3 {
   border-color: var(--muted);
 }
 
+.icon-button[data-action="close-sheet"] {
+  color: var(--accent);
+}
+
+.icon-button[data-action="close-sheet"] svg {
+  width: 20px;
+  height: 20px;
+}
+
 .profile-button {
   display: none;
   grid-column: 2;
@@ -901,8 +910,8 @@ main:focus {
 }
 
 .job-card-action svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .job-card:hover .job-card-action,
@@ -2296,6 +2305,11 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 16px;
   border-color: var(--secondary-border);
+}
+
+.view-all-button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .secondary-button svg,
