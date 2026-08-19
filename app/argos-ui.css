@@ -1184,7 +1184,7 @@ main:focus {
 .task-context {
   display: block;
   margin-top: 8px;
-  color: var(--muted);
+  color: #e0e0dc;
   font-size: var(--caps-size);
   line-height: 1.25;
   text-transform: uppercase;
