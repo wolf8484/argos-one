@@ -2388,12 +2388,17 @@ document.addEventListener("click", (event) => {
       const form = document.querySelector("#problem-form");
       if (form) syncProblem(form);
       if (!validateAssessment(form)) return;
+      showTopProgressBar();
+      setButtonLoading(actionButton, "Saving…");
       return persistAssessment("repair").then(() => {
         state.repairReferenceEnabled = false;
         state.workflowUnlockedStep = 4;
         openRepairRecord();
         showToast("Assessment saved. Repair is ready to continue.");
-      }).catch((error) => showToast(error.message));
+      }).catch((error) => {
+        resetButtonLoading(actionButton);
+        showToast(error.message);
+      }).finally(() => hideTopProgressBar());
     }
     if (action === "add-photo") {
       const problemForm = document.querySelector("#problem-form");
@@ -2497,8 +2502,11 @@ document.addEventListener("click", (event) => {
     if (action === "close-sheet") return closeSheet();
     if (action === "web-research") return webResearchSheet();
     if (action === "log-fix") {
+      showTopProgressBar();
+      setButtonLoading(actionButton, "Saving…");
       state.repairReferenceEnabled = true;
       openRepairRecord();
+      hideTopProgressBar();
       return showToast("Selected repair reference saved to this job.");
     }
     if (action === "save-research") { closeSheet(); return showToast("Research notes saved with source links."); }
