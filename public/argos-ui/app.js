@@ -1254,11 +1254,11 @@ function renderResults() {
     </div>
 
     <section class="selected-repair-card" aria-live="polite" aria-labelledby="selected-repair-heading-label">
-      <span class="section-label result-section-label" id="selected-repair-heading-label">Selected repair · ${selected.rank}</span>
       <div class="selected-repair-top">
-        <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
-        <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
+        <span class="section-label result-section-label selected-repair-eyebrow${selected.rank === "01" ? " is-best" : ""}" id="selected-repair-heading-label">${selected.rank === "01" ? "Best match" : `Repair ${selected.rank}`}</span>
+        <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span></span>
       </div>
+      <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
       <div class="selected-repair-specs">${escapeHTML(specRows.join(" · "))}</div>
 
       ${selected.repairSummary ? `<div class="result-detail-section" aria-labelledby="repair-summary-label">

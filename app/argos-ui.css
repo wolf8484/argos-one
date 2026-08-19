@@ -2585,8 +2585,9 @@ button.journey-item:active {
 }
 
 .selected-repair-card {
-  padding: 20px 20px 20px 18px;
-  border-left: 2px solid var(--accent-fill);
+  padding: 20px;
+  border-top: 2px solid var(--accent-fill);
+  border-bottom: 2px solid var(--accent-fill);
   background: var(--surface-2);
 }
 
@@ -2595,14 +2596,19 @@ button.journey-item:active {
 }
 
 .selected-repair-top {
-  margin-top: 16px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
 }
 
-.selected-repair-top h2 {
+.selected-repair-eyebrow.is-best {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+#selected-repair-heading {
+  margin-top: 6px;
   font-size: 20px;
 }
 
@@ -2619,7 +2625,7 @@ button.journey-item:active {
 }
 
 .selected-repair-specs {
-  margin-top: 16px;
+  margin-top: 8px;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.4;
@@ -4283,16 +4289,7 @@ body.dictation-active .toast {
   }
 
   .selected-repair-card {
-    padding: 16px 16px 16px 14px;
-  }
-
-  .selected-repair-top {
-    display: block;
-  }
-
-  .selected-match-value {
-    display: block;
-    margin-top: 12px;
+    padding: 16px;
   }
 
   .repair-job-strip {
