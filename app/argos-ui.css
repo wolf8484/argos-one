@@ -2498,7 +2498,7 @@ button.journey-item:active {
 
 .match-option-best {
   color: var(--accent);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .match-option-score {
@@ -2604,7 +2604,7 @@ button.journey-item:active {
 
 .selected-repair-eyebrow.is-best {
   color: var(--accent);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 #selected-repair-heading {
