@@ -23,6 +23,7 @@ let repairAutosaveTimer;
 let repairAutosaveInFlight = false;
 let animateNextScreen = false;
 let pendingMatchCarouselRestore = null;
+let lastResearchResult = null;
 const photoGestureStates = new WeakMap();
 const assetBase = window.location.pathname.startsWith("/dashboard") ? "/argos-ui" : "";
 const isPersistedJobId = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ""));
@@ -2142,19 +2143,42 @@ async function priceSheet(partName, partKey = "") {
   }
 }
 
+function sourceDomain(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function renderResearchSourceList() {
+  const { sources, synthesis } = lastResearchResult;
+  openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
+      <div class="source-card internal"><span class="micro-label">AI synthesis with source citations</span><h3>Research summary</h3><p>${escapeHTML(synthesis || "No summary was returned.").replace(/\n/g, "<br>")}</p></div>
+      <div class="source-list">${sources.map((source, index) => `<button class="source-list-item" type="button" data-action="open-research-source" data-source-index="${index}"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></button>`).join("")}</div>
+      <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
+    </div>`);
+}
+
+function renderResearchSourceReader(index) {
+  const source = lastResearchResult.sources[index];
+  if (!source) return renderResearchSourceList();
+  openSheet(`<div class="sheet-head"><div class="sheet-head-with-back"><button class="icon-button" type="button" data-action="back-to-research-list" aria-label="Back to sources">${icon("back")}</button><div><span class="eyebrow"><strong>${escapeHTML(sourceDomain(source.url))}</strong>${source.date ? ` · ${escapeHTML(source.date)}` : ""}</span><h2>${escapeHTML(source.title)}</h2></div></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <div class="source-card internal"><p>${escapeHTML(source.snippet || "No preview text was returned for this source.")}</p></div>
+      <a class="secondary-button full" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${icon("globe")} Open original page</a>
+    </div>`);
+}
+
 async function webResearchSheet() {
   const vehicle = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
   const query = [state.complaint, state.notes].filter(Boolean).join(" ").slice(0, 450) || "diagnostic repair guidance";
   openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Searching repair sources…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Researching ${escapeHTML(vehicle)} and cross-checking sources</span></div></div>`);
   try {
     const result = await apiRequest("/api/research", { method: "POST", body: JSON.stringify({ jobId: state.currentJobId || undefined, query, vehicle, dtcs: state.dtcs, complaint: state.complaint, observations: state.notes }) });
-    const sources = Array.isArray(result.sources) ? result.sources : [];
-    openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
-      <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
-        <div class="source-card internal"><span class="micro-label">AI synthesis with source citations</span><h3>Research summary</h3><p>${escapeHTML(result.synthesis || "No summary was returned.").replace(/\n/g, "<br>")}</p></div>
-        ${sources.map((source, index) => `<a class="source-card" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer"><span class="micro-label">Source ${index + 1}${source.date ? ` · ${escapeHTML(source.date)}` : ""}</span><h3>${escapeHTML(source.title)}</h3><p>${escapeHTML(source.snippet || "Open source")}</p></a>`).join("")}
-        <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
-      </div>`);
+    lastResearchResult = { synthesis: result.synthesis, sources: Array.isArray(result.sources) ? result.sources : [] };
+    renderResearchSourceList();
   } catch (error) {
     openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
   }
@@ -2388,6 +2412,8 @@ document.addEventListener("click", (event) => {
       queueRepairAutosave();
       return showToast("Supplier offer and part saved to the repair record.");
     }
+    if (action === "open-research-source") return renderResearchSourceReader(Number(actionButton.dataset.sourceIndex));
+    if (action === "back-to-research-list") return renderResearchSourceList();
     if (action === "settings-info") return showToast("This preference will connect to the workshop profile.");
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
