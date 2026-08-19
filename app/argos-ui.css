@@ -1375,10 +1375,11 @@ button.journey-item:active {
 .repair-job-info strong {
   font-size: 20px;
   font-weight: 600;
+  margin-bottom: 8px;
 }
 
 .repair-job-info span {
-  margin-top: 4px;
+  margin-top: 2px;
   color: #c3c3c3;
   font-size: 16px;
 }
@@ -2506,7 +2507,7 @@ button.journey-item:active {
   align-items: center;
   gap: 8px;
   font-size: var(--caps-size);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -2517,7 +2518,7 @@ button.journey-item:active {
 
 .match-option-best {
   color: var(--accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .match-option-score {
@@ -2623,7 +2624,7 @@ button.journey-item:active {
 
 .selected-repair-eyebrow.is-best {
   color: var(--accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 #selected-repair-heading {
@@ -2642,7 +2643,7 @@ button.journey-item:active {
 }
 
 .selected-match-value.is-best {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .selected-match-value .percent-symbol {
