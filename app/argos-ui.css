@@ -2584,17 +2584,18 @@ button.journey-item:active {
   color: var(--accent);
 }
 
-.selected-repair {
-  margin-top: 0;
-}
-
-.selected-repair-box {
-  padding: 18px 18px 18px 16px;
+.selected-repair-card {
+  padding: 20px 20px 20px 18px;
   border-left: 2px solid var(--accent-fill);
   background: var(--surface-2);
 }
 
+.selected-repair-card > .result-detail-section {
+  margin-top: 32px;
+}
+
 .selected-repair-top {
+  margin-top: 16px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -2627,7 +2628,7 @@ button.journey-item:active {
 .repair-summary-box {
   padding: 20px;
   border: 0;
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 
 .repair-summary-box p {
@@ -2637,10 +2638,6 @@ button.journey-item:active {
 }
 
 .result-detail-section + .result-detail-section {
-  margin-top: 40px;
-}
-
-.result-detail-section + .selected-repair {
   margin-top: 40px;
 }
 
@@ -2657,8 +2654,7 @@ button.journey-item:active {
 }
 
 .parts-panel {
-  padding: 12px;
-  background: var(--surface-2);
+  padding: 0;
 }
 
 .parts-panel.always-visible {
@@ -4286,7 +4282,7 @@ body.dictation-active .toast {
     font-size: var(--copy-size);
   }
 
-  .selected-repair-box {
+  .selected-repair-card {
     padding: 16px 16px 16px 14px;
   }
 

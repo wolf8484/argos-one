@@ -1253,33 +1253,30 @@ function renderResults() {
       ${repairMatches.map((repair) => matchOption(repair, repair.id === selected.id)).join("")}
     </div>
 
-    <section class="result-detail-section" aria-labelledby="selected-repair-heading-label">
+    <section class="selected-repair-card" aria-live="polite" aria-labelledby="selected-repair-heading-label">
       <span class="section-label result-section-label" id="selected-repair-heading-label">Selected repair · ${selected.rank}</span>
-      <div class="selected-repair-box">
-        <div class="selected-repair-top">
-          <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
-          <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
-        </div>
-        <div class="selected-repair-specs">${escapeHTML(specRows.join(" · "))}</div>
+      <div class="selected-repair-top">
+        <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
+        <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
       </div>
-    </section>
-    <section class="selected-repair" aria-live="polite">
-      ${selected.repairSummary ? `<section class="result-detail-section" aria-labelledby="repair-summary-label">
+      <div class="selected-repair-specs">${escapeHTML(specRows.join(" · "))}</div>
+
+      ${selected.repairSummary ? `<div class="result-detail-section" aria-labelledby="repair-summary-label">
         <span class="section-label result-section-label" id="repair-summary-label">Repair summary <span class="optional-label">(AI-generated)</span></span>
         <div class="repair-summary-box"><p>${escapeHTML(selected.repairSummary)}</p></div>
-      </section>` : ""}
-      <section class="result-detail-section" aria-labelledby="work-performed-label">
+      </div>` : ""}
+      <div class="result-detail-section" aria-labelledby="work-performed-label">
         <span class="section-label result-section-label" id="work-performed-label">Work performed</span>
         <div class="repair-summary-box"><p>${escapeHTML(selected.workPerformed || "No work performed recorded.")}</p></div>
-      </section>
-      <section class="result-detail-section" aria-labelledby="verification-label">
+      </div>
+      <div class="result-detail-section" aria-labelledby="verification-label">
         <span class="section-label result-section-label" id="verification-label">Verification</span>
         <div class="repair-summary-box"><p>${escapeHTML(selected.verificationNotes || "No verification notes recorded.")}</p></div>
-      </section>
-      <section class="result-detail-section" aria-labelledby="parts-used-label">
+      </div>
+      <div class="result-detail-section" aria-labelledby="parts-used-label">
         <div class="parts-heading result-section-head"><span class="section-label" id="parts-used-label">Parts & consumables used</span><span class="parts-item-count">${selected.parts.length} items</span></div>
         <div class="parts-panel always-visible">${selected.parts.map(([name, number, key]) => partRow(name, number, key)).join("")}</div>
-      </section>
+      </div>
     </section>
     <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${icon("wrench")} Save & start repair</button><button class="web-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
   </section>`;
