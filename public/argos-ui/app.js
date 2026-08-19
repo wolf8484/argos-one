@@ -664,6 +664,14 @@ function queueRepairAutosave(delay = 900) {
   }, delay);
 }
 
+function syncTextFieldState(target) {
+  if (target.id === "complaint") state.complaint = target.value;
+  if (target.id === "notes") state.notes = target.value;
+  if (target.id === "repair-notes") state.repair.workNotes = target.value;
+  if (target.id === "repair-verification") state.repair.verificationNotes = target.value;
+  if (target.id === "repair-notes" || target.id === "repair-verification") queueRepairAutosave();
+}
+
 function enhanceWorkshopText(value) {
   const cleaned = String(value)
     .trim()
@@ -1202,12 +1210,12 @@ function renderProblem() {
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Customer complaint</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea><button class="see-original-button" type="button" data-see-original="complaint" hidden>See original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="complaint">${icon("sparkles")} AI enhance</button></div>
       </div>
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="notes">Initial observations <span class="optional-label">(optional)</span></label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>See original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
       </div>
       <div class="form-field repair-dtc-field">
@@ -1301,7 +1309,7 @@ function renderRepairRecord() {
     <form id="repair-form" class="repair-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
-        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>See original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -1313,7 +1321,7 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>See original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
       </div>
 
@@ -2389,12 +2397,24 @@ document.addEventListener("click", (event) => {
     return startDictation(dictate, target);
   }
 
+  const seeOriginal = event.target.closest("[data-see-original]");
+  if (seeOriginal) {
+    const target = document.querySelector(`#${seeOriginal.dataset.seeOriginal}`);
+    if (!target || target.dataset.aiOriginal === undefined) return;
+    target.value = target.dataset.aiOriginal;
+    delete target.dataset.aiOriginal;
+    syncTextFieldState(target);
+    seeOriginal.hidden = true;
+    return;
+  }
+
   const enhancer = event.target.closest("[data-enhance]");
   if (enhancer) {
     const target = document.querySelector(`#${enhancer.dataset.enhance}`);
     if (!target) return;
     if (!target.value.trim()) return showToast("Type or dictate first.");
     const fieldShell = target.closest(".text-field-shell");
+    const seeOriginalButton = fieldShell?.querySelector("[data-see-original]");
     clearTimeout(enhancer.enhanceTimer);
     fieldShell?.classList.remove("is-ai-tracing");
     if (fieldShell) void fieldShell.offsetWidth;
@@ -2402,16 +2422,16 @@ document.addEventListener("click", (event) => {
     enhancer.classList.add("is-enhancing");
     enhancer.innerHTML = `${icon("sparkles")} Enhancing…`;
     const field = target.id === "complaint" ? "complaint" : target.id === "notes" ? "observations" : target.id === "repair-verification" ? "verification" : "work_performed";
+    const originalText = target.value;
     apiRequest("/api/ai/enhance", { method: "POST", body: JSON.stringify({ text: target.value, field }) }).then((result) => {
       target.value = result.text;
-      if (target.id === "complaint") state.complaint = target.value;
-      if (target.id === "notes") state.notes = target.value;
-      if (target.id === "repair-notes") state.repair.workNotes = target.value;
-      if (target.id === "repair-verification") state.repair.verificationNotes = target.value;
-      if (target.id === "repair-notes" || target.id === "repair-verification") queueRepairAutosave();
+      target.dataset.aiOriginal = originalText;
+      if (seeOriginalButton) seeOriginalButton.hidden = false;
+      syncTextFieldState(target);
       showToast("Text enhanced for clarity — review before continuing.");
     }).catch((error) => {
       target.value = enhanceWorkshopText(target.value);
+      syncTextFieldState(target);
       showToast(`${error.message}. Basic cleanup applied locally.`);
     }).finally(() => {
       enhancer.classList.remove("is-enhancing");
