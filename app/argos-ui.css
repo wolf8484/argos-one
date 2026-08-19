@@ -2144,7 +2144,6 @@ button.journey-item:active {
   gap: 8px;
   min-width: 0;
   height: 116px;
-  padding: 8px;
   overflow-x: auto;
   overflow-y: hidden;
   background: var(--surface-2);
@@ -4683,7 +4682,6 @@ body.dictation-active .toast {
     max-width: none;
     margin-right: calc(var(--gutter) * -1);
     margin-left: calc(var(--gutter) * -1);
-    padding-right: var(--gutter);
     padding-left: var(--gutter);
     scroll-padding-left: var(--gutter);
     overflow-x: auto;

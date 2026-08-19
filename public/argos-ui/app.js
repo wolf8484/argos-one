@@ -936,7 +936,7 @@ function scrollJourneyIntoView() {
   const currentStep = Number(current.dataset.journeyStep);
   if (currentStep <= 1) journey.scrollLeft = 0;
   else if (currentStep === 2) journey.scrollLeft = current.offsetLeft;
-  else journey.scrollLeft = journey.scrollWidth;
+  else journey.scrollLeft = current.offsetLeft + current.offsetWidth - journey.clientWidth;
 }
 
 function scrollToNextView() {
