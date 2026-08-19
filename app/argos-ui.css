@@ -708,7 +708,7 @@ main:focus {
   display: block;
   color: #e0e0dc;
   font-size: var(--caps-size);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
   text-transform: uppercase;
