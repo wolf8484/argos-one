@@ -2618,9 +2618,6 @@ button.journey-item:active {
 }
 
 .selected-repair-specs {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   margin-top: 16px;
   color: var(--muted-strong);
   font-size: var(--copy-size);

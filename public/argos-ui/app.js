@@ -1260,7 +1260,7 @@ function renderResults() {
           <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
           <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span> match</span>
         </div>
-        <div class="selected-repair-specs">${specRows.map((row) => `<span>${row}</span>`).join("")}</div>
+        <div class="selected-repair-specs">${escapeHTML(specRows.join(" · "))}</div>
       </div>
     </section>
     <section class="selected-repair" aria-live="polite">
