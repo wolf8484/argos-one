@@ -2636,7 +2636,7 @@ button.journey-item:active {
 .repair-summary-box p {
   color: var(--text);
   font-size: var(--copy-size);
-  line-height: 1.45;
+  line-height: 1.6;
 }
 
 .result-detail-section + .result-detail-section {
