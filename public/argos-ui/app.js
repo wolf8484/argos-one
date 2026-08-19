@@ -312,6 +312,7 @@ const icons = {
   steeringWheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5v4.3M6.9 15.3l3.4-2.1M17.1 15.3l-3.4-2.1"/>',
   car: '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  externalLink: '<path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/><path d="M14 3h7v7"/><path d="M10 14 21 3"/>',
 };
 
 const filledIcons = {
@@ -2177,7 +2178,9 @@ function formatResearchSynthesisLine(line, sourceCount) {
   return bolded.replace(/\[(\d+)\]/g, (match, num) => {
     const index = Number(num) - 1;
     if (index < 0 || index >= sourceCount) return match;
-    return `<button class="citation-link" type="button" data-action="open-research-source" data-source-index="${index}">[${num}]</button>`;
+    const source = lastResearchResult && lastResearchResult.sources[index];
+    if (!source) return match;
+    return `<a class="citation-link" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">[${num}]</a>`;
   });
 }
 
@@ -2222,18 +2225,8 @@ function renderResearchSourceList() {
   openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
       <details class="source-card internal synthesis-accordion"><summary class="micro-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
-      <div class="source-list">${sources.map((source, index) => `<button class="source-list-item" type="button" data-action="open-research-source" data-source-index="${index}"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></button>`).join("")}</div>
+      <div class="source-list">${sources.map((source) => `<a class="source-list-item" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer"><span class="source-list-main"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></span><span class="source-list-external" aria-hidden="true">${icon("externalLink")}</span></a>`).join("")}</div>
       <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
-    </div>`);
-}
-
-function renderResearchSourceReader(index) {
-  const source = lastResearchResult.sources[index];
-  if (!source) return renderResearchSourceList();
-  openSheet(`<div class="sheet-head"><div class="sheet-head-with-back"><button class="icon-button" type="button" data-action="back-to-research-list" aria-label="Back to sources">${icon("back")}</button><div><span class="eyebrow"><strong>${escapeHTML(sourceDomain(source.url))}</strong>${source.date ? ` · ${escapeHTML(source.date)}` : ""}</span><h2>${escapeHTML(source.title)}</h2></div></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
-    <div class="sheet-body">
-      <div class="source-card internal"><p>${escapeHTML(source.snippet || "No preview text was returned for this source.")}</p></div>
-      <a class="secondary-button full" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer">${icon("globe")} Open original page</a>
     </div>`);
 }
 
@@ -2478,8 +2471,6 @@ document.addEventListener("click", (event) => {
       queueRepairAutosave();
       return showToast("Supplier offer and part saved to the repair record.");
     }
-    if (action === "open-research-source") return renderResearchSourceReader(Number(actionButton.dataset.sourceIndex));
-    if (action === "back-to-research-list") return renderResearchSourceList();
     if (action === "settings-info") return showToast("This preference will connect to the workshop profile.");
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
