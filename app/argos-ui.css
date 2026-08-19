@@ -1182,12 +1182,24 @@ main:focus {
 }
 
 .task-context {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
   color: #e0e0dc;
   font-size: var(--caps-size);
   line-height: 1.25;
   text-transform: uppercase;
+}
+
+.task-context svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.task-context span {
+  min-width: 0;
 }
 
 .task-header-copy h1 {
@@ -2630,6 +2642,28 @@ button.journey-item:active {
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.4;
+}
+
+.selected-repair-spec-line,
+.selected-repair-date-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-repair-spec-line span,
+.selected-repair-date-line span {
+  min-width: 0;
+}
+
+.selected-repair-date-line {
+  margin-top: 4px;
+}
+
+.selected-repair-specs svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .repair-summary-box {

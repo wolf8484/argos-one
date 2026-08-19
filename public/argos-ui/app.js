@@ -308,6 +308,8 @@ const icons = {
   sparkles: '<path d="m12 2 1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4Z"/><path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8Z"/><path d="m5 14 .8 1.7 1.7.8-1.7.8L5 19l-.8-1.7-1.7-.8 1.7-.8Z"/>',
   send: '<path d="m3 11 18-8-8 18-2-7Z"/><path d="m11 14 10-11"/>',
   book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5V5.5Z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5V5.5Z"/>',
+  steeringWheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5v4.3M6.9 15.3l3.4-2.1M17.1 15.3l-3.4-2.1"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
 };
 
 const filledIcons = {
@@ -940,7 +942,8 @@ function vehicleName() {
 }
 
 function vehicleMoustache() {
-  return [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
+  const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
+  return specs ? `${icon("steeringWheel")}<span>${specs}</span>` : "";
 }
 
 function resultsTaskHeader() {
@@ -1242,8 +1245,9 @@ function renderResults() {
   const specRows = [
     [selected.trim, selected.drivetrain],
     [selected.engine, selected.transmission],
-    [selected.mileageLabel, selected.repairedDateLabel ? `Repaired ${selected.repairedDateLabel}` : ""],
+    [selected.mileageLabel],
   ].map((parts) => parts.filter(Boolean).join(" · ")).filter(Boolean);
+  const repairedLabel = selected.repairedDateLabel ? `Repaired ${selected.repairedDateLabel}` : "";
   const repairCountClass = repairMatches.length === 1 ? "has-one" : repairMatches.length === 2 ? "has-two" : "has-many";
   app.innerHTML = `<section class="screen workflow-shell">
     ${resultsTaskHeader()}
@@ -1259,7 +1263,10 @@ function renderResults() {
         <span class="selected-match-value">${selectedPercent}<span class="percent-symbol">%</span></span>
       </div>
       <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
-      <div class="selected-repair-specs">${escapeHTML(specRows.join(" · "))}</div>
+      <div class="selected-repair-specs">
+        ${specRows.length ? `<span class="selected-repair-spec-line">${icon("steeringWheel")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
+        ${repairedLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(repairedLabel)}</span></span>` : ""}
+      </div>
 
       ${selected.repairSummary ? `<div class="result-detail-section" aria-labelledby="repair-summary-label">
         <span class="section-label result-section-label" id="repair-summary-label">Repair summary <span class="optional-label">(AI-generated)</span></span>
