@@ -2143,6 +2143,45 @@ async function priceSheet(partName, partKey = "") {
   }
 }
 
+function markdownTableToBullets(text) {
+  const lines = text.split("\n");
+  const out = [];
+  let i = 0;
+  const isTableRow = (line) => /^\s*\|.*\|\s*$/.test(line);
+  const isSeparatorRow = (line) => /^\s*\|?[\s:|-]+\|?\s*$/.test(line);
+  const cellsOf = (line) => line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim()).filter(Boolean);
+  while (i < lines.length) {
+    if (isTableRow(lines[i])) {
+      const tableLines = [];
+      while (i < lines.length && isTableRow(lines[i])) {
+        tableLines.push(lines[i]);
+        i += 1;
+      }
+      const rows = tableLines.filter((line) => !isSeparatorRow(line));
+      rows.slice(1).forEach((row) => {
+        const cells = cellsOf(row);
+        if (cells.length) out.push(`- ${cells.join(" — ")}`);
+      });
+      continue;
+    }
+    out.push(lines[i]);
+    i += 1;
+  }
+  return out.join("\n");
+}
+
+function formatResearchSynthesis(rawText, sourceCount) {
+  const withBullets = markdownTableToBullets(rawText || "");
+  const escaped = escapeHTML(withBullets);
+  const bolded = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  const linked = bolded.replace(/\[(\d+)\]/g, (match, num) => {
+    const index = Number(num) - 1;
+    if (index < 0 || index >= sourceCount) return match;
+    return `<button class="citation-link" type="button" data-action="open-research-source" data-source-index="${index}">[${num}]</button>`;
+  });
+  return linked.replace(/\n{2,}/g, "<br><br>").replace(/\n/g, "<br>");
+}
+
 function sourceDomain(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -2155,7 +2194,7 @@ function renderResearchSourceList() {
   const { sources, synthesis } = lastResearchResult;
   openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
-      <div class="source-card internal"><span class="micro-label">AI synthesis with source citations</span><h3>Research summary</h3><p>${escapeHTML(synthesis || "No summary was returned.").replace(/\n/g, "<br>")}</p></div>
+      <div class="source-card internal"><span class="micro-label">AI synthesis with source citations</span><h3>Research summary</h3><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></div>
       <div class="source-list">${sources.map((source, index) => `<button class="source-list-item" type="button" data-action="open-research-source" data-source-index="${index}"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></button>`).join("")}</div>
       <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
     </div>`);

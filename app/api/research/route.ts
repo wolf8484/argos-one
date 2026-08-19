@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'openai/gpt-oss-120b', temperature: 0.1, max_completion_tokens: 1200,
         messages: [
-          { role: 'system', content: 'You are assisting a qualified automotive technician. Summarize only the supplied search extracts. Clearly distinguish likely diagnostic directions from confirmed facts, mention safety-critical uncertainty, tell the mechanic to verify against official service information, and cite source numbers in square brackets. Never invent torque values, procedures, part fitment or diagnoses.' },
+          { role: 'system', content: 'You are assisting a qualified automotive technician. Summarize only the supplied search extracts. Clearly distinguish likely diagnostic directions from confirmed facts, mention safety-critical uncertainty, tell the mechanic to verify against official service information, and cite source numbers in square brackets like [1] inline in the prose. Write in short paragraphs and "- " bullet points only. Never use markdown tables or pipe characters. Never invent torque values, procedures, part fitment or diagnoses.' },
           { role: 'user', content: `Vehicle: ${input.vehicle || 'not supplied'}\nDTCs: ${input.dtcs.join(', ') || 'none supplied'}\nComplaint: ${input.complaint || 'not supplied'}\nObservations: ${input.observations || 'not supplied'}\nResearch request: ${input.query}\n\nSearch extracts:\n${sourceText || 'No results'}` },
         ],
       }),
