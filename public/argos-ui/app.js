@@ -2453,6 +2453,22 @@ document.addEventListener("input", (event) => {
     queueRepairAutosave();
     return;
   }
+  if (event.target.matches('input[name="mileage"]')) {
+    const digitsBeforeCursor = event.target.value.slice(0, event.target.selectionStart).replace(/[^0-9]/g, "").length;
+    const digits = event.target.value.replace(/[^0-9]/g, "");
+    const formatted = digits ? Number(digits).toLocaleString("en-AU") : "";
+    event.target.value = formatted;
+    let cursor = formatted.length;
+    let seen = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/[0-9]/.test(formatted[i])) seen++;
+      if (seen === digitsBeforeCursor) { cursor = i + 1; break; }
+    }
+    if (digitsBeforeCursor === 0) cursor = 0;
+    event.target.setSelectionRange(cursor, cursor);
+    state.vehicle.mileage = formatted;
+    return;
+  }
   if (event.target.matches("#vin")) {
     event.target.value = event.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "");
     state.vehicle.vin = event.target.value;
