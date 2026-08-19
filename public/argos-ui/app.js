@@ -1216,8 +1216,8 @@ function renderProblem() {
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Customer complaint</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea><button class="see-original-button" type="button" data-see-original="complaint" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="complaint">${icon("sparkles")} AI enhance</button></div>
+        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea></div>
+        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button></div>
       </div>
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="notes">Initial observations <span class="optional-label">(optional)</span></label></div>
@@ -2222,7 +2222,7 @@ function sourceDomain(url) {
 
 function renderResearchSourceList() {
   const { sources, synthesis } = lastResearchResult;
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span><h2>Web repair tips</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>Web repair tips</h2><span class="eyebrow eyebrow-below"><strong>External research</strong> · ${sources.length} source${sources.length === 1 ? "" : "s"}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
       <details class="source-card internal synthesis-accordion"><summary class="micro-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
       <div class="source-list">${sources.map((source) => `<a class="source-list-item" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer"><span class="source-list-main"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></span><span class="source-list-external" aria-hidden="true">${icon("externalLink")}</span></a>`).join("")}</div>
