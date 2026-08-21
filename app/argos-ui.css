@@ -2163,12 +2163,13 @@ button.journey-item:active {
 .quick-chip,
 .filter-button {
   min-height: 52px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 1px solid var(--line-strong);
   border-radius: 0;
-  background: transparent;
+  background: 0 0;
   color: var(--muted-strong);
   font-size: var(--copy-size);
+  font-weight: 500;
 }
 
 .quick-chip.caps-text {
@@ -2326,10 +2327,11 @@ button.journey-item:active {
   align-items: center;
   justify-content: center;
   min-height: 56px;
-  padding: 0 18px;
+  padding: 0 16px;
   gap: 8px;
   border-radius: 0;
   font-size: var(--copy-size);
+  font-weight: 500;
   text-align: center;
 }
 
@@ -2367,6 +2369,7 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 16px;
   border-color: var(--secondary-border);
+  font-weight: 500;
 }
 
 .view-all-button svg {
