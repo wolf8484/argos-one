@@ -332,4 +332,105 @@ export class WorkshopRepository {
     if (jobError) throw jobError
     return this.getJob(jobId)
   }
+
+  async listVehicleProfiles() {
+    const { data, error } = await this.supabase.rpc('list_vehicle_profiles')
+    if (error) throw error
+    return data ?? []
+  }
+
+  async getVehicleProfile(profileId: string) {
+    const { data: profile, error: profileError } = await this.supabase
+      .from('vehicle_profiles')
+      .select('id,make,model,created_at,updated_at')
+      .eq('id', profileId)
+      .single()
+    if (profileError) throw profileError
+
+    const [notes, insights, repairs] = await Promise.all([
+      this.listProfileNotes(profileId),
+      this.getProfileMileageInsights(profileId),
+      this.listProfileRepairs(profileId),
+    ])
+    return { profile, notes, insights, repairs }
+  }
+
+  async listProfileNotes(profileId: string) {
+    const { data, error } = await this.supabase
+      .from('vehicle_profile_notes')
+      .select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,author:profiles(id,full_name)')
+      .eq('profile_id', profileId)
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (error) throw error
+    return data ?? []
+  }
+
+  async getProfileMileageInsights(profileId: string) {
+    const { data, error } = await this.supabase.rpc('vehicle_profile_mileage_insights', {
+      target_profile_id: profileId,
+    })
+    if (error) throw error
+    return data ?? []
+  }
+
+  async listProfileRepairs(profileId: string) {
+    const { data, error } = await this.supabase
+      .from('jobs')
+      .select(`id,status,complaint,observations,summary,resolved_at,updated_at,
+        vehicle:vehicles!inner(id,year,make,model,trim,engine,drivetrain,transmission,mileage,profile_id),
+        dtcs:job_dtc_codes(code,description),
+        repair:repair_records!repair_records_job_id_fkey(id,cause,work_performed,verification_notes,verified,updated_at)`)
+      .eq('vehicle.profile_id', profileId)
+      .eq('status', 'resolved')
+      .order('resolved_at', { ascending: false, nullsFirst: false })
+      .limit(100)
+    if (error) throw error
+    return data ?? []
+  }
+
+  async addProfileNote(profileId: string, input: {
+    body: string
+    vehicleYear?: number | null
+    vehicleTrim?: string | null
+    vehicleTransmission?: string | null
+    vehicleMileage?: number | null
+    sourceJobId?: string | null
+  }) {
+    const { data, error } = await this.supabase.from('vehicle_profile_notes').insert({
+      shop_id: this.profile.shop_id,
+      profile_id: profileId,
+      body: input.body,
+      vehicle_year: input.vehicleYear ?? null,
+      vehicle_trim: input.vehicleTrim || null,
+      vehicle_transmission: input.vehicleTransmission || null,
+      vehicle_mileage: input.vehicleMileage ?? null,
+      source_job_id: input.sourceJobId || null,
+      created_by: this.profile.id,
+    }).select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,author:profiles(id,full_name)').single()
+    if (error) throw error
+    return data
+  }
+
+  async deleteProfileNote(profileId: string, noteId: string) {
+    const { error } = await this.supabase
+      .from('vehicle_profile_notes')
+      .delete()
+      .eq('id', noteId)
+      .eq('profile_id', profileId)
+    if (error) throw error
+  }
+
+  // Resolves the profile bucket for an ad-hoc vehicle identity so a note can be
+  // filed before that car has ever been through the shop.
+  async resolveVehicleProfile(input: { make: string; model: string }) {
+    const { data, error } = await this.supabase.rpc('ensure_vehicle_profile', {
+      target_shop_id: this.profile.shop_id,
+      target_make: input.make,
+      target_model: input.model,
+      target_created_by: this.profile.id,
+    })
+    if (error) throw error
+    return data as string | null
+  }
 }

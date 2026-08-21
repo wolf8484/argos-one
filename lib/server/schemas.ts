@@ -12,10 +12,13 @@ export const vehicleSchema = z.object({
   make: z.string().trim().min(1).max(100),
   model: z.string().trim().min(1).max(100),
   mileage: z.coerce.number().int().min(0).nullable().optional(),
-  engine: z.string().trim().max(120).nullable().optional(),
-  trim: z.string().trim().max(120).nullable().optional(),
-  drivetrain: z.string().trim().max(120).nullable().optional(),
-  transmission: z.string().trim().max(120).nullable().optional(),
+  // Trim/engine/drivetrain/transmission are mandatory: the repair library
+  // filters a car profile's history by these, so a vehicle saved without
+  // them is invisible to that filter and pools into an "unspecified" bucket.
+  engine: z.string().trim().min(1).max(120),
+  trim: z.string().trim().min(1).max(120),
+  drivetrain: z.string().trim().min(1).max(120),
+  transmission: z.string().trim().min(1).max(120),
   bodyStyle: z.string().trim().max(120).nullable().optional(),
   fuelType: z.string().trim().max(120).nullable().optional(),
 })
@@ -91,4 +94,18 @@ export const catalogResearchSchema = z.object({
   make: z.string().trim().min(1).max(100),
   model: z.string().trim().min(1).max(100),
   year: z.number().int().min(1886).max(2200).optional(),
+})
+
+export const profileNoteSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+  vehicleYear: z.number().int().min(1886).max(2200).nullable().optional(),
+  vehicleTrim: z.string().trim().max(120).nullable().optional(),
+  vehicleTransmission: z.string().trim().max(120).nullable().optional(),
+  vehicleMileage: z.number().int().min(0).nullable().optional(),
+  sourceJobId: z.string().uuid().nullable().optional(),
+})
+
+export const resolveProfileSchema = z.object({
+  make: z.string().trim().min(1).max(100),
+  model: z.string().trim().min(1).max(100),
 })

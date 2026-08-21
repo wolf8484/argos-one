@@ -4740,3 +4740,131 @@ body.dictation-active .toast {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Car profile ------------------------------------------------------------
+   The profile splits into two tabs so a growing repair history never pushes
+   the notes and mileage insights off the screen. Quick note capture sits
+   above the tab panels so it stays reachable from either tab. */
+
+.profile-tabs {
+  margin-bottom: 24px;
+}
+
+.profile-tabs .quick-chip {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.profile-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 16px;
+  background: var(--surface-2);
+}
+
+.profile-note-form .form-field {
+  margin: 0;
+}
+
+.profile-note-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-note-actions .dictate-button {
+  flex: 0 0 auto;
+}
+
+.profile-note-actions .primary-button {
+  flex: 1 1 auto;
+  min-height: 52px;
+}
+
+.profile-note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 40px;
+  background: var(--line);
+}
+
+.profile-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--surface-2);
+}
+
+.profile-note-body {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--copy-size);
+  line-height: 1.45;
+}
+
+.profile-note-specifics,
+.profile-note-byline {
+  color: var(--muted);
+  font-size: var(--caps-size);
+}
+
+.profile-insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 40px;
+  background: var(--line);
+}
+
+.profile-insight {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--surface-2);
+}
+
+.profile-insight-range {
+  color: var(--heading);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.profile-insight-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-insight-items li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+  font-size: var(--copy-size);
+}
+
+.profile-insight-items strong {
+  color: var(--muted-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-empty {
+  margin: 0 0 40px;
+  padding: 16px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 1.45;
+}
+
+.profile-variant-filters {
+  margin-bottom: 16px;
+}

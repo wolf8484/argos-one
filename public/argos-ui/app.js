@@ -36,6 +36,14 @@ const state = {
   jobFilter: "all",
   jobSearch: "",
   librarySearch: "",
+  libraryProfiles: [],
+  libraryStatus: "loading",
+  activeProfile: null,
+  activeProfileId: null,
+  profileTab: "notes",
+  profileStatus: "idle",
+  profileNoteDraft: "",
+  profileVariantFilter: "all",
   currentJobId: null,
   backendStatus: "loading",
   catalog: { makes: [], models: [], variants: [] },
@@ -517,10 +525,10 @@ function specFieldHtml(field, label, placeholder, fallbackOptions) {
   const value = state.vehicle[field] || "";
   const options = specOptions(field);
   const asSelect = (opts) =>
-    `<label class="form-field"><span class="field-label">${label}</span><span class="select-control"><select class="select${value ? "" : " is-placeholder"}" name="${field}" aria-label="${label}"><option value=""${value ? "" : " selected"}></option>${opts.map((option) => `<option${value === option ? " selected" : ""}>${escapeHTML(option)}</option>`).join("")}</select>${icon("down")}</span></label>`;
+    `<label class="form-field"><span class="field-label">${label}</span><span class="select-control"><select class="select${value ? "" : " is-placeholder"}" name="${field}" required aria-label="${label}"><option value=""${value ? "" : " selected"}></option>${opts.map((option) => `<option${value === option ? " selected" : ""}>${escapeHTML(option)}</option>`).join("")}</select>${icon("down")}</span></label>`;
   if (options.length > 1) return asSelect(options);
   if (options.length === 0 && fallbackOptions && fallbackOptions.length) return asSelect(fallbackOptions);
-  return `<label class="form-field"><span class="field-label">${label}</span><input class="input" name="${field}" value="${escapeHTML(value)}" placeholder="${placeholder}" /></label>`;
+  return `<label class="form-field"><span class="field-label">${label}</span><input class="input" name="${field}" value="${escapeHTML(value)}" placeholder="${placeholder}" required /></label>`;
 }
 
 async function loadBackendData() {
@@ -544,6 +552,7 @@ async function loadBackendData() {
     state.activeJobId = rememberedJob?.id || null;
     state.currentJobId = rememberedJob?.id || null;
     state.backendStatus = "connected";
+    await loadLibraryProfiles();
   } catch (error) {
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
   }
@@ -861,7 +870,8 @@ function updateNavigation() {
   document.querySelectorAll(".nav-item, .nav-new").forEach((item) => {
     const isActive = item.dataset.route === state.route
       || (item.dataset.route === "new" && state.route === "repair")
-      || (item.dataset.route === "jobs" && state.route === "resolved");
+      || (item.dataset.route === "jobs" && state.route === "resolved")
+      || (item.dataset.route === "knowledge" && state.route === "car-profile");
     item.classList.toggle("is-active", isActive);
   });
 }
@@ -1013,7 +1023,7 @@ function renderHome() {
   const resolvedJobs = jobRecords.filter((job) => job.status === "resolved");
   const allJobsCount = jobRecords.length;
   const activeJob = jobRecords.find((job) => job.id === state.activeJobId && job.status === "open");
-  const repairLibraryCount = libraryRecords.length;
+  const repairLibraryCount = state.libraryProfiles.length;
   const resumeTitle = "Resume job";
   const resumeTile = activeJob
     ? `<button type="button" class="control-tile" data-action="open-job" data-job-id="${activeJob.id}" aria-label="${resumeTitle} for ${jobVehicleName(activeJob)}">
@@ -1046,7 +1056,7 @@ function renderHome() {
       </button>
       <button type="button" class="control-tile" data-route="knowledge">
         <span class="tile-icon">${icon("database")}</span>
-        <span class="tile-copy"><strong>Repair library</strong><small>${repairLibraryCount} ${repairLibraryCount === 1 ? "item" : "items"}</small></span>
+        <span class="tile-copy"><strong>Repair library</strong><small>${repairLibraryCount} ${repairLibraryCount === 1 ? "car profile" : "car profiles"}</small></span>
       </button>
     </div>
 
@@ -1112,38 +1122,274 @@ function renderJobs() {
   </section>`;
 }
 
-const libraryRecords = [
-  { vehicle: "Volvo V60 / XC60", issue: "P0171 · PCV diaphragm / breather hose", meta: "22 reuses", score: "92%" },
-  { vehicle: "Ford F-150 3.5L", issue: "P0300 · coil pack heat failure", meta: "18 reuses", score: "88%" },
-];
+// ---------------------------------------------------------------------------
+// Repair library: car profiles
+//
+// A profile is a car bucket (make + model + generation/engine). Every note and
+// repair filed under it keeps its own year, trim, transmission and mileage, so
+// the bucket stays dense enough to be worth opening without losing detail.
+// ---------------------------------------------------------------------------
 
-function librarySearchText(record) {
-  return [record.vehicle, record.issue, record.meta, record.score].join(" ").toLowerCase();
+function profileName(profile) {
+  return [profile.make, profile.model].filter(Boolean).join(" ").trim() || "Unknown vehicle";
 }
 
-function libraryCard(record, { hidden = false } = {}) {
-  return `<article class="job-card library-result-card" data-library-search="${escapeHTML(librarySearchText(record))}"${hidden ? " hidden" : ""}>
-    <span class="job-card-main"><span class="job-status-row"><span class="status-chip resolved">Verified repair</span><span class="job-bay">${record.meta}</span><span class="job-time">${record.score}</span></span><span class="job-vehicle">${record.vehicle}</span><span class="job-issue">${record.issue}</span></span>
+function profileSearchText(profile) {
+  return [profile.make, profile.model].filter(Boolean).join(" ").toLowerCase();
+}
+
+// A profile is Make+Model only; trim/engine live on the vehicles/repairs
+// inside it and are surfaced as a filter in Repair history, not a profile
+// attribute.
+function repairVariantKey(job) {
+  const vehicle = relatedRecord(job.vehicle) || {};
+  return [vehicle.trim || "", vehicle.engine || ""].join("|");
+}
+
+function repairVariantLabel(job) {
+  const vehicle = relatedRecord(job.vehicle) || {};
+  return [vehicle.trim, vehicle.engine].filter(Boolean).join(" · ") || "Unspecified";
+}
+
+function profileVariantOptions(repairs) {
+  const seen = new Map();
+  repairs.forEach((job) => {
+    const key = repairVariantKey(job);
+    if (!seen.has(key)) seen.set(key, { key, label: repairVariantLabel(job), count: 0 });
+    seen.get(key).count += 1;
+  });
+  return Array.from(seen.values()).sort((a, b) => b.count - a.count);
+}
+
+function formatKilometres(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  return `${Math.round(number).toLocaleString("en-AU")} km`;
+}
+
+function formatShortDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function profileCard(profile, { hidden = false } = {}) {
+  const repairs = Number(profile.repair_count || 0);
+  const notes = Number(profile.note_count || 0);
+  return `<button class="job-card library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
+    <span class="job-card-main">
+      <span class="job-status-row">
+        <span class="job-bay">${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
+        <span class="job-time">${notes} ${notes === 1 ? "note" : "notes"}</span>
+      </span>
+      <span class="job-vehicle">${escapeHTML(profileName(profile))}</span>
+    </span>
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
-  </article>`;
+  </button>`;
 }
 
 function renderKnowledge() {
   const normalizedSearch = state.librarySearch.trim().toLowerCase();
-  const hasSearchResults = !normalizedSearch || libraryRecords.some((record) => librarySearchText(record).includes(normalizedSearch));
+  const profiles = state.libraryProfiles;
+  const hasSearchResults = !normalizedSearch || profiles.some((profile) => profileSearchText(profile).includes(normalizedSearch));
+  const totalRepairs = profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
+  const totalNotes = profiles.reduce((sum, profile) => sum + Number(profile.note_count || 0), 0);
   app.innerHTML = `<section class="screen workflow-shell">
     <div class="page-header"><div><h1>Repair library</h1></div></div>
     <label class="form-field jobs-search-field" for="library-search">
-      <span class="field-label">Search repairs</span>
-      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="library-search" type="search" value="${escapeHTML(state.librarySearch)}" placeholder="Vehicle, code, part or repair" autocomplete="off" /></span>
+      <span class="field-label">Search cars</span>
+      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="library-search" type="search" value="${escapeHTML(state.librarySearch)}" placeholder="Make, model, engine" autocomplete="off" /></span>
     </label>
-    <div class="stat-grid"><div class="stat"><span class="stat-value">86%</span><span class="stat-label">Fix verified</span></div><div class="stat"><span class="stat-value">312</span><span class="stat-label">Models</span></div><div class="stat"><span class="stat-value">48</span><span class="stat-label">Techs</span></div></div>
-    <div class="section-heading"><div><span class="section-label">Most reused</span><h2>This month</h2></div></div>
-    <div class="job-list">
-      ${libraryRecords.map((record) => libraryCard(record, { hidden: Boolean(normalizedSearch && !librarySearchText(record).includes(normalizedSearch)) })).join("")}
+    <div class="stat-grid">
+      <div class="stat"><span class="stat-value">${profiles.length}</span><span class="stat-label">Car profiles</span></div>
+      <div class="stat"><span class="stat-value">${totalRepairs}</span><span class="stat-label">Verified repairs</span></div>
+      <div class="stat"><span class="stat-value">${totalNotes}</span><span class="stat-label">Shop notes</span></div>
     </div>
-    <div class="jobs-empty library-empty"${hasSearchResults ? " hidden" : ""} role="status">No repairs match your search.</div>
+    <div class="section-heading"><div><span class="section-label">Cars in the library</span><h2>Most recent first</h2></div></div>
+    <div class="job-list">
+      ${profiles.map((profile) => profileCard(profile, { hidden: Boolean(normalizedSearch && !profileSearchText(profile).includes(normalizedSearch)) })).join("")}
+    </div>
+    ${profiles.length === 0 && state.libraryStatus !== "loading" ? `<div class="jobs-empty library-zero-state" role="status">No cars in the library yet. Profiles are created automatically as jobs come through the shop.</div>` : ""}
+    <div class="jobs-empty library-empty"${hasSearchResults || profiles.length === 0 ? " hidden" : ""} role="status">No cars match your search.</div>
   </section>`;
+}
+
+function profileNoteCard(note) {
+  const specifics = [
+    note.vehicle_year ? String(note.vehicle_year) : "",
+    note.vehicle_trim || "",
+    note.vehicle_transmission || "",
+    note.vehicle_mileage ? formatKilometres(note.vehicle_mileage) : "",
+  ].filter(Boolean).join(" · ");
+  const author = relatedRecord(note.author)?.full_name || "";
+  const byline = [author, formatShortDate(note.created_at)].filter(Boolean).join(" · ");
+  return `<article class="profile-note">
+    <p class="profile-note-body">${escapeHTML(note.body)}</p>
+    ${specifics ? `<span class="profile-note-specifics">${escapeHTML(specifics)}</span>` : ""}
+    <span class="profile-note-byline">${escapeHTML(byline)}</span>
+  </article>`;
+}
+
+function profileInsightGroups(insights) {
+  const groups = new Map();
+  insights.forEach((row) => {
+    const key = `${row.bucket_start}`;
+    if (!groups.has(key)) groups.set(key, { start: row.bucket_start, end: row.bucket_end, rows: [] });
+    groups.get(key).rows.push(row);
+  });
+  return Array.from(groups.values());
+}
+
+function profileInsightsSection(insights) {
+  const groups = profileInsightGroups(insights);
+  if (!groups.length) {
+    return `<p class="profile-empty">Not enough repair history yet. A pattern shows here once the same fault has been fixed twice in the same mileage range.</p>`;
+  }
+  return `<div class="profile-insight-list">
+    ${groups.map((group) => `<div class="profile-insight">
+      <span class="profile-insight-range">${formatKilometres(group.start)} – ${formatKilometres(group.end)}</span>
+      <ul class="profile-insight-items">
+        ${group.rows.map((row) => `<li><span>${escapeHTML(row.label)}</span><strong>${row.occurrences}×</strong></li>`).join("")}
+      </ul>
+    </div>`).join("")}
+  </div>`;
+}
+
+function profileRepairCard(job) {
+  const vehicle = relatedRecord(job.vehicle) || {};
+  const repair = relatedRecord(job.repair) || {};
+  const codes = (job.dtcs || []).map((entry) => entry.code).filter(Boolean);
+  const specifics = [
+    vehicle.year ? String(vehicle.year) : "",
+    vehicle.trim || "",
+    vehicle.transmission || "",
+    vehicle.mileage ? formatKilometres(vehicle.mileage) : "",
+  ].filter(Boolean).join(" · ");
+  const headline = repair.cause || job.summary || job.complaint || "Repair recorded";
+  return `<button class="job-card library-result-card" type="button" data-action="open-job" data-job-id="${escapeHTML(job.id)}">
+    <span class="job-card-main">
+      <span class="job-status-row">
+        <span class="status-chip resolved">${repair.verified ? "Verified repair" : "Resolved"}</span>
+        <span class="job-time">${escapeHTML(formatShortDate(job.resolved_at || job.updated_at))}</span>
+      </span>
+      <span class="job-vehicle">${escapeHTML(headline)}</span>
+      ${specifics ? `<span class="job-issue">${escapeHTML(specifics)}</span>` : ""}
+      ${codes.length ? `<span class="job-card-context">${escapeHTML(codes.join(" · "))}</span>` : ""}
+    </span>
+    <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
+  </button>`;
+}
+
+function renderCarProfile() {
+  const detail = state.activeProfile;
+  if (!detail) {
+    // A blocking top-progress-bar is already running while this loads (see
+    // openCarProfile), so this screen stays visually quiet rather than
+    // showing its own "Loading…" text on top of it.
+    app.innerHTML = state.profileStatus === "loading"
+      ? `<section class="screen workflow-shell"></section>`
+      : `<section class="screen workflow-shell"><section class="empty-state"><h1>Car profile not found</h1><p>That car profile is unavailable.</p><button class="secondary-button" type="button" data-route="knowledge">Back to library</button></section></section>`;
+    return;
+  }
+  const { profile, notes, insights, repairs } = detail;
+  const variantOptions = profileVariantOptions(repairs);
+  const activeVariant = state.profileVariantFilter;
+  const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
+  const isNotesTab = state.profileTab !== "history";
+  app.innerHTML = `<section class="screen workflow-shell car-profile-shell">
+    ${taskHeader({ context: "Car profile", title: profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
+
+    <div class="quick-row profile-tabs" role="tablist" aria-label="Car profile sections">
+      <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights ${notes.length}</button>
+      <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
+    </div>
+
+    <form class="profile-note-form" id="profile-note-form" autocomplete="off">
+      <label class="form-field" for="profile-note-input">
+        <span class="field-label">Add a note</span>
+        <textarea class="textarea" id="profile-note-input" name="body" rows="2" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
+      </label>
+      <div class="profile-note-actions">
+        <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
+        <button class="primary-button" type="submit">${icon("save")} Save note</button>
+      </div>
+    </form>
+
+    <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
+      <div class="section-heading"><div><span class="section-label">Common failures by mileage</span><h2>From verified repairs</h2></div></div>
+      ${profileInsightsSection(insights)}
+      <div class="section-heading"><div><span class="section-label">Shop notes</span><h2>Everyone in the shop can see these</h2></div></div>
+      ${notes.length ? `<div class="profile-note-list">${notes.map(profileNoteCard).join("")}</div>` : `<p class="profile-empty">No notes yet. Add the first one above.</p>`}
+    </div>
+
+    <div class="profile-panel"${isNotesTab ? " hidden" : ""} role="tabpanel" aria-label="Repair history">
+      ${variantOptions.length > 1 ? `<div class="quick-row profile-variant-filters" role="group" aria-label="Filter by variant">
+        <button class="quick-chip${activeVariant === "all" ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="all">All ${repairs.length}</button>
+        ${variantOptions.map((option) => `<button class="quick-chip${activeVariant === option.key ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="${escapeHTML(option.key)}">${escapeHTML(option.label)} ${option.count}</button>`).join("")}
+      </div>` : ""}
+      ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map(profileRepairCard).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match that variant." : "No resolved repairs recorded for this car yet."}</p>`}
+    </div>
+  </section>`;
+}
+
+async function loadLibraryProfiles() {
+  showTopProgressBar();
+  try {
+    const { profiles } = await apiRequest("/api/library/profiles");
+    state.libraryProfiles = Array.isArray(profiles) ? profiles : [];
+    state.libraryStatus = "loaded";
+  } catch (_) {
+    state.libraryProfiles = [];
+    state.libraryStatus = "offline";
+  } finally {
+    hideTopProgressBar();
+  }
+}
+
+async function openCarProfile(profileId, { tab = "notes" } = {}) {
+  state.activeProfileId = profileId;
+  state.profileTab = tab;
+  state.profileNoteDraft = "";
+  state.profileVariantFilter = "all";
+  state.profileStatus = "loading";
+  state.activeProfile = null;
+  setRoute("car-profile");
+  showTopProgressBar({ blocking: true });
+  try {
+    const detail = await apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}`);
+    // The mechanic may have navigated away while this was in flight.
+    if (state.activeProfileId !== profileId) return hideTopProgressBar();
+    state.activeProfile = detail;
+    state.profileStatus = "loaded";
+  } catch (error) {
+    if (state.activeProfileId !== profileId) return hideTopProgressBar();
+    state.profileStatus = "error";
+    showToast(error.message || "Could not open that car profile");
+  }
+  hideTopProgressBar();
+  render();
+}
+
+async function saveProfileNote(form) {
+  const body = String(new FormData(form).get("body") || "").trim();
+  if (!body) return showToast("Write a note first");
+  const profileId = state.activeProfileId;
+  try {
+    const { note } = await apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    });
+    if (state.activeProfileId !== profileId || !state.activeProfile) return;
+    state.activeProfile.notes = [note, ...state.activeProfile.notes];
+    state.profileNoteDraft = "";
+    const listed = state.libraryProfiles.find((profile) => profile.id === profileId);
+    if (listed) listed.note_count = Number(listed.note_count || 0) + 1;
+    render();
+    showToast("Note saved");
+  } catch (error) {
+    showToast(error.message || "Could not save that note");
+  }
 }
 
 function renderSettings() {
@@ -1210,7 +1456,7 @@ function renderVehicle() {
         <label class="form-field"><span class="field-label">Year</span><input class="input" name="year" inputmode="numeric" value="${state.vehicle.year}" placeholder="e.g. 2010" required /></label>
         <label class="form-field"><span class="field-label">Make</span><span class="select-control"><select class="select${state.vehicle.make ? "" : " is-placeholder"}" name="make" id="vehicle-make" required aria-label="Make"><option value="" disabled${state.vehicle.make ? "" : " selected"}></option>${makes.map((make) => `<option${state.vehicle.make === make ? " selected" : ""}>${escapeHTML(make)}</option>`).join("")}</select>${icon("down")}</span></label>
         <label class="form-field"><span class="field-label">Model</span><span class="select-control"><select class="select${state.vehicle.model ? "" : " is-placeholder"}" name="model" id="vehicle-model"${state.vehicle.make ? "" : " disabled"} required aria-label="Model"><option value="" disabled${state.vehicle.model ? "" : " selected"}></option>${models.map((model) => `<option${state.vehicle.model === model ? " selected" : ""}>${escapeHTML(model)}</option>`).join("")}</select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Trim</span><span class="select-control"><select class="select${state.vehicle.trim ? "" : " is-placeholder"}" name="trim" id="vehicle-trim" aria-label="Trim"><option value=""${state.vehicle.trim ? "" : " selected"}></option>${variants.map((variant) => `<option${state.vehicle.trim === variant ? " selected" : ""}>${escapeHTML(variant)}</option>`).join("")}</select>${icon("down")}</span></label>
+        <label class="form-field"><span class="field-label">Trim</span><span class="select-control"><select class="select${state.vehicle.trim ? "" : " is-placeholder"}" name="trim" id="vehicle-trim" required aria-label="Trim"><option value=""${state.vehicle.trim ? "" : " selected"}></option>${variants.map((variant) => `<option${state.vehicle.trim === variant ? " selected" : ""}>${escapeHTML(variant)}</option>`).join("")}</select>${icon("down")}</span></label>
         ${specFieldHtml("drivetrain", "Drivetrain", "e.g. AWD", ["FWD", "RWD", "AWD", "4WD"])}
         ${specFieldHtml("engine", "Engine", "e.g. 2.0L turbo", null)}
         ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
@@ -1508,6 +1754,7 @@ function render() {
   if (state.route === "home") renderHome();
   if (state.route === "jobs") renderJobs();
   if (state.route === "knowledge") renderKnowledge();
+  if (state.route === "car-profile") renderCarProfile();
   if (state.route === "settings") renderSettings();
   if (state.route === "resolved") renderResolvedJob();
   if (state.route === "new" && state.step === 1) renderVehicle();
@@ -2553,6 +2800,22 @@ document.addEventListener("click", (event) => {
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
     if (action === "open-job") return openJob(actionButton.dataset.jobId || state.activeJobId);
+    if (action === "open-car-profile") return openCarProfile(actionButton.dataset.profileId);
+    if (action === "back-to-library") {
+      state.activeProfile = null;
+      state.activeProfileId = null;
+      return setRoute("knowledge");
+    }
+    if (action === "set-profile-tab") {
+      state.profileTab = actionButton.dataset.profileTab === "history" ? "history" : "notes";
+      const draft = document.querySelector("#profile-note-input");
+      if (draft) state.profileNoteDraft = draft.value;
+      return render();
+    }
+    if (action === "set-profile-variant") {
+      state.profileVariantFilter = actionButton.dataset.variantKey || "all";
+      return render();
+    }
   }
 
   const dictate = event.target.closest("[data-dictate]");
@@ -2700,6 +2963,7 @@ document.addEventListener("change", (event) => {
 
 document.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (event.target.id === "profile-note-form") return saveProfileNote(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
