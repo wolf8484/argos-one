@@ -422,7 +422,7 @@ main:focus {
 .nav-item:hover,
 .nav-new:hover,
 .nav-new:focus-visible {
-  color: var(--accent-fill);
+  color: #e0e0dc;
 }
 
 .nav-item.is-active,
@@ -1004,9 +1004,9 @@ main:focus {
 }
 
 .library-brand-divider {
-  padding: 14px 4px 6px;
-  color: var(--muted);
-  font-size: 13px;
+  padding: 16px 4px 16px;
+  color: #f67034;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1396,7 +1396,7 @@ button.journey-item {
 
 .journey-item.is-current {
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
-  color: var(--accent);
+  color: #e0e0dc;
   font-weight: 400;
 }
 
@@ -2051,9 +2051,10 @@ button.journey-item:active {
   gap: 8px;
   border: 1px solid var(--secondary-border);
   border-radius: 0;
-  background: transparent;
+  background: 0 0;
   color: var(--text);
   font-size: var(--copy-size);
+  font-weight: 500;
 }
 
 .dictate-button svg,
@@ -2142,12 +2143,13 @@ button.journey-item:active {
   align-items: center;
   justify-content: center;
   min-height: 52px;
-  padding: 0 14px;
+  padding: 0 16px;
   gap: 8px;
   border: 1px solid var(--secondary-border);
-  background: transparent;
+  background: 0 0;
   color: var(--text);
   font-size: var(--copy-size);
+  font-weight: 500;
 }
 
 .add-dtc-button svg {
