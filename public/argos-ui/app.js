@@ -217,6 +217,10 @@ function shortDate(iso) {
   return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" }).format(new Date(iso));
 }
 
+function mediumDate(iso) {
+  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(iso));
+}
+
 function jobVehicleName(job) {
   return `${job.vehicle.year} ${job.vehicle.make} ${job.vehicle.model}`;
 }
@@ -321,6 +325,7 @@ const icons = {
   car: '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
   user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>',
+  gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   externalLink: '<path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/><path d="M14 3h7v7"/><path d="M10 14 21 3"/>',
 };
 
@@ -1675,17 +1680,16 @@ function renderResolvedJob() {
   const header = isDeleted
     ? taskHeader({ context: vehicle, title: "Deleted job" })
     : taskHeader({ context: "Repair details", title: vehicle, status: "Resolved", statusType: "resolved" });
-  // Same spec/date/customer line-up as the similar-repair card on the results
-  // screen, so a repair reads identically whether it is being compared or
-  // reviewed after the fact.
-  const specRows = [
-    [job.vehicle.trim, job.vehicle.drivetrain],
-    [job.vehicle.engine, job.vehicle.transmission],
-    [job.vehicle.mileage ? `${job.vehicle.mileage} km` : ""],
-  ].map((parts) => parts.filter(Boolean).join(" · ")).filter(Boolean);
-  const dateLabel = isDeleted
-    ? (job.updatedAt ? `Deleted ${job.updatedAt}` : "")
-    : (job.resolvedAt ? `Repaired ${job.resolvedAt}` : "");
+  // Vehicle spec line holds trim/drivetrain/engine/transmission only --
+  // mileage gets its own odometer line rather than being folded in here.
+  const specLine = [
+    [job.vehicle.trim, job.vehicle.drivetrain].filter(Boolean).join(" · "),
+    [job.vehicle.engine, job.vehicle.transmission].filter(Boolean).join(" · "),
+  ].filter(Boolean).join(" · ");
+  const odometerLine = job.vehicle.mileage ? `Odometer: ${job.vehicle.mileage} km` : "";
+  // Date only -- no time -- matching the similar-repair card.
+  const dateSource = isDeleted ? job.raw.updated_at : job.raw.resolved_at;
+  const dateLabel = dateSource ? `${isDeleted ? "Deleted" : "Repaired"} ${mediumDate(dateSource)}` : "";
   const customerLine = [job.vehicle.customerName, job.vehicle.customerPhone].filter(Boolean).join(" · ");
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
@@ -1694,14 +1698,14 @@ function renderResolvedJob() {
         <div class="resolved-report-identity">
           <h2>${escapeHTML(vehicle)}</h2>
           <div class="selected-repair-specs">
-            ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
+            ${specLine ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specLine)}</span></span>` : ""}
+            ${odometerLine ? `<span class="selected-repair-date-line">${icon("gauge")}<span>${escapeHTML(odometerLine)}</span></span>` : ""}
             ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
             ${customerLine ? `<span class="selected-repair-date-line">${icon("user")}<span>${escapeHTML(customerLine)}</span></span>` : ""}
           </div>
         </div>
         <div class="repair-job-meta">
           ${job.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(job.jobNumber)}</span>` : ""}
-          ${job.bay ? `<span class="repair-job-bay">${escapeHTML(job.bay)}</span>` : ""}
           ${job.technician ? `<span class="repair-job-bay">${escapeHTML(job.technician)}</span>` : ""}
         </div>
       </div>
