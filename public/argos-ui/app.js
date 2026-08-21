@@ -324,7 +324,6 @@ const icons = {
   steeringWheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5v4.3M6.9 15.3l3.4-2.1M17.1 15.3l-3.4-2.1"/>',
   car: '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
-  user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>',
   gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   externalLink: '<path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/><path d="M14 3h7v7"/><path d="M10 14 21 3"/>',
 };
@@ -1690,18 +1689,17 @@ function renderResolvedJob() {
   // Date only -- no time -- matching the similar-repair card.
   const dateSource = isDeleted ? job.raw.updated_at : job.raw.resolved_at;
   const dateLabel = dateSource ? `${isDeleted ? "Deleted" : "Repaired"} ${mediumDate(dateSource)}` : "";
-  const customerLine = [job.vehicle.customerName, job.vehicle.customerPhone].filter(Boolean).join(" · ");
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="selected-repair-card resolved-repair-card" aria-label="${isDeleted ? "Deleted job record" : "Resolved repair record"}">
       <div class="resolved-report-head">
         <div class="resolved-report-identity">
           <h2>${escapeHTML(vehicle)}</h2>
+          <span class="section-label result-section-label resolved-vehicle-label">Vehicle details</span>
           <div class="selected-repair-specs">
             ${specLine ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specLine)}</span></span>` : ""}
             ${odometerLine ? `<span class="selected-repair-date-line">${icon("gauge")}<span>${escapeHTML(odometerLine)}</span></span>` : ""}
             ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
-            ${customerLine ? `<span class="selected-repair-date-line">${icon("user")}<span>${escapeHTML(customerLine)}</span></span>` : ""}
           </div>
         </div>
         <div class="repair-job-meta">
