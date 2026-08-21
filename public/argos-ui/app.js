@@ -1182,16 +1182,18 @@ function formatShortDate(value) {
 function profileCard(profile, { hidden = false } = {}) {
   const repairs = Number(profile.repair_count || 0);
   const notes = Number(profile.note_count || 0);
-  return `<button class="job-card library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
-    <span class="job-card-main">
-      <span class="job-status-row">
-        <span class="job-bay">${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
-        <span class="job-time">${notes} ${notes === 1 ? "note" : "notes"}</span>
-      </span>
-      <span class="job-vehicle">${escapeHTML(profileName(profile))}</span>
+  return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
+    <span class="library-result-name">${escapeHTML(profileName(profile))}</span>
+    <span class="library-result-counts">
+      <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
+      <span>${notes} ${notes === 1 ? "note" : "notes"}</span>
     </span>
-    <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
+    <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
+}
+
+function libraryBrandDivider(make) {
+  return `<div class="library-brand-divider" role="presentation">${escapeHTML(make)}</div>`;
 }
 
 function renderKnowledge() {
@@ -1200,6 +1202,18 @@ function renderKnowledge() {
   const hasSearchResults = !normalizedSearch || profiles.some((profile) => profileSearchText(profile).includes(normalizedSearch));
   const totalRepairs = profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
   const totalNotes = profiles.reduce((sum, profile) => sum + Number(profile.note_count || 0), 0);
+  const sortedProfiles = [...profiles].sort((a, b) => {
+    const makeCompare = (a.make || "").localeCompare(b.make || "");
+    return makeCompare !== 0 ? makeCompare : (a.model || "").localeCompare(b.model || "");
+  });
+  let lastMake = null;
+  const listMarkup = sortedProfiles.map((profile) => {
+    const isHidden = Boolean(normalizedSearch && !profileSearchText(profile).includes(normalizedSearch));
+    const make = profile.make || "Other";
+    const divider = !normalizedSearch && make !== lastMake ? libraryBrandDivider(make) : "";
+    lastMake = make;
+    return divider + profileCard(profile, { hidden: isHidden });
+  }).join("");
   app.innerHTML = `<section class="screen workflow-shell">
     <div class="page-header"><div><h1>Repair library</h1></div></div>
     <label class="form-field jobs-search-field" for="library-search">
@@ -1211,9 +1225,9 @@ function renderKnowledge() {
       <div class="stat"><span class="stat-value">${totalRepairs}</span><span class="stat-label">Verified repairs</span></div>
       <div class="stat"><span class="stat-value">${totalNotes}</span><span class="stat-label">Shop notes</span></div>
     </div>
-    <div class="section-heading"><div><span class="section-label">Cars in the library</span><h2>Most recent first</h2></div></div>
-    <div class="job-list">
-      ${profiles.map((profile) => profileCard(profile, { hidden: Boolean(normalizedSearch && !profileSearchText(profile).includes(normalizedSearch)) })).join("")}
+    <div class="section-heading"><div><span class="section-label">Cars in the library</span><h2>Grouped by brand</h2></div></div>
+    <div class="library-result-list">
+      ${listMarkup}
     </div>
     ${profiles.length === 0 && state.libraryStatus !== "loading" ? `<div class="jobs-empty library-zero-state" role="status">No cars in the library yet. Profiles are created automatically as jobs come through the shop.</div>` : ""}
     <div class="jobs-empty library-empty"${hasSearchResults || profiles.length === 0 ? " hidden" : ""} role="status">No cars match your search.</div>
