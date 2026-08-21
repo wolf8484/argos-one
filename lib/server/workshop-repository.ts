@@ -374,13 +374,16 @@ export class WorkshopRepository {
     return data ?? []
   }
 
+  // Selected in the same shape as listJobs() so the UI can map these through
+  // the one job-card renderer instead of a second bespoke card.
   async listProfileRepairs(profileId: string) {
     const { data, error } = await this.supabase
       .from('jobs')
-      .select(`id,status,complaint,observations,summary,resolved_at,updated_at,
-        vehicle:vehicles!inner(id,year,make,model,trim,engine,drivetrain,transmission,mileage,profile_id),
-        dtcs:job_dtc_codes(code,description),
-        repair:repair_records!repair_records_job_id_fkey(id,cause,work_performed,verification_notes,verified,updated_at)`)
+      .select(`id,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
+        customer:customers(id,full_name,phone,email),
+        vehicle:vehicles!inner(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type,profile_id),
+        dtcs:job_dtc_codes(id,code,description),
+        repair:repair_records!repair_records_job_id_fkey(*,items:repair_items(*))`)
       .eq('vehicle.profile_id', profileId)
       .eq('status', 'resolved')
       .order('resolved_at', { ascending: false, nullsFirst: false })

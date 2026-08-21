@@ -320,6 +320,7 @@ const icons = {
   steeringWheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 5.5v4.3M6.9 15.3l3.4-2.1M17.1 15.3l-3.4-2.1"/>',
   car: '<path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="3" y="11" width="18" height="6" rx="2"/><circle cx="7.5" cy="17" r="1.6"/><circle cx="16.5" cy="17" r="1.6"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>',
   externalLink: '<path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/><path d="M14 3h7v7"/><path d="M10 14 21 3"/>',
 };
 
@@ -1142,13 +1143,11 @@ function profileSearchText(profile) {
 // inside it and are surfaced as a filter in Repair history, not a profile
 // attribute.
 function repairVariantKey(job) {
-  const vehicle = relatedRecord(job.vehicle) || {};
-  return [vehicle.trim || "", vehicle.engine || ""].join("|");
+  return [job.vehicle.trim || "", job.vehicle.engine || ""].join("|");
 }
 
 function repairVariantLabel(job) {
-  const vehicle = relatedRecord(job.vehicle) || {};
-  return [vehicle.trim, vehicle.engine].filter(Boolean).join(" · ") || "Unspecified";
+  return [job.vehicle.trim, job.vehicle.engine].filter(Boolean).join(" · ") || "Unspecified";
 }
 
 function profileVariantOptions(repairs) {
@@ -1256,31 +1255,6 @@ function profileInsightsSection(insights) {
   </div>`;
 }
 
-function profileRepairCard(job) {
-  const vehicle = relatedRecord(job.vehicle) || {};
-  const repair = relatedRecord(job.repair) || {};
-  const codes = (job.dtcs || []).map((entry) => entry.code).filter(Boolean);
-  const specifics = [
-    vehicle.year ? String(vehicle.year) : "",
-    vehicle.trim || "",
-    vehicle.transmission || "",
-    vehicle.mileage ? formatKilometres(vehicle.mileage) : "",
-  ].filter(Boolean).join(" · ");
-  const headline = repair.cause || job.summary || job.complaint || "Repair recorded";
-  return `<button class="job-card library-result-card" type="button" data-action="open-job" data-job-id="${escapeHTML(job.id)}">
-    <span class="job-card-main">
-      <span class="job-status-row">
-        <span class="status-chip resolved">${repair.verified ? "Verified repair" : "Resolved"}</span>
-        <span class="job-time">${escapeHTML(formatShortDate(job.resolved_at || job.updated_at))}</span>
-      </span>
-      <span class="job-vehicle">${escapeHTML(headline)}</span>
-      ${specifics ? `<span class="job-issue">${escapeHTML(specifics)}</span>` : ""}
-      ${codes.length ? `<span class="job-card-context">${escapeHTML(codes.join(" · "))}</span>` : ""}
-    </span>
-    <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
-  </button>`;
-}
-
 function renderCarProfile() {
   const detail = state.activeProfile;
   if (!detail) {
@@ -1305,18 +1279,17 @@ function renderCarProfile() {
       <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
 
-    <form class="profile-note-form" id="profile-note-form" autocomplete="off">
-      <label class="form-field" for="profile-note-input">
-        <span class="field-label">Add a note</span>
-        <textarea class="textarea" id="profile-note-input" name="body" rows="2" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
-      </label>
-      <div class="profile-note-actions">
-        <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
-        <button class="primary-button" type="submit">${icon("save")} Save note</button>
-      </div>
-    </form>
-
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
+      <form class="profile-note-form" id="profile-note-form" autocomplete="off">
+        <label class="form-field" for="profile-note-input">
+          <span class="field-label">Add a note</span>
+          <textarea class="textarea" id="profile-note-input" name="body" rows="2" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
+        </label>
+        <div class="profile-note-actions">
+          <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
+          <button class="primary-button" type="submit">${icon("save")} Save note</button>
+        </div>
+      </form>
       <div class="section-heading"><div><span class="section-label">Common failures by mileage</span><h2>From verified repairs</h2></div></div>
       ${profileInsightsSection(insights)}
       <div class="section-heading"><div><span class="section-label">Shop notes</span><h2>Everyone in the shop can see these</h2></div></div>
@@ -1328,7 +1301,7 @@ function renderCarProfile() {
         <button class="quick-chip${activeVariant === "all" ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="all">All ${repairs.length}</button>
         ${variantOptions.map((option) => `<button class="quick-chip${activeVariant === option.key ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="${escapeHTML(option.key)}">${escapeHTML(option.label)} ${option.count}</button>`).join("")}
       </div>` : ""}
-      ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map(profileRepairCard).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match that variant." : "No resolved repairs recorded for this car yet."}</p>`}
+      ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map((job) => jobCard(job)).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match that variant." : "No resolved repairs recorded for this car yet."}</p>`}
     </div>
   </section>`;
 }
@@ -1360,6 +1333,7 @@ async function openCarProfile(profileId, { tab = "notes" } = {}) {
     const detail = await apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}`);
     // The mechanic may have navigated away while this was in flight.
     if (state.activeProfileId !== profileId) return hideTopProgressBar();
+    detail.repairs = (detail.repairs || []).map(databaseJobToUi);
     state.activeProfile = detail;
     state.profileStatus = "loaded";
   } catch (error) {
@@ -1659,10 +1633,6 @@ function repairPartsTable() {
   </div>`;
 }
 
-function resolvedDetail(label, content) {
-  return `<section class="resolved-section"><h2 class="section-label">${label}</h2><div class="resolved-copy">${content}</div></section>`;
-}
-
 function resolvedPhotoGallery() {
   const photos = [
     ...state.photos.map((photo, index) => ({ photo, scope: "inspection", index })),
@@ -1670,6 +1640,22 @@ function resolvedPhotoGallery() {
   ];
   if (!photos.length) return `<div class="resolved-photo-empty">No photos were saved with this repair.</div>`;
   return `<div class="resolved-photo-gallery">${photos.map(({ photo, scope, index }, displayIndex) => `<button type="button" data-action="view-photo" data-photo-scope="${scope}" data-photo-index="${index}" aria-label="Open repair photo ${displayIndex + 1}"><img src="${escapeHTML(photoUrl(photo))}" alt="Repair photo ${displayIndex + 1}" /></button>`).join("")}</div>`;
+}
+
+function resolvedDetailSection(label, content, { optional = "" } = {}) {
+  return `<div class="result-detail-section">
+    <span class="section-label result-section-label">${label}${optional ? ` <span class="optional-label">${optional}</span>` : ""}</span>
+    ${content}
+  </div>`;
+}
+
+// Read-only twin of partRow(): a resolved job is a finished record, so parts
+// are listed as a table rather than offered as "add to repair" actions.
+function resolvedPartRow(part) {
+  const meta = [part.type, part.number, `QTY ${part.quantity}`].filter(Boolean).join(" · ");
+  return `<div class="part-row is-static">
+    <div><div class="part-name">${escapeHTML(part.name)}</div><div class="part-number">${escapeHTML(meta)}</div></div>
+  </div>`;
 }
 
 function renderResolvedJob() {
@@ -1687,24 +1673,41 @@ function renderResolvedJob() {
   const header = isDeleted
     ? taskHeader({ context: vehicle, title: "Deleted job" })
     : taskHeader({ context: "Repair details", title: vehicle, status: "Resolved", statusType: "resolved" });
+  // Same spec/date/customer line-up as the similar-repair card on the results
+  // screen, so a repair reads identically whether it is being compared or
+  // reviewed after the fact.
+  const specRows = [
+    [job.vehicle.trim, job.vehicle.drivetrain],
+    [job.vehicle.engine, job.vehicle.transmission],
+    [job.vehicle.mileage ? `${job.vehicle.mileage} km` : ""],
+  ].map((parts) => parts.filter(Boolean).join(" · ")).filter(Boolean);
+  const dateLabel = isDeleted
+    ? (job.updatedAt ? `Deleted ${job.updatedAt}` : "")
+    : (job.resolvedAt ? `Repaired ${job.resolvedAt}` : "");
+  const customerLine = [job.vehicle.customerName, job.vehicle.customerPhone].filter(Boolean).join(" · ");
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
-    <section class="resolved-summary" aria-label="${isDeleted ? "Deleted job summary" : "Resolved job summary"}">
-      <div><span class="section-label">Customer</span><strong>${escapeHTML(job.vehicle.customerName)}</strong>${job.vehicle.customerPhone ? `<span>${escapeHTML(job.vehicle.customerPhone)}</span>` : ""}</div>
-      <div><span class="section-label">${isDeleted ? "Deleted" : "Resolved"}</span><strong>${escapeHTML(isDeleted ? job.updatedAt : job.resolvedAt)}</strong><span>${escapeHTML(job.bay)} · ${escapeHTML(job.technician)}</span></div>
-      <div><span class="section-label">${isDeleted ? "Mileage" : "Final mileage"}</span><strong>${escapeHTML(job.vehicle.mileage)} KM</strong>${job.vehicle.vin ? `<span>VIN ${escapeHTML(job.vehicle.vin)}</span>` : ""}</div>
+    <section class="selected-repair-card resolved-repair-card" aria-label="${isDeleted ? "Deleted job record" : "Resolved repair record"}">
+      <div class="selected-repair-specs">
+        ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
+        ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
+        ${customerLine ? `<span class="selected-repair-date-line">${icon("user")}<span>${escapeHTML(customerLine)}</span></span>` : ""}
+        <span class="selected-repair-date-line">${icon("clipboard")}<span>${escapeHTML([job.bay, job.technician].filter(Boolean).join(" · "))}</span></span>
+      </div>
+
+      ${resolvedDetailSection("Customer complaint", `<div class="repair-summary-box"><p>${escapeHTML(job.complaint) || "No complaint recorded."}</p></div>`)}
+      ${resolvedDetailSection("Initial observations", `<div class="repair-summary-box"><p>${escapeHTML(job.observations || "No initial observations recorded.")}</p></div>`)}
+      ${resolvedDetailSection("Diagnostic trouble codes", job.dtcs.length ? `<div class="quick-row">${job.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<div class="repair-summary-box"><p>No scan codes recorded.</p></div>`)}
+      ${job.repairSummary ? resolvedDetailSection("Repair summary", `<div class="repair-summary-box"><p>${escapeHTML(job.repairSummary)}</p></div>`, { optional: "(AI-generated)" }) : ""}
+      ${resolvedDetailSection("Work performed", `<div class="repair-summary-box"><p>${escapeHTML(job.workPerformed || "No work performed recorded.")}</p></div>`)}
+      ${resolvedDetailSection("Verification", `<div class="repair-summary-box"><p>${escapeHTML(job.verification)}</p></div>`)}
+      <div class="result-detail-section">
+        <div class="parts-heading result-section-head"><span class="section-label">Parts &amp; consumables used</span><span class="parts-item-count">${job.parts.length} ${job.parts.length === 1 ? "item" : "items"}</span></div>
+        ${job.parts.length ? `<div class="parts-panel always-visible">${job.parts.map(resolvedPartRow).join("")}</div>` : `<div class="repair-summary-box"><p>No parts or consumables recorded.</p></div>`}
+      </div>
+      ${resolvedDetailSection("Previous repair reference", `<div class="repair-summary-box"><p>${escapeHTML(job.reference)}</p></div>`)}
+      ${resolvedDetailSection("Repair photos", resolvedPhotoGallery())}
     </section>
-    <div class="resolved-details">
-      ${resolvedDetail("Customer complaint", `<p>${escapeHTML(job.complaint) || "No complaint recorded."}</p>`)}
-      ${resolvedDetail("Initial observations", `<p>${escapeHTML(job.observations || "No initial observations recorded.")}</p>`)}
-      ${resolvedDetail("Diagnostic trouble codes", job.dtcs.length ? `<div class="quick-row">${job.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<p class="muted">No scan codes recorded.</p>`)}
-      ${job.repairSummary ? resolvedDetail("Repair summary (AI-generated)", `<p>${escapeHTML(job.repairSummary)}</p>`) : ""}
-      ${resolvedDetail("Work performed", `<p>${escapeHTML(job.workPerformed || "No work performed recorded.")}</p>`)}
-      ${resolvedDetail("Verification", `<p>${escapeHTML(job.verification)}</p>`)}
-      ${resolvedDetail("Parts & consumables", job.parts.length ? `<div class="resolved-parts">${job.parts.map((part) => `<div><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""} · QTY ${escapeHTML(part.quantity)}</span></div>`).join("")}</div>` : `<p class="muted">No parts or consumables recorded.</p>`)}
-      ${resolvedDetail("Previous repair reference", `<p>${escapeHTML(job.reference)}</p>`)}
-      ${resolvedDetail("Repair photos", resolvedPhotoGallery())}
-    </div>
     ${isDeleted ? `<div class="action-dock resolved-actions span-2">
       <button class="secondary-button full" type="button" data-action="restore-job" data-job-id="${job.id}">${icon("back")} Restore job</button>
       <button class="danger-button full" type="button" data-action="delete-forever" data-job-id="${job.id}">${icon("trash")} Delete forever</button>

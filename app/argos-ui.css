@@ -4868,3 +4868,8 @@ body.dictation-active .toast {
 .profile-variant-filters {
   margin-bottom: 16px;
 }
+
+/* A resolved job's parts list is a record, not a picker -- no action column. */
+.part-row.is-static {
+  grid-template-columns: minmax(0, 1fr);
+}
