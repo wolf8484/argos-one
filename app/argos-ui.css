@@ -2629,7 +2629,7 @@ button.journey-item:active {
 }
 
 #selected-repair-heading,
-.resolved-repair-card > h2 {
+.resolved-report-identity h2 {
   margin-top: 6px;
   font-size: 20px;
 }
