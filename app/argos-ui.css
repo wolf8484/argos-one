@@ -20,7 +20,7 @@
   --accent-border: #caf268;
   --secondary-border: rgba(202, 242, 104, 0.4);
   --on-accent: #111111;
-  --accent-deep: #ddd35c;
+  --accent-deep: #acce58;
   --accent-on-inverse: #1e1e1e;
   --notice: #f7e75d;
   --danger: #b91c1c;
@@ -61,12 +61,12 @@
   --line: #d3d3d0;
   --line-strong: #92928e;
   --accent: #1e1e1e;
-  --accent-fill: #fadb15;
+  --accent-fill: #caf268;
   --accent-border: #1e1e1e;
   --secondary-border: #111111;
   --on-accent: #111111;
-  --accent-deep: #ddd35c;
-  --accent-on-inverse: #fadb15;
+  --accent-deep: #acce58;
+  --accent-on-inverse: #caf268;
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
@@ -422,12 +422,12 @@ main:focus {
 .nav-item:hover,
 .nav-new:hover,
 .nav-new:focus-visible {
-  color: #fadb15;
+  color: var(--accent-fill);
 }
 
 .nav-item.is-active,
 .nav-new.is-active {
-  background: color-mix(in srgb, #fadb15 8%, #090909);
+  background: color-mix(in srgb, var(--accent-fill) 8%, #090909);
 }
 
 .nav-item.is-active::before,
