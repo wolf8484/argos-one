@@ -2191,6 +2191,11 @@ button.journey-item:active {
   color: var(--text);
 }
 
+.quick-chip:not(.is-selected):active,
+.filter-button:not(.is-active):active {
+  background: var(--surface-3);
+}
+
 .photo-panel {
   display: block;
   min-height: 116px;
@@ -3663,7 +3668,9 @@ button.setting-row:focus-visible .setting-row-action {
   .web-button:hover,
   .part-button:hover,
   .calendar-nav:hover,
-  .recorded-part-actions button:hover {
+  .recorded-part-actions button:hover,
+  .quick-chip:not(.is-selected):hover,
+  .filter-button:not(.is-active):hover {
     background: var(--surface-3);
   }
 
@@ -3675,7 +3682,9 @@ button.setting-row:focus-visible .setting-row-action {
   :root[data-theme="light"] .add-dtc-button:hover,
   :root[data-theme="light"] .vin-camera:hover,
   :root[data-theme="light"] .calendar-nav:hover,
-  :root[data-theme="light"] .recorded-part-actions button:hover {
+  :root[data-theme="light"] .recorded-part-actions button:hover,
+  :root[data-theme="light"] .quick-chip:not(.is-selected):hover,
+  :root[data-theme="light"] .filter-button:not(.is-active):hover {
     background: #1d1d1d;
   }
 
