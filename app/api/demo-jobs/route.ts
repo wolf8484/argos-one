@@ -14,6 +14,10 @@ type DemoFixture = {
   year: number
   make: string
   model: string
+  trim: string
+  engine: string
+  drivetrain: string
+  transmission: string
   mileage: number
   dtc?: string
   complaint: string
@@ -31,28 +35,32 @@ type DemoFixture = {
 const fixtures: DemoFixture[] = [
   {
     key: 'volvo-v60-open', status: 'open', stage: 'assessment', bay: 'Bay 03',
-    customer: 'Maria Santos', year: 2020, make: 'Volvo', model: 'V60', mileage: 80000, dtc: 'P0171',
+    customer: 'Maria Santos', year: 2020, make: 'Volvo', model: 'V60',
+    trim: 'T5 Momentum', engine: 'B4204T', drivetrain: 'FWD', transmission: '8-speed auto', mileage: 80000, dtc: 'P0171',
     complaint: 'Check engine light comes on after 15–20 minutes. Hesitates when accelerating uphill.',
     observations: 'Lean condition at idle. Light whistle near intake. Fuel trims rise above +18% when warm.',
     summary: 'Check-engine light appears after 15–20 minutes with hesitation uphill. Warm idle is lean with a light whistle near the intake.',
   },
   {
     key: 'toyota-camry-open', status: 'open', stage: 'similar_repairs', bay: 'Bay 02',
-    customer: 'Jamie Lee', year: 2020, make: 'Toyota', model: 'Camry', mileage: 61200, dtc: 'P0171',
+    customer: 'Jamie Lee', year: 2020, make: 'Toyota', model: 'Camry',
+    trim: 'SX', engine: '2.5L', drivetrain: 'FWD', transmission: '8-speed automatic', mileage: 61200, dtc: 'P0171',
     complaint: 'Rough idle with a slight hesitation when pulling away from a stop.',
     observations: 'Idle speed varies when warm; no visible smoke or fluid leaks.',
     summary: 'Rough idle when warm with slight hesitation pulling away. Idle speed varies, with no visible smoke or fluid leaks.',
   },
   {
     key: 'ford-f150-open', status: 'open', stage: 'repair', bay: 'Bay 05',
-    customer: 'Noah Williams', year: 2018, make: 'Ford', model: 'F-150', mileage: 134900, dtc: 'P0300',
+    customer: 'Noah Williams', year: 2018, make: 'Ford', model: 'F-150',
+    trim: 'XLT', engine: '5.0L V8', drivetrain: '4WD', transmission: '10-speed automatic', mileage: 134900, dtc: 'P0300',
     complaint: 'Engine shakes at idle and feels weak at low RPM.',
     observations: 'Misfire is most noticeable while stationary after the engine warms up.',
     summary: 'Engine shakes at idle and feels weak at low RPM. The misfire becomes more noticeable after the engine warms up.',
   },
   {
     key: 'honda-civic-resolved', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
-    customer: 'Priya Nair', year: 2019, make: 'Honda', model: 'Civic', mileage: 82400, dtc: 'P0420',
+    customer: 'Priya Nair', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 82400, dtc: 'P0420',
     complaint: 'Check-engine light was on with no noticeable loss of power.',
     observations: 'No exhaust leak found. Rear oxygen-sensor response remained slow after the engine reached operating temperature.',
     summary: 'Check-engine light with no noticeable power loss. Rear oxygen-sensor response remained slow after reaching operating temperature.',
@@ -120,6 +128,10 @@ export async function POST() {
         year: fixture.year,
         make: fixture.make,
         model: fixture.model,
+        trim: fixture.trim,
+        engine: fixture.engine,
+        drivetrain: fixture.drivetrain,
+        transmission: fixture.transmission,
         mileage: fixture.mileage,
         created_by: profile.id,
       }).select('id').single()
