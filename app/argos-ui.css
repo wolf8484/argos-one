@@ -4954,6 +4954,81 @@ body.dictation-active .toast {
   margin-bottom: 16px;
 }
 
+/* "Known issues" is auto-populated reference data (recalls + fault-code
+   lookups), not a technician's own words -- it must read as visually
+   distinct from Shop notes so nobody mistakes one for the other. */
+.section-label-reference {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.section-label-reference svg {
+  width: 14px;
+  height: 14px;
+}
+
+.reference-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-recall-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 40px;
+  background: var(--line);
+}
+
+.profile-recall {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  border-left: 2px solid var(--line-strong);
+}
+
+.profile-recall-meta {
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.profile-recall-body {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--copy-size);
+  line-height: 1.5;
+}
+
+.profile-recall-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profile-recall-link svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* A resolved job's parts list is a record, not a picker -- no action column. */
 .part-row.is-static {
   grid-template-columns: minmax(0, 1fr);

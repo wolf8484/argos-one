@@ -1,4 +1,4 @@
-const VERSION = 'argos-one-v5'
+const VERSION = 'argos-one-v6'
 const STATIC_CACHE = `${VERSION}-static`
 const STATIC_ASSETS = [
   '/manifest.webmanifest',

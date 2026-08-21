@@ -1275,6 +1275,24 @@ function profileInsightsSection(insights) {
   </div>`;
 }
 
+function recallCard(recall) {
+  const years = [recall.year_from, recall.year_to].filter(Boolean);
+  const yearLabel = years.length === 2 && years[0] !== years[1] ? `${years[0]}–${years[1]}` : (years[0] ? String(years[0]) : "");
+  const dateLabel = recall.recall_date ? formatShortDate(recall.recall_date) : "";
+  return `<a class="profile-recall" href="${escapeHTML(recall.source_url)}" target="_blank" rel="noopener noreferrer">
+    <span class="profile-recall-meta">${[yearLabel, dateLabel].filter(Boolean).map(escapeHTML).join(" · ")}</span>
+    <p class="profile-recall-body">${escapeHTML(recall.defect_description)}</p>
+    <span class="profile-recall-link">View recall notice ${icon("arrow")}</span>
+  </a>`;
+}
+
+function profileRecallsSection(recalls) {
+  if (!recalls.length) {
+    return `<p class="profile-empty">No known recalls for this model.</p>`;
+  }
+  return `<div class="profile-recall-list">${recalls.map(recallCard).join("")}</div>`;
+}
+
 function renderCarProfile() {
   const detail = state.activeProfile;
   if (!detail) {
@@ -1286,7 +1304,7 @@ function renderCarProfile() {
       : `<section class="screen workflow-shell"><section class="empty-state"><h1>Car profile not found</h1><p>That car profile is unavailable.</p><button class="secondary-button" type="button" data-route="knowledge">Back to library</button></section></section>`;
     return;
   }
-  const { profile, notes, insights, repairs } = detail;
+  const { profile, notes, insights, repairs, recalls = [] } = detail;
   const variantOptions = profileVariantOptions(repairs);
   const activeVariant = state.profileVariantFilter;
   const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
@@ -1314,6 +1332,8 @@ function renderCarProfile() {
       ${profileInsightsSection(insights)}
       <div class="section-heading"><div><span class="section-label">Shop notes</span><h2>Everyone in the shop can see these</h2></div></div>
       ${notes.length ? `<div class="profile-note-list">${notes.map(profileNoteCard).join("")}</div>` : `<p class="profile-empty">No notes yet. Add the first one above.</p>`}
+      <div class="section-heading"><div><span class="section-label section-label-reference">${icon("info")} Known issues<span class="reference-tag">Reference</span></span><h2>From recall data &amp; fault code reference</h2></div></div>
+      ${profileRecallsSection(recalls)}
     </div>
 
     <div class="profile-panel"${isNotesTab ? " hidden" : ""} role="tabpanel" aria-label="Repair history">

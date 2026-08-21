@@ -188,8 +188,10 @@ export class WorkshopRepository {
     const { error: deleteError } = await this.supabase.from('job_dtc_codes').delete().eq('job_id', jobId)
     if (deleteError) throw deleteError
     if (input.dtcs.length) {
+      const decoded = await this.decodeDtcCodes(input.dtcs)
       const { error: insertError } = await this.supabase.from('job_dtc_codes').insert(input.dtcs.map((code) => ({
         shop_id: this.profile.shop_id, job_id: jobId, code,
+        description: decoded.get(code.trim().toUpperCase())?.description ?? null,
       })))
       if (insertError) throw insertError
     }
@@ -297,10 +299,12 @@ export class WorkshopRepository {
     ]).then((results) => results.forEach(({ error: nestedError }) => { if (nestedError) throw nestedError }))
 
     if (input.dtcs.length) {
+      const decoded = await this.decodeDtcCodes(input.dtcs)
       const { error: dtcError } = await this.supabase.from('job_dtc_codes').insert(input.dtcs.map((code) => ({
         shop_id: this.profile.shop_id,
         job_id: jobId,
         code,
+        description: decoded.get(code.trim().toUpperCase())?.description ?? null,
       })))
       if (dtcError) throw dtcError
     }
@@ -347,12 +351,13 @@ export class WorkshopRepository {
       .single()
     if (profileError) throw profileError
 
-    const [notes, insights, repairs] = await Promise.all([
+    const [notes, insights, repairs, recalls] = await Promise.all([
       this.listProfileNotes(profileId),
       this.getProfileMileageInsights(profileId),
       this.listProfileRepairs(profileId),
+      this.getMatchingRecalls(profile.make, profile.model),
     ])
-    return { profile, notes, insights, repairs }
+    return { profile, notes, insights, repairs, recalls }
   }
 
   async listProfileNotes(profileId: string) {
@@ -435,5 +440,52 @@ export class WorkshopRepository {
     })
     if (error) throw error
     return data as string | null
+  }
+
+  // Recalls are global reference data (not shop-scoped) matched at
+  // make/model, optionally narrowed by a single year falling inside the
+  // recall's [year_from, year_to] range. A profile pools multiple model
+  // years, so the profile page calls this without a year and shows every
+  // recall for that make/model regardless of year range.
+  //
+  // The recall's `model` text comes straight from the regulator's free-text
+  // recall title (e.g. "Camry Ascent & Ascent Sport AXVH80R"), not a bare
+  // model name like the profile's "Camry" -- so this matches model as a
+  // prefix rather than requiring an exact match.
+  async getMatchingRecalls(make: string, model: string, year?: number | null) {
+    const escapedModel = model.replace(/[%_]/g, (char) => `\\${char}`)
+    let query = this.supabase
+      .from('recalls')
+      .select('id,make,model,year_from,year_to,defect_description,source_url,recall_date')
+      .ilike('make', make)
+      .ilike('model', `${escapedModel}%`)
+      .order('recall_date', { ascending: false, nullsFirst: false })
+    if (year) {
+      query = query.or(`year_from.is.null,year_from.lte.${year}`).or(`year_to.is.null,year_to.gte.${year}`)
+    }
+    const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  async decodeDtcCode(code: string) {
+    const { data, error } = await this.supabase
+      .from('dtc_reference')
+      .select('code,description,system')
+      .eq('code', code.trim().toUpperCase())
+      .maybeSingle()
+    if (error) throw error
+    return data
+  }
+
+  async decodeDtcCodes(codes: string[]) {
+    const normalized = Array.from(new Set(codes.map((code) => code.trim().toUpperCase()).filter(Boolean)))
+    if (!normalized.length) return new Map<string, { code: string; description: string; system: string | null }>()
+    const { data, error } = await this.supabase
+      .from('dtc_reference')
+      .select('code,description,system')
+      .in('code', normalized)
+    if (error) throw error
+    return new Map((data ?? []).map((row) => [row.code, row]))
   }
 }
