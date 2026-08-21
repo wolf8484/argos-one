@@ -2628,7 +2628,8 @@ button.journey-item:active {
   font-weight: 600;
 }
 
-#selected-repair-heading {
+#selected-repair-heading,
+.resolved-repair-card > h2 {
   margin-top: 6px;
   font-size: 20px;
 }
@@ -4872,4 +4873,12 @@ body.dictation-active .toast {
 /* A resolved job's parts list is a record, not a picker -- no action column. */
 .part-row.is-static {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* The resolved report is a record rather than a match being chosen, so it
+   drops the accent rules that frame the similar-repair card on the results
+   screen. Those borders stay put there. */
+.selected-repair-card.resolved-repair-card {
+  border-top: 0;
+  border-bottom: 0;
 }

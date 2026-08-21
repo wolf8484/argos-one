@@ -1688,6 +1688,7 @@ function renderResolvedJob() {
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="selected-repair-card resolved-repair-card" aria-label="${isDeleted ? "Deleted job record" : "Resolved repair record"}">
+      <h2>${escapeHTML(vehicle)}</h2>
       <div class="selected-repair-specs">
         ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
         ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
