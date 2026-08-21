@@ -1183,7 +1183,7 @@ function profileCard(profile, { hidden = false } = {}) {
   const repairs = Number(profile.repair_count || 0);
   const notes = Number(profile.note_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
-    <span class="library-result-name">${escapeHTML(profileName(profile))}</span>
+    <span class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</span>
     <span class="library-result-counts">
       <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
       <span>${notes} ${notes === 1 ? "note" : "notes"}</span>
@@ -1292,7 +1292,7 @@ function renderCarProfile() {
   const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
   const isNotesTab = state.profileTab !== "history";
   app.innerHTML = `<section class="screen workflow-shell car-profile-shell">
-    ${taskHeader({ context: "Car profile", title: profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
+    ${taskHeader({ context: profile.make || "Car profile", title: profile.model || profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
 
     <div class="quick-row profile-tabs" role="tablist" aria-label="Car profile sections">
       <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights ${notes.length}</button>

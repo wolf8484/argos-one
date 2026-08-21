@@ -1024,10 +1024,10 @@ main:focus {
   width: 100%;
   min-height: 0;
   height: auto;
-  padding: 14px 4px;
+  padding: 16px 4px;
   border: 0;
   border-bottom: 1px solid var(--line);
-  background: transparent;
+  background: 0 0;
   color: var(--text);
   text-align: left;
   cursor: default;
