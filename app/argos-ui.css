@@ -4882,3 +4882,16 @@ body.dictation-active .toast {
   border-top: 0;
   border-bottom: 0;
 }
+
+/* Resolved report header: identity on the left, job number / bay / mechanic
+   right-aligned alongside it. */
+.resolved-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.resolved-report-identity {
+  min-width: 0;
+}

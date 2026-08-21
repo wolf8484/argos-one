@@ -420,6 +420,7 @@ function databaseJobToUi(row) {
   const { firstName, lastName } = splitCustomerName(name);
   return {
     id: row.id,
+    jobNumber: row.job_number || "",
     status: row.status === "cancelled" ? "deleted" : row.status === "resolved" ? "resolved" : "open",
     vehicle: {
       year: String(vehicle.year || ""), make: vehicle.make || "", model: vehicle.model || "", mileage: Number(vehicle.mileage || 0).toLocaleString("en-AU"),
@@ -1572,6 +1573,7 @@ function renderRepairRecord() {
     [state.vehicle.drivetrain, state.vehicle.engine].filter(Boolean).join(" · "),
     [state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · "),
   ].filter(Boolean);
+  const activeJobRecord = jobRecords.find((record) => String(record.id) === String(state.currentJobId));
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
     ${repairRecordHeader()}
     ${workflowJourney(4)}
@@ -1581,8 +1583,8 @@ function renderRepairRecord() {
         ${jobSpecRows.map((row) => `<span>${escapeHTML(row)}</span>`).join("")}
       </div>
       <div class="repair-job-meta">
-        <span class="repair-job-number">JOB AO-260809-04</span>
-        <span class="repair-job-bay">Bay 03</span>
+        ${activeJobRecord?.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(activeJobRecord.jobNumber)}</span>` : ""}
+        ${activeJobRecord?.bay ? `<span class="repair-job-bay">${escapeHTML(activeJobRecord.bay)}</span>` : ""}
       </div>
     </div>
 
@@ -1688,12 +1690,20 @@ function renderResolvedJob() {
   app.innerHTML = `<section class="screen workflow-shell resolved-job-shell${isDeleted ? " deleted-job-shell" : ""}">
     ${header}
     <section class="selected-repair-card resolved-repair-card" aria-label="${isDeleted ? "Deleted job record" : "Resolved repair record"}">
-      <h2>${escapeHTML(vehicle)}</h2>
-      <div class="selected-repair-specs">
-        ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
-        ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
-        ${customerLine ? `<span class="selected-repair-date-line">${icon("user")}<span>${escapeHTML(customerLine)}</span></span>` : ""}
-        <span class="selected-repair-date-line">${icon("clipboard")}<span>${escapeHTML([job.bay, job.technician].filter(Boolean).join(" · "))}</span></span>
+      <div class="resolved-report-head">
+        <div class="resolved-report-identity">
+          <h2>${escapeHTML(vehicle)}</h2>
+          <div class="selected-repair-specs">
+            ${specRows.length ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specRows.join(" · "))}</span></span>` : ""}
+            ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
+            ${customerLine ? `<span class="selected-repair-date-line">${icon("user")}<span>${escapeHTML(customerLine)}</span></span>` : ""}
+          </div>
+        </div>
+        <div class="repair-job-meta">
+          ${job.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(job.jobNumber)}</span>` : ""}
+          ${job.bay ? `<span class="repair-job-bay">${escapeHTML(job.bay)}</span>` : ""}
+          ${job.technician ? `<span class="repair-job-bay">${escapeHTML(job.technician)}</span>` : ""}
+        </div>
       </div>
 
       ${resolvedDetailSection("Customer complaint", `<div class="repair-summary-box"><p>${escapeHTML(job.complaint) || "No complaint recorded."}</p></div>`)}
@@ -1999,6 +2009,7 @@ function deleteRepairConfirmation() {
 }
 
 function completeJobConfirmation() {
+  const completingJob = jobRecords.find((record) => String(record.id) === String(state.currentJobId));
   const vehicleLine = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
   const partsCount = state.repair.parts.length;
   const photosCount = state.repair.photos.length;
@@ -2009,7 +2020,7 @@ function completeJobConfirmation() {
     { label: "Repair photos", optional: true, detail: photosCount ? `${photosCount} photo${photosCount === 1 ? "" : "s"} attached` : "No photos attached", done: photosCount > 0 },
   ];
   openSheet(`<div class="confirmation-content complete-job-confirmation">
-    <span class="repair-job-number">JOB AO-260809-04</span>
+    ${completingJob?.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(completingJob.jobNumber)}</span>` : ""}
     <h2>Ready to complete?</h2>
     <div class="complete-job-vehicle">${escapeHTML(vehicleLine)}</div>
     <ul class="complete-job-checklist">

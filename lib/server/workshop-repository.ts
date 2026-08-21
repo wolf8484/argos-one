@@ -11,7 +11,7 @@ export class WorkshopRepository {
   async listJobs() {
     const { data, error } = await this.supabase
       .from('jobs')
-      .select(`id,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
+      .select(`id,job_number,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
         customer:customers(id,full_name,phone,email),
         vehicle:vehicles(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type),
         dtcs:job_dtc_codes(id,code,description)`)
@@ -379,7 +379,7 @@ export class WorkshopRepository {
   async listProfileRepairs(profileId: string) {
     const { data, error } = await this.supabase
       .from('jobs')
-      .select(`id,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
+      .select(`id,job_number,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
         customer:customers(id,full_name,phone,email),
         vehicle:vehicles!inner(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type,profile_id),
         dtcs:job_dtc_codes(id,code,description),
