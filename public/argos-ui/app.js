@@ -44,6 +44,7 @@ const state = {
   profileStatus: "idle",
   profileNoteDraft: "",
   profileVariantFilter: "all",
+  resolvedReturn: { route: "jobs" },
   currentJobId: null,
   backendStatus: "loading",
   catalog: { makes: [], models: [], variants: [] },
@@ -876,8 +877,8 @@ function updateNavigation() {
   document.querySelectorAll(".nav-item, .nav-new").forEach((item) => {
     const isActive = item.dataset.route === state.route
       || (item.dataset.route === "new" && state.route === "repair")
-      || (item.dataset.route === "jobs" && state.route === "resolved")
-      || (item.dataset.route === "knowledge" && state.route === "car-profile");
+      || (item.dataset.route === "jobs" && state.route === "resolved" && state.resolvedReturn.route === "jobs")
+      || (item.dataset.route === "knowledge" && (state.route === "car-profile" || (state.route === "resolved" && state.resolvedReturn.route === "car-profile")));
     item.classList.toggle("is-active", isActive);
   });
 }
@@ -1676,9 +1677,10 @@ function renderResolvedJob() {
   // show when it was cancelled (updated_at) instead. Matches the "Active
   // job" header exactly: context + title, no back button, no status
   // chip -- this is a paused job, not a finished repair.
+  const backLabel = state.resolvedReturn.route === "car-profile" ? "Back to repair history" : "Back to jobs";
   const header = isDeleted
-    ? taskHeader({ context: vehicle, title: "Deleted job" })
-    : taskHeader({ context: "Repair details", title: vehicle, status: "Resolved", statusType: "resolved" });
+    ? taskHeader({ context: vehicle, title: "Deleted job", backAction: "back-from-resolved", backLabel })
+    : taskHeader({ context: "Repair details", title: vehicle, status: "Resolved", statusType: "resolved", backAction: "back-from-resolved", backLabel });
   // Vehicle spec line holds trim/drivetrain/engine/transmission only --
   // mileage gets its own odometer line rather than being folded in here.
   const specLine = [
@@ -1695,7 +1697,6 @@ function renderResolvedJob() {
       <div class="resolved-report-head">
         <div class="resolved-report-identity">
           <h2>${escapeHTML(vehicle)}</h2>
-          <span class="section-label result-section-label resolved-vehicle-label">Vehicle details</span>
           <div class="selected-repair-specs">
             ${specLine ? `<span class="selected-repair-spec-line">${icon("car")}<span>${escapeHTML(specLine)}</span></span>` : ""}
             ${odometerLine ? `<span class="selected-repair-date-line">${icon("gauge")}<span>${escapeHTML(odometerLine)}</span></span>` : ""}
@@ -1904,6 +1905,9 @@ function openJob(jobId) {
   if (!job) return;
   state.selectedJobId = job.id;
   if (job.status === "resolved" || job.status === "deleted") {
+    state.resolvedReturn = state.route === "car-profile"
+      ? { route: "car-profile", profileId: state.activeProfileId, tab: state.profileTab }
+      : { route: "jobs" };
     state.route = "resolved";
     animateNextScreen = true;
     updateNavigation();
@@ -2817,6 +2821,14 @@ document.addEventListener("click", (event) => {
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
     if (action === "open-job") return openJob(actionButton.dataset.jobId || state.activeJobId);
+    if (action === "back-from-resolved") {
+      const target = state.resolvedReturn;
+      if (target.route === "car-profile" && state.activeProfile) {
+        state.profileTab = target.tab || "history";
+        return setRoute("car-profile");
+      }
+      return setRoute("jobs");
+    }
     if (action === "open-car-profile") return openCarProfile(actionButton.dataset.profileId);
     if (action === "back-to-library") {
       state.activeProfile = null;
