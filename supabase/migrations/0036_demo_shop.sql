@@ -47,7 +47,8 @@ begin
   if coalesce(is_exempt, false) then return; end if;
   if not coalesce(is_sharing, false) then return; end if;
 
-  insert into public.network_repair_contributions (shop_id, make, model, system, label, occurrences)
+  insert into public.network_repair_contributions
+    (shop_id, make, model, system, label, job_id, symptom_text, repair_text)
   select
     target_shop,
     v.make,
@@ -58,7 +59,9 @@ begin
       nullif(trim(coalesce(rr.cause, '')), ''),
       nullif(trim(coalesce(j.complaint, '')), '')
     ),
-    count(*)
+    j.id,
+    nullif(trim(concat_ws(' — ', nullif(trim(coalesce(j.complaint, '')), ''), nullif(trim(coalesce(j.observations, '')), ''))), ''),
+    nullif(trim(concat_ws(' — ', nullif(trim(coalesce(rr.work_performed, '')), ''), nullif(trim(coalesce(rr.verification_notes, '')), ''))), '')
   from public.jobs j
   join public.vehicles v on v.id = j.vehicle_id
   join public.repair_records rr on rr.job_id = j.id
@@ -67,18 +70,15 @@ begin
     and rr.verified = true
     and nullif(trim(coalesce(v.make, '')), '') is not null
     and nullif(trim(coalesce(v.model, '')), '') is not null
-  group by 1, 2, 3, 4, coalesce(
-      (select c.code from public.job_dtc_codes c where c.job_id = j.id order by c.created_at limit 1),
-      nullif(trim(coalesce(rr.cause, '')), ''),
-      nullif(trim(coalesce(j.complaint, '')), '')
-    )
-  having coalesce(
+    and coalesce(
       (select c.code from public.job_dtc_codes c where c.job_id = j.id order by c.created_at limit 1),
       nullif(trim(coalesce(rr.cause, '')), ''),
       nullif(trim(coalesce(j.complaint, '')), '')
     ) is not null
-  on conflict (shop_id, make, model, system, label) do update
-    set occurrences = excluded.occurrences, updated_at = now();
+  on conflict (shop_id, job_id) do update
+    set make = excluded.make, model = excluded.model, system = excluded.system,
+      label = excluded.label, symptom_text = excluded.symptom_text,
+      repair_text = excluded.repair_text, updated_at = now();
 end;
 $$;
 
@@ -87,7 +87,9 @@ returns table (
   system text,
   label text,
   occurrences integer,
-  shop_count integer
+  shop_count integer,
+  symptoms text[],
+  repairs text[]
 )
 language plpgsql security definer
 set search_path = public
@@ -109,15 +111,17 @@ begin
   select
     c.system,
     c.label,
-    sum(c.occurrences)::int,
-    count(distinct c.shop_id)::int
+    count(*)::int,
+    count(distinct c.shop_id)::int,
+    array_remove(array_agg(distinct c.symptom_text), null),
+    array_remove(array_agg(distinct c.repair_text), null)
   from public.network_repair_contributions c
   where c.shop_id <> target_shop
     and lower(c.make) = lower(trim(target_make))
     and lower(c.model) = lower(trim(target_model))
   group by c.system, c.label
   having count(distinct c.shop_id) >= min_contributing_shops
-  order by sum(c.occurrences) desc, c.label
+  order by count(*) desc, c.label
   limit 20;
 end;
 $$;
