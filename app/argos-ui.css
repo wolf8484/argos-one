@@ -453,6 +453,21 @@ main:focus {
   stroke-width: 1.5;
 }
 
+.nav-update-dot {
+  display: none;
+  position: absolute;
+  top: 8px;
+  left: calc(50% + 7px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-fill);
+}
+
+.nav-item.has-update .nav-update-dot {
+  display: block;
+}
+
 .scroll-cue {
   position: fixed;
   z-index: 48;

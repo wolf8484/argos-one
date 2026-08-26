@@ -26,6 +26,9 @@ let animateNextScreen = false;
 let pendingMatchCarouselRestore = null;
 let lastResearchResult = null;
 const photoGestureStates = new WeakMap();
+const BUILD_VERSION = window.__ARGOS_BUILD_VERSION__ || "dev-local";
+let updateAvailable = false;
+let updateCheckInFlight = false;
 const assetBase = window.location.pathname.startsWith("/dashboard") ? "/argos-ui" : "";
 const isPersistedJobId = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id || ""));
 
@@ -906,6 +909,29 @@ function updateNavigation() {
       || (item.dataset.route === "knowledge" && (state.route === "car-profile" || (state.route === "resolved" && state.resolvedReturn.route === "car-profile")));
     item.classList.toggle("is-active", isActive);
   });
+}
+
+function updateNavUpdateBadge() {
+  const settingsNavItem = document.querySelector('.nav-item[data-route="settings"]');
+  if (settingsNavItem) settingsNavItem.classList.toggle("has-update", updateAvailable);
+}
+
+// Compares the commit baked into this loaded bundle against a live check --
+// a stale open tab/installed PWA never re-fetches app.js on its own, so this
+// is the only way it learns a newer deploy exists.
+function checkForUpdate() {
+  if (updateCheckInFlight) return;
+  updateCheckInFlight = true;
+  fetch("/api/version", { cache: "no-store" })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      const wasAvailable = updateAvailable;
+      updateAvailable = Boolean(data && data.version && data.version !== BUILD_VERSION);
+      updateNavUpdateBadge();
+      if (updateAvailable !== wasAvailable && state.route === "settings") renderSettings();
+    })
+    .catch(() => {})
+    .finally(() => { updateCheckInFlight = false; });
 }
 
 function showToast(message) {
@@ -1869,6 +1895,13 @@ function renderSettings() {
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Voice and dictation</strong><small>Microphone, language and transcription review</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Camera and photos</strong><small>Permissions, image quality and storage</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Workshop profile</strong><small>Bays, technicians and supplier region</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
+    </section>
+
+    <section class="settings-group" aria-labelledby="about-settings">
+      <div class="settings-section-head"><span class="field-label">About</span><h2 id="about-settings">App version</h2></div>
+      ${updateAvailable
+        ? `<button class="setting-row is-action" type="button" data-action="reload-app"><span><strong>Update available</strong><small>A newer version of Argos One is ready. Reload to switch to it.</small></span><span class="setting-value">Reload</span></button>`
+        : `<div class="setting-row"><span><strong>You're up to date</strong><small>Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}</small></span><span class="setting-value">Up to date</span></div>`}
     </section>
   </section>`;
 }
@@ -3163,6 +3196,7 @@ document.addEventListener("click", (event) => {
       return;
     }
     if (action === "scroll-next") return scrollToNextView();
+    if (action === "reload-app") { window.location.reload(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "toggle-network-sharing") {
       const next = !state.shop?.sharesRepairData;
@@ -3774,4 +3808,10 @@ updateWorkshopClock();
 setInterval(updateWorkshopClock, 30000);
 render();
 loadBackendData();
+
+checkForUpdate();
+setInterval(checkForUpdate, 5 * 60 * 1000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") checkForUpdate();
+});
 })();

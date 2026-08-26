@@ -5,12 +5,16 @@ import { useEffect } from 'react'
 
 export default function DashboardPage() {
   useEffect(() => {
+    // Exposed so app.js can compare its own bundle's build against a live
+    // check to /api/version and surface an update prompt.
+    ;(window as unknown as { __ARGOS_BUILD_VERSION__: string }).__ARGOS_BUILD_VERSION__ = process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev-local'
+
     if (document.querySelector('script[data-argos-ui]')) return
 
     const script = document.createElement('script')
     // Keep the UI runtime cacheable while ensuring remote tablets do not reuse
     // the pre-hydration build that rendered only the persistent navigation.
-    script.src = '/argos-ui/app.js?v=20260826-home-metric-divider'
+    script.src = '/argos-ui/app.js?v=20260826-update-check'
     script.dataset.argosUi = 'true'
     document.body.appendChild(script)
   }, [])
@@ -75,6 +79,7 @@ export default function DashboardPage() {
           </button>
           <button type="button" data-route="settings" className="nav-item">
             <span className="nav-icon" data-icon="settings" />
+            <span className="nav-update-dot" aria-hidden="true" />
             <span>Settings</span>
           </button>
         </nav>
