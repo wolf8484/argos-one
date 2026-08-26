@@ -222,19 +222,17 @@ h3 {
 }
 
 .workshop-clock {
-  grid-column: 2;
-  display: none;
-  align-items: center;
-  flex-wrap: nowrap;
+  color: #e0e0dc;
   width: max-content;
   min-height: 52px;
-  padding: 0 12px;
-  gap: 8px;
-  border: 1px solid #2d2d2d;
-  background: transparent;
-  color: #e0e0dc;
   font-size: var(--copy-size);
   white-space: nowrap;
+  background: none;
+  border: 1px solid #707070;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
 }
 
 .workshop-clock:hover,
@@ -327,8 +325,8 @@ h3 {
 }
 
 .topbar .icon-button {
-  border-color: #2d2d2d;
   color: #e0e0dc;
+  border-color: #707070;
 }
 
 .topbar .icon-button:hover {
@@ -1068,20 +1066,20 @@ main:focus {
 }
 
 .library-result-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 0;
-  height: auto;
-  padding: 16px 4px;
   border: 0;
-  border-bottom: 1px solid var(--line);
-  background: 0 0;
+  border-bottom: 1px solid #707070;
+  width: 100%;
+  height: auto;
+  min-height: 0;
   color: var(--text);
   text-align: left;
   cursor: default;
+  background: none;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 4px;
   transition: background 160ms ease;
+  display: flex;
 }
 
 .library-result-card:hover,
@@ -4467,15 +4465,15 @@ body.dictation-active .toast {
   }
 
   .home-metric.secondary {
+    border-top: 0;
+    border-left: 1px solid #707070;
+    text-align: left;
     grid-column: auto;
-    display: flex;
+    align-items: flex-start;
     min-height: 126px;
     margin: 0;
     padding: 0 0 0 18px;
-    border-top: 0;
-    border-left: 1px solid var(--line);
-    align-items: flex-start;
-    text-align: left;
+    display: flex;
   }
 
   .home-metric.secondary strong {
@@ -5126,16 +5124,16 @@ body.dictation-active .toast {
 }
 
 .profile-repair-row-button {
-  background: transparent;
   border: none;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #707070;
   width: 100%;
   font: inherit;
   text-align: left;
   cursor: pointer;
+  background: none;
   align-items: center;
   gap: 16px;
-  padding: 16px 16px;
+  padding: 16px;
   display: flex;
 }
 
