@@ -5173,6 +5173,15 @@ body.dictation-active .toast {
   margin-bottom: 16px;
 }
 
+/* Says a section could not honour the active variant filter. Muted and small
+   because it is a caveat on the section below it, not a heading of its own. */
+.profile-scope-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 1.4;
+}
+
 /* "Known issues" is auto-populated reference data (recalls + fault-code
    lookups), not a technician's own words -- it must read as visually
    distinct from Shop notes so nobody mistakes one for the other. */

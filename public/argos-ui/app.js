@@ -1207,14 +1207,74 @@ function repairVariantLabel(job) {
   return [job.vehicle.trim, job.vehicle.engine].filter(Boolean).join(" · ") || "Unspecified";
 }
 
-function profileVariantOptions(repairs) {
-  const seen = new Map();
+// Drawn from both surfaces the filter now spans -- the resolved-job list
+// behind Repair history and the grouped cases behind Common symptoms &
+// repairs -- deduped by job id, since in real data the same resolved job
+// feeds both. Reading only the job list would miss variants that appear in
+// grouped cases.
+function profileVariantOptions(repairs, repairGroups = []) {
+  const byJob = new Map();
   repairs.forEach((job) => {
-    const key = repairVariantKey(job);
-    if (!seen.has(key)) seen.set(key, { key, label: repairVariantLabel(job), count: 0 });
+    byJob.set(String(job.id), { key: repairVariantKey(job), label: repairVariantLabel(job) });
+  });
+  repairGroups.forEach((group) => {
+    (group.instances || []).forEach((instance) => {
+      const jobId = String(instance.job_id || "");
+      if (!jobId || byJob.has(jobId)) return;
+      byJob.set(jobId, {
+        key: instanceVariantKey(instance),
+        label: [instance.trim, instance.engine].filter(Boolean).join(" · ") || "Unspecified",
+      });
+    });
+  });
+  const seen = new Map();
+  byJob.forEach(({ key, label }) => {
+    if (!seen.has(key)) seen.set(key, { key, label, count: 0 });
     seen.get(key).count += 1;
   });
   return Array.from(seen.values()).sort((a, b) => b.count - a.count);
+}
+
+// The same trim|engine key the Repair history tab filters by, rebuilt from a
+// repair-group instance (vehicle_profile_repair_groups, 0037) instead of a
+// job row -- so one variant selection narrows both tabs.
+function instanceVariantKey(instance) {
+  return [instance.trim || "", instance.engine || ""].join("|");
+}
+
+// Narrows each case to the selected variant and re-derives its occurrence
+// count from what survived, dropping cases with nothing left. Counting the
+// filtered instances rather than trusting the group's own `occurrences`
+// matters: that number was computed server-side across every variant.
+function filterRepairGroups(groups, variantKey) {
+  if (variantKey === "all") return groups;
+  return groups.reduce((kept, group) => {
+    const instances = (group.instances || []).filter((instance) => instanceVariantKey(instance) === variantKey);
+    if (instances.length) kept.push({ ...group, instances, occurrences: instances.length });
+    return kept;
+  }, []);
+}
+
+// Notes record vehicle_trim but never an engine, so they can only honour the
+// trim half of the variant key. Matching on that alone is deliberately
+// looser than the repair filter rather than dropping every note the moment a
+// variant is picked.
+function filterNotesByVariant(notes, variantKey) {
+  if (variantKey === "all") return notes;
+  const trim = variantKey.split("|")[0];
+  if (!trim) return notes;
+  return notes.filter((note) => (note.vehicle_trim || "") === trim);
+}
+
+// Recalls, complaint trends and network patterns are all keyed make+model at
+// the source, so a variant selection cannot narrow them. Stated once, up
+// front under the chips, rather than as a caption on each affected section:
+// repeated mid-page captions read as though they belong to whichever heading
+// sits above them. They are never hidden while filtered -- a mechanic missing
+// a relevant recall is a worse failure than showing a broader one.
+function variantScopeNote(variantKey, modelLabel) {
+  if (variantKey === "all") return "";
+  return `<p class="profile-scope-note">Filtering your shop's repairs and notes. Recalls, commonly reported and network cases aren't variant-specific &mdash; they stay shown for all ${escapeHTML(modelLabel)} variants.</p>`;
 }
 
 function formatKilometres(value) {
@@ -1611,9 +1671,14 @@ function renderCarProfile() {
     return;
   }
   const { profile, notes, repairGroups = [], repairs, recalls = [], complaintTrends = [], networkPatterns = [] } = detail;
-  const variantOptions = profileVariantOptions(repairs);
+  const variantOptions = profileVariantOptions(repairs, repairGroups);
+  const variantTotal = variantOptions.reduce((total, option) => total + option.count, 0);
   const activeVariant = state.profileVariantFilter;
   const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
+  const visibleGroups = filterRepairGroups(repairGroups, activeVariant);
+  const visibleNotes = filterNotesByVariant(notes, activeVariant);
+  const modelLabel = profile.model || profileName(profile);
+  const scopeNote = variantScopeNote(activeVariant, modelLabel);
   const isNotesTab = state.profileTab !== "history";
   app.innerHTML = `<section class="screen workflow-shell car-profile-shell">
     ${taskHeader({ context: profile.make || "Car profile", title: profile.model || profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
@@ -1622,6 +1687,11 @@ function renderCarProfile() {
       <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
       <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
+
+    ${variantOptions.length > 1 ? `<div class="quick-row profile-variant-filters" role="group" aria-label="Filter by variant">
+      <button class="quick-chip${activeVariant === "all" ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="all">All ${variantTotal}</button>
+      ${variantOptions.map((option) => `<button class="quick-chip${activeVariant === option.key ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="${escapeHTML(option.key)}">${escapeHTML(option.label)} ${option.count}</button>`).join("")}
+    </div>${scopeNote}` : ""}
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
       <form class="profile-note-form" id="profile-note-form" autocomplete="off">
@@ -1635,9 +1705,13 @@ function renderCarProfile() {
         </div>
       </form>
       <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
-      ${profileRepairsSection(repairGroups)}
+      ${visibleGroups.length || activeVariant === "all"
+        ? profileRepairsSection(visibleGroups)
+        : `<p class="profile-empty">No repairs recorded for that variant yet.</p>`}
       <div class="field-header"><span class="field-label">Shop notes</span></div>
-      ${notes.length ? `<div class="profile-note-list">${notes.map(profileNoteCard).join("")}</div>` : `<p class="profile-empty">No notes yet. Add the first one above.</p>`}
+      ${visibleNotes.length
+        ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
+        : `<p class="profile-empty">${notes.length ? "No notes for that variant yet." : "No notes yet. Add the first one above."}</p>`}
       ${profileNetworkSection(networkPatterns)}
       <div class="field-header"><span class="field-label">Known issues<span class="reference-tag">Reference</span></span></div>
       <div class="known-issues-list">
@@ -1647,10 +1721,6 @@ function renderCarProfile() {
     </div>
 
     <div class="profile-panel"${isNotesTab ? " hidden" : ""} role="tabpanel" aria-label="Repair history">
-      ${variantOptions.length > 1 ? `<div class="quick-row profile-variant-filters" role="group" aria-label="Filter by variant">
-        <button class="quick-chip${activeVariant === "all" ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="all">All ${repairs.length}</button>
-        ${variantOptions.map((option) => `<button class="quick-chip${activeVariant === option.key ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="${escapeHTML(option.key)}">${escapeHTML(option.label)} ${option.count}</button>`).join("")}
-      </div>` : ""}
       ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map((job) => jobCard(job)).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match that variant." : "No resolved repairs recorded for this car yet."}</p>`}
     </div>
   </section>`;
@@ -1682,6 +1752,12 @@ async function loadLibraryProfiles() {
 // sheet (see shopRepairCaseSheet). Content lengths deliberately vary within a
 // case (one-line vs multi-sentence) so the fixed-height sheet can be verified
 // against real content instead of uniformly-sized placeholder text.
+// Instances carry their own trim/engine where they differ, so the fixture
+// exercises the in-profile variant filter (a profile only renders the filter
+// once it has more than one variant behind it). These are the fallback.
+const FIXTURE_DEFAULT_TRIM = "VTi-LX";
+const FIXTURE_DEFAULT_ENGINE = "1.5L turbo petrol";
+
 const DEV_FIXTURE_CASES = [
   {
     system: "emissions",
@@ -1694,10 +1770,10 @@ const DEV_FIXTURE_CASES = [
       { key: "p0420-2", year: 2018, mileage: 78000, resolvedAt: "2026-05-02",
         complaint: "Check-engine light on, slight rotten egg smell from exhaust noticed by customer during highway driving.",
         workPerformed: "Replaced catalytic converter and both oxygen sensors, cleared codes and verified with a full drive cycle before returning the vehicle." },
-      { key: "p0420-3", year: 2020, mileage: 64500, resolvedAt: "2026-02-10",
+      { key: "p0420-3", year: 2020, mileage: 64500, resolvedAt: "2026-02-10", trim: "RS",
         complaint: "Customer reported the check-engine light flashing intermittently on cold starts, mostly in the mornings, and said it would sometimes go off after the car warmed up for ten minutes or so. No other drivability complaints -- engine ran smoothly with no hesitation or rough idle during the test drive we did with the customer present.",
         workPerformed: "Diagnosed an exhaust leak upstream of the catalytic converter caused by a cracked manifold gasket, which was letting in extra oxygen and skewing the downstream O2 sensor reading enough to trip the efficiency code intermittently. Replaced the manifold gasket, retorqued the manifold bolts to spec, cleared the code, and completed a full drive cycle with a scan tool connected to confirm the readiness monitor passed with no code recurrence." },
-      { key: "p0420-4", year: 2017, mileage: 103000, resolvedAt: "2025-11-20",
+      { key: "p0420-4", year: 2017, mileage: 103000, resolvedAt: "2025-11-20", trim: "RS",
         complaint: "No symptoms noticed by customer; code found during scheduled service scan.",
         workPerformed: "Cat efficiency below threshold. Replaced converter and both O2 sensors." },
     ],
@@ -1720,7 +1796,7 @@ const DEV_FIXTURE_CASES = [
       { key: "p0301-1", year: 2019, mileage: 88000, resolvedAt: "2026-08-01",
         complaint: "Rough idle.",
         workPerformed: "Replaced cylinder 1 coil pack." },
-      { key: "p0301-2", year: 2019, mileage: 71000, resolvedAt: "2026-03-15",
+      { key: "p0301-2", year: 2019, mileage: 71000, resolvedAt: "2026-03-15", trim: "Type R", engine: "2.0L turbo petrol",
         complaint: "Engine shaking at idle, customer says it's worse when the car is cold and settles down once warmed up.",
         workPerformed: "Replaced the ignition coil and spark plugs on all cylinders as a preventive measure rather than just the failing one, since the plugs were near the end of their service interval anyway." },
       { key: "p0301-3", year: 2016, mileage: 121000, resolvedAt: "2025-09-05",
@@ -1733,7 +1809,7 @@ const DEV_FIXTURE_CASES = [
     label: "Misfire under acceleration",
     dtc: "P0303",
     instances: [
-      { key: "p0303-1", year: 2020, mileage: 52000, resolvedAt: "2026-06-20",
+      { key: "p0303-1", year: 2020, mileage: 52000, resolvedAt: "2026-06-20", trim: "Type R", engine: "2.0L turbo petrol",
         complaint: "Intermittent misfire under acceleration.",
         workPerformed: "Replaced cylinder 3 coil pack." },
     ],
@@ -1744,7 +1820,7 @@ function fixtureJobId(key) {
   return `fixture-honda-civic-${key}`;
 }
 
-function fixtureResolvedJob({ key, year, mileage, resolvedAt, complaint, dtc, workPerformed }) {
+function fixtureResolvedJob({ key, year, mileage, resolvedAt, complaint, dtc, workPerformed, trim, engine }) {
   const resolvedIso = `${resolvedAt}T09:00:00.000Z`;
   return {
     id: fixtureJobId(key),
@@ -1754,7 +1830,8 @@ function fixtureResolvedJob({ key, year, mileage, resolvedAt, complaint, dtc, wo
       year: String(year), make: "Honda", model: "Civic", mileage: Number(mileage).toLocaleString("en-AU"),
       vin: "", customerName: "Demo customer", customerFirstName: "Demo", customerLastName: "Customer",
       customerPhone: "", customerEmail: "",
-      trim: "VTi-LX", engine: "1.5L turbo petrol", drivetrain: "FWD", transmission: "CVT",
+      trim: trim || FIXTURE_DEFAULT_TRIM, engine: engine || FIXTURE_DEFAULT_ENGINE,
+      drivetrain: "FWD", transmission: "CVT",
     },
     bay: "Bay 02",
     time: "09:00",
@@ -1791,6 +1868,10 @@ function applyDevFixtures(detail) {
     instances: repairCase.instances.map((instance) => ({
       job_id: fixtureJobId(instance.key),
       year: instance.year,
+      // Mirrors what vehicle_profile_repair_groups returns (0037) so the
+      // variant filter behaves identically against fixtures and real data.
+      trim: instance.trim || FIXTURE_DEFAULT_TRIM,
+      engine: instance.engine || FIXTURE_DEFAULT_ENGINE,
       mileage: instance.mileage,
       repaired_at: instance.resolvedAt,
       symptom_text: instance.complaint,
