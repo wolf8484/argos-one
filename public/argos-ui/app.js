@@ -50,7 +50,7 @@ const state = {
   profileTab: "notes",
   profileStatus: "idle",
   profileNoteDraft: "",
-  profileVariantFilter: "all",
+  profileVariantFilter: "",
   resolvedReturn: { route: "jobs" },
   currentJobId: null,
   backendStatus: "loading",
@@ -576,7 +576,7 @@ async function loadBackendData() {
     await apiRequest("/api/demo-jobs", { method: "POST" });
     const [{ jobs }, account] = await Promise.all([apiRequest("/api/jobs"), apiRequest("/api/me")]);
     state.profile = account.profile || null;
-    state.shop = account.shop ? { ...account.shop, sharesRepairData: Boolean(account.shop.shares_repair_data) } : null;
+    state.shop = account.shop ? { ...account.shop, sharesRepairData: Boolean(account.shop.shares_repair_data), networkReadExempt: Boolean(account.shop.network_read_exempt) } : null;
     const profileInitials = state.profile?.full_name?.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
     const profileLabel = document.querySelector(".profile-button span");
     if (profileInitials && profileLabel) profileLabel.textContent = profileInitials;
@@ -1196,15 +1196,15 @@ function profileSearchText(profile) {
   return [profile.make, profile.model].filter(Boolean).join(" ").toLowerCase();
 }
 
-// A profile is Make+Model only; trim/engine live on the vehicles/repairs
-// inside it and are surfaced as a filter in Repair history, not a profile
-// attribute.
+// A profile is Make+Model only; trim lives on the vehicles/repairs inside
+// it. The library now picks a trim before ever opening a profile (Brand ->
+// Golf GTI -> profile), so every profile page is scoped to one trim key.
 function repairVariantKey(job) {
-  return [job.vehicle.trim || "", job.vehicle.engine || ""].join("|");
+  return job.vehicle.trim || "";
 }
 
 function repairVariantLabel(job) {
-  return [job.vehicle.trim, job.vehicle.engine].filter(Boolean).join(" · ") || "Unspecified";
+  return job.vehicle.trim || "Unspecified";
 }
 
 // Drawn from both surfaces the filter now spans -- the resolved-job list
@@ -1223,7 +1223,7 @@ function profileVariantOptions(repairs, repairGroups = []) {
       if (!jobId || byJob.has(jobId)) return;
       byJob.set(jobId, {
         key: instanceVariantKey(instance),
-        label: [instance.trim, instance.engine].filter(Boolean).join(" · ") || "Unspecified",
+        label: instance.trim || "Unspecified",
       });
     });
   });
@@ -1235,46 +1235,47 @@ function profileVariantOptions(repairs, repairGroups = []) {
   return Array.from(seen.values()).sort((a, b) => b.count - a.count);
 }
 
-// The same trim|engine key the Repair history tab filters by, rebuilt from a
+// The same trim key the Repair history tab filters by, rebuilt from a
 // repair-group instance (vehicle_profile_repair_groups, 0037) instead of a
 // job row -- so one variant selection narrows both tabs.
 function instanceVariantKey(instance) {
-  return [instance.trim || "", instance.engine || ""].join("|");
+  return instance.trim || "";
 }
 
-// Narrows each case to the selected variant and re-derives its occurrence
+// Narrows each case to the selected trim and re-derives its occurrence
 // count from what survived, dropping cases with nothing left. Counting the
 // filtered instances rather than trusting the group's own `occurrences`
-// matters: that number was computed server-side across every variant.
-function filterRepairGroups(groups, variantKey) {
-  if (variantKey === "all") return groups;
+// matters: that number was computed server-side across every trim.
+function filterRepairGroups(groups, trimKey) {
   return groups.reduce((kept, group) => {
-    const instances = (group.instances || []).filter((instance) => instanceVariantKey(instance) === variantKey);
+    const instances = (group.instances || []).filter((instance) => instanceVariantKey(instance) === trimKey);
     if (instances.length) kept.push({ ...group, instances, occurrences: instances.length });
     return kept;
   }, []);
 }
 
-// Notes record vehicle_trim but never an engine, so they can only honour the
-// trim half of the variant key. Matching on that alone is deliberately
-// looser than the repair filter rather than dropping every note the moment a
-// variant is picked.
-function filterNotesByVariant(notes, variantKey) {
-  if (variantKey === "all") return notes;
-  const trim = variantKey.split("|")[0];
-  if (!trim) return notes;
-  return notes.filter((note) => (note.vehicle_trim || "") === trim);
+function filterNotesByVariant(notes, trimKey) {
+  return notes.filter((note) => (note.vehicle_trim || "") === trimKey);
 }
 
-// Recalls, complaint trends and network patterns are all keyed make+model at
-// the source, so a variant selection cannot narrow them. Stated once, up
-// front under the chips, rather than as a caption on each affected section:
-// repeated mid-page captions read as though they belong to whichever heading
-// sits above them. They are never hidden while filtered -- a mechanic missing
-// a relevant recall is a worse failure than showing a broader one.
-function variantScopeNote(variantKey, modelLabel) {
-  if (variantKey === "all") return "";
-  return `<p class="profile-scope-note">Filtering your shop's repairs and notes. Recalls, commonly reported and network cases aren't variant-specific &mdash; they stay shown for all ${escapeHTML(modelLabel)} variants.</p>`;
+// Network cases are grouped by trim at the source too (0039), same shape as
+// filterRepairGroups above.
+function filterNetworkByTrim(networkGroups, trimKey) {
+  return networkGroups.reduce((kept, group) => {
+    const rows = (group.rows || []).filter((row) => (row.trim || "") === trimKey);
+    if (rows.length) kept.push({ ...group, rows, occurrences: rows.reduce((sum, row) => sum + row.occurrences, 0) });
+    return kept;
+  }, []);
+}
+
+// Recalls and complaint trends are keyed make+model at the source (no trim
+// column), so they can't be narrowed the way repairs, notes and network
+// cases now are. Stated once, up front, rather than as a caption on each
+// affected section: repeated mid-page captions read as though they belong to
+// whichever heading sits above them. They are never hidden -- a mechanic
+// missing a relevant recall is a worse failure than showing a broader one.
+function variantScopeNote(modelLabel) {
+  return `<p class="profile-scope-note">Recalls and commonly reported aren't trim-specific &mdash; they stay shown for all ${escapeHTML(modelLabel)} variants.</p>`;
 }
 
 function formatKilometres(value) {
@@ -1294,6 +1295,36 @@ function profileCard(profile, { hidden = false } = {}) {
   const repairs = Number(profile.repair_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
     <span class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</span>
+    <span class="library-result-counts">
+      <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
+    </span>
+    <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
+  </button>`;
+}
+
+// One row per trim the shop has actually seen for this model, not every
+// possible trim -- the brand drill-in list is the trim picker now, so this
+// is where a mechanic chooses "Golf GTI" rather than "Golf" before ever
+// opening the profile. A model with no recorded trims still gets exactly
+// one row (bare model name), same as before this split existed.
+function profileTrimRows(profiles) {
+  return profiles.flatMap((profile) => {
+    const trims = Array.isArray(profile.trims) && profile.trims.length
+      ? profile.trims
+      : [{ trim: null, vehicle_count: profile.vehicle_count, repair_count: profile.repair_count }];
+    return trims.map((entry) => ({ profile, entry }));
+  }).sort((a, b) => {
+    const modelCompare = (a.profile.model || "").localeCompare(b.profile.model || "");
+    return modelCompare !== 0 ? modelCompare : (b.entry.repair_count || 0) - (a.entry.repair_count || 0);
+  });
+}
+
+function profileTrimCard(profile, entry) {
+  const trimKey = entry.trim || "";
+  const label = trimKey ? `${profile.model || ""} ${trimKey}`.trim() : (profile.model || profileName(profile));
+  const repairs = Number(entry.repair_count || 0);
+  return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-trim="${escapeHTML(trimKey)}" aria-label="Open the ${escapeHTML(label)} car profile">
+    <span class="library-result-name">${escapeHTML(label)}</span>
     <span class="library-result-counts">
       <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
     </span>
@@ -1408,10 +1439,10 @@ function renderKnowledge() {
   const activeGroup = state.libraryBrand ? groups.find((group) => group.make === state.libraryBrand) : null;
 
   if (activeGroup) {
-    const models = sortedProfileList(activeGroup.profiles);
+    const trimRows = profileTrimRows(activeGroup.profiles);
     app.innerHTML = `<section class="screen workflow-shell">
       ${taskHeader({ context: "Repair library", title: activeGroup.make, backAction: "back-to-library-brands", backLabel: "Back to all brands" })}
-      <div class="library-result-list">${models.map((profile) => profileCard(profile)).join("")}</div>
+      <div class="library-result-list">${trimRows.map(({ profile, entry }) => profileTrimCard(profile, entry)).join("")}</div>
     </section>`;
     return;
   }
@@ -1553,14 +1584,14 @@ function profileRepairsSection(rows) {
 // a rare cross-shop fault is exactly what a mechanic won't already know,
 // so it can't be the one that gets buried behind a "most common" pick.
 function networkPatternRow(row) {
-  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="network" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}">
+  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="network" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}" data-trim="${escapeHTML(row.trim || "")}">
     <span class="profile-repair-label">${escapeHTML(row.mostCommonIssue || row.label)}</span>
-    <span class="profile-repair-meta">${row.shopCount} shops · <strong>${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span>
+    <span class="profile-repair-meta">${row.shopCount} shop${row.shopCount === 1 ? "" : "s"} · <strong>${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span>
   </button></li>`;
 }
 
 function networkRepairCaseSheet(row) {
-  const meta = `${row.shopCount} shops · ${row.occurrences} repair${row.occurrences === 1 ? "" : "s"} reported`;
+  const meta = `${row.shopCount} shop${row.shopCount === 1 ? "" : "s"} · ${row.occurrences} repair${row.occurrences === 1 ? "" : "s"} reported`;
   openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.mostCommonIssue || row.label)}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
       ${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(row.symptomsSummary)}</p></div>`)}
@@ -1568,18 +1599,23 @@ function networkRepairCaseSheet(row) {
     </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.mostCommonIssue || row.label });
 }
 
+// Gated on read-capability (sharing OR read-exempt, mirroring the SQL
+// function's own check), not on sharesRepairData alone -- a read-exempt
+// shop (the demo shop) doesn't share but must still see this section, or it
+// would wrongly show "Turn on sharing" despite the RPC returning data.
 function profileNetworkSection(networkGroups) {
   const sharing = Boolean(state.shop?.sharesRepairData);
+  const canRead = sharing || Boolean(state.shop?.networkReadExempt);
   const statusTag = sharing
     ? `<span class="reference-tag reference-tag-active">Active</span>`
     : `<span class="reference-tag">Off</span>`;
   const heading = `<div class="field-header"><span class="field-label">Network cases${statusTag}</span></div>`;
 
-  if (!sharing) {
-    return `${heading}<p class="profile-empty">Turn on sharing in Settings to see what other shops found for this model.</p>`;
+  if (!canRead) {
+    return `${heading}<p class="profile-empty">Turn on sharing in Settings to see what other shops found for this trim.</p>`;
   }
   if (!networkGroups.length) {
-    return `${heading}<p class="profile-empty">No shared repairs for this model yet.</p>`;
+    return `${heading}<p class="profile-empty">No shared repairs for this trim yet.</p>`;
   }
   return `${heading}
     <div class="known-issues-list">
@@ -1671,27 +1707,23 @@ function renderCarProfile() {
     return;
   }
   const { profile, notes, repairGroups = [], repairs, recalls = [], complaintTrends = [], networkPatterns = [] } = detail;
-  const variantOptions = profileVariantOptions(repairs, repairGroups);
-  const variantTotal = variantOptions.reduce((total, option) => total + option.count, 0);
-  const activeVariant = state.profileVariantFilter;
-  const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
+  const activeVariant = state.profileVariantFilter || "";
+  const visibleRepairs = repairs.filter((job) => repairVariantKey(job) === activeVariant);
   const visibleGroups = filterRepairGroups(repairGroups, activeVariant);
   const visibleNotes = filterNotesByVariant(notes, activeVariant);
+  const visibleNetwork = filterNetworkByTrim(networkPatterns, activeVariant);
   const modelLabel = profile.model || profileName(profile);
-  const scopeNote = variantScopeNote(activeVariant, modelLabel);
+  const trimTitle = activeVariant ? `${modelLabel} ${activeVariant}`.trim() : modelLabel;
+  const scopeNote = variantScopeNote(modelLabel);
   const isNotesTab = state.profileTab !== "history";
   app.innerHTML = `<section class="screen workflow-shell car-profile-shell">
-    ${taskHeader({ context: profile.make || "Car profile", title: profile.model || profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
+    ${taskHeader({ context: profile.make || "Car profile", title: trimTitle, backAction: "back-to-library", backLabel: "Back to the repair library" })}
 
     <div class="quick-row profile-tabs" role="tablist" aria-label="Car profile sections">
       <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
       <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
-
-    ${variantOptions.length > 1 ? `<div class="quick-row profile-variant-filters" role="group" aria-label="Filter by variant">
-      <button class="quick-chip${activeVariant === "all" ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="all">All ${variantTotal}</button>
-      ${variantOptions.map((option) => `<button class="quick-chip${activeVariant === option.key ? " is-selected" : ""}" type="button" data-action="set-profile-variant" data-variant-key="${escapeHTML(option.key)}">${escapeHTML(option.label)} ${option.count}</button>`).join("")}
-    </div>${scopeNote}` : ""}
+    ${scopeNote}
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
       <form class="profile-note-form" id="profile-note-form" autocomplete="off">
@@ -1705,14 +1737,14 @@ function renderCarProfile() {
         </div>
       </form>
       <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
-      ${visibleGroups.length || activeVariant === "all"
+      ${visibleGroups.length
         ? profileRepairsSection(visibleGroups)
-        : `<p class="profile-empty">No repairs recorded for that variant yet.</p>`}
+        : `<p class="profile-empty">No repairs recorded for this trim yet.</p>`}
       <div class="field-header"><span class="field-label">Shop notes</span></div>
       ${visibleNotes.length
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
-        : `<p class="profile-empty">${notes.length ? "No notes for that variant yet." : "No notes yet. Add the first one above."}</p>`}
-      ${profileNetworkSection(networkPatterns)}
+        : `<p class="profile-empty">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one above."}</p>`}
+      ${profileNetworkSection(visibleNetwork)}
       <div class="field-header"><span class="field-label">Known issues<span class="reference-tag">Reference</span></span></div>
       <div class="known-issues-list">
         ${knownIssuesAccordion("Recalls", "", profileRecallsSection(recalls), recallsSummaryText(recalls))}
@@ -1721,7 +1753,7 @@ function renderCarProfile() {
     </div>
 
     <div class="profile-panel"${isNotesTab ? " hidden" : ""} role="tabpanel" aria-label="Repair history">
-      ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map((job) => jobCard(job)).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match that variant." : "No resolved repairs recorded for this car yet."}</p>`}
+      ${visibleRepairs.length ? `<div class="job-list">${visibleRepairs.map((job) => jobCard(job)).join("")}</div>` : `<p class="profile-empty">${repairs.length ? "No repairs match this trim." : "No resolved repairs recorded for this car yet."}</p>`}
     </div>
   </section>`;
 }
@@ -1890,11 +1922,16 @@ function applyDevFixtures(detail) {
   return detail;
 }
 
-async function openCarProfile(profileId, { tab = "notes" } = {}) {
+// `trim` comes from the brand drill-in row the mechanic just picked, so the
+// profile opens already scoped to it -- no in-page picker. Left undefined
+// only when opened from search (which cuts across models, bypassing the
+// trim picker entirely), in which case the most-repaired trim is picked as
+// the default once the detail has loaded.
+async function openCarProfile(profileId, { tab = "notes", trim } = {}) {
   state.activeProfileId = profileId;
   state.profileTab = tab;
   state.profileNoteDraft = "";
-  state.profileVariantFilter = "all";
+  state.profileVariantFilter = trim === undefined ? null : trim;
   state.profileStatus = "loading";
   state.activeProfile = null;
   setRoute("car-profile");
@@ -1905,6 +1942,10 @@ async function openCarProfile(profileId, { tab = "notes" } = {}) {
     if (state.activeProfileId !== profileId) return hideTopProgressBar();
     detail.repairs = (detail.repairs || []).map(databaseJobToUi);
     state.activeProfile = applyDevFixtures(detail);
+    if (state.profileVariantFilter === null) {
+      const options = profileVariantOptions(state.activeProfile.repairs, state.activeProfile.repairGroups);
+      state.profileVariantFilter = options[0]?.key ?? "";
+    }
     state.profileStatus = "loaded";
   } catch (error) {
     if (state.activeProfileId !== profileId) return hideTopProgressBar();
@@ -3283,7 +3324,7 @@ document.addEventListener("click", (event) => {
       const next = !state.shop?.sharesRepairData;
       return apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify({ sharesRepairData: next }) })
         .then(({ shop }) => {
-          state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data) };
+          state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data), networkReadExempt: Boolean(shop.network_read_exempt) };
           render();
           showToast(next ? "Sharing anonymised repair patterns with the network." : "Stopped sharing with the network.");
         })
@@ -3498,8 +3539,9 @@ document.addEventListener("click", (event) => {
         if (row) shopRepairCaseSheet(row);
         return;
       }
+      const networkTrim = actionButton.dataset.trim || "";
       const systemGroup = (detail.networkPatterns || []).find((g) => g.system === system);
-      const row = systemGroup?.rows.find((r) => r.label === label);
+      const row = systemGroup?.rows.find((r) => r.label === label && (r.trim || "") === networkTrim);
       if (row) networkRepairCaseSheet(row);
       return;
     }
@@ -3516,7 +3558,7 @@ document.addEventListener("click", (event) => {
       }
       return setRoute("jobs");
     }
-    if (action === "open-car-profile") return openCarProfile(actionButton.dataset.profileId);
+    if (action === "open-car-profile") return openCarProfile(actionButton.dataset.profileId, { trim: actionButton.dataset.trim });
     if (action === "back-to-library") {
       state.activeProfile = null;
       state.activeProfileId = null;
@@ -3534,10 +3576,6 @@ document.addEventListener("click", (event) => {
       state.profileTab = actionButton.dataset.profileTab === "history" ? "history" : "notes";
       const draft = document.querySelector("#profile-note-input");
       if (draft) state.profileNoteDraft = draft.value;
-      return render();
-    }
-    if (action === "set-profile-variant") {
-      state.profileVariantFilter = actionButton.dataset.variantKey || "all";
       return render();
     }
   }

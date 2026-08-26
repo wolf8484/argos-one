@@ -502,12 +502,15 @@ export class WorkshopRepository {
     return data ?? []
   }
 
-  // Anonymised repair patterns from other shops on the platform. Returns
-  // nothing unless this shop has opted into sharing (reciprocity) and at
-  // least two *other* shops have logged the same pattern -- both rules are
-  // enforced inside the SQL function, not here, so the UI cannot bypass
-  // them. Never merged into getProfileRepairGroups: this shop's own
-  // "Common symptoms & repairs" stays its own verified work only.
+  // Anonymised repair patterns from other shops on the platform, grouped by
+  // trim -- a mechanic already knows the exact trim in front of them, so a
+  // pattern is only useful narrowed to it. Returns nothing unless this shop
+  // has opted into sharing (reciprocity) or is read-exempt -- enforced
+  // inside the SQL function, not here, so the UI cannot bypass it. There is
+  // deliberately no minimum-contributing-shops floor: no shop identity, and
+  // no shop count, is ever exposed to the reader. Never merged into
+  // getProfileRepairGroups: this shop's own "Common symptoms & repairs"
+  // stays its own verified work only.
   async getNetworkRepairPatterns(make: string, model: string) {
     const { data, error } = await this.supabase.rpc('network_repair_patterns', {
       target_make: make,
@@ -515,7 +518,7 @@ export class WorkshopRepository {
     })
     if (error) throw error
     const rows = (data ?? []) as Array<{
-      system: string; label: string; occurrences: number; shop_count: number
+      system: string; label: string; trim: string | null; occurrences: number; shop_count: number
       symptoms: string[] | null; repairs: string[] | null
     }>
     if (!rows.length) return []
@@ -528,11 +531,15 @@ export class WorkshopRepository {
       const symptoms = row.symptoms ?? []
       const repairs = row.repairs ?? []
       const sourceHash = hashPatternSource(row.label, symptoms, repairs)
+      // network_pattern_summaries keys on trim too (0039) -- two different
+      // trims can share the same system+label, and without trim in the key
+      // they'd overwrite each other's cached summary.
+      const trimKey = row.trim ?? ''
 
       const { data: cached } = await this.supabase
         .from('network_pattern_summaries')
         .select('most_common_issue,symptoms_summary,repair_summary,source_hash')
-        .eq('make', make).eq('model', model).eq('system', row.system).eq('label', row.label)
+        .eq('make', make).eq('model', model).eq('trim', trimKey).eq('system', row.system).eq('label', row.label)
         .maybeSingle()
 
       const summary = cached && cached.source_hash === sourceHash
@@ -541,7 +548,7 @@ export class WorkshopRepository {
 
       if (!cached || cached.source_hash !== sourceHash) {
         await this.supabase.from('network_pattern_summaries').upsert({
-          make, model, system: row.system, label: row.label, source_hash: sourceHash,
+          make, model, trim: trimKey, system: row.system, label: row.label, source_hash: sourceHash,
           most_common_issue: summary.mostCommonIssue,
           symptoms_summary: summary.symptomsSummary,
           repair_summary: summary.repairSummary,
@@ -552,6 +559,7 @@ export class WorkshopRepository {
       return {
         system: row.system,
         label: row.label,
+        trim: row.trim,
         occurrences: row.occurrences,
         shopCount: row.shop_count,
         mostCommonIssue: summary.mostCommonIssue,

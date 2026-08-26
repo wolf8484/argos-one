@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const { data: shop, error } = await auth.supabase
       .from('shops')
-      .select('id,name,timezone,shares_repair_data')
+      .select('id,name,timezone,shares_repair_data,network_read_exempt')
       .eq('id', auth.profile.shop_id)
       .single()
     if (error) throw error

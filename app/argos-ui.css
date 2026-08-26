@@ -5169,12 +5169,9 @@ body.dictation-active .toast {
   line-height: 1.45;
 }
 
-.profile-variant-filters {
-  margin-bottom: 16px;
-}
-
-/* Says a section could not honour the active variant filter. Muted and small
-   because it is a caveat on the section below it, not a heading of its own. */
+/* Says recalls/commonly-reported can't be narrowed to the profile's trim.
+   Muted and small because it is a caveat on the sections below it, not a
+   heading of its own. */
 .profile-scope-note {
   margin: 0 0 8px;
   color: var(--muted);

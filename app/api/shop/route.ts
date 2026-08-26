@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
       .from('shops')
       .update({ shares_repair_data: input.sharesRepairData })
       .eq('id', auth.profile.shop_id)
-      .select('id,name,timezone,shares_repair_data')
+      .select('id,name,timezone,shares_repair_data,network_read_exempt')
       .single()
     if (error) throw error
 
