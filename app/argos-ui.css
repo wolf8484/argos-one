@@ -536,8 +536,8 @@ main:focus {
 }
 
 .home-metric + .home-metric:not(.secondary) {
+  border-left: 1px solid #707070;
   padding-left: 18px;
-  border-left: 1px solid var(--line);
 }
 
 .home-metric strong {
@@ -5044,12 +5044,11 @@ body.dictation-active .toast {
 }
 
 .profile-repair-list {
+  border-top: 1px solid #707070;
   flex-direction: column;
   gap: 0;
-  margin: 8px 0 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--line);
   display: flex;
 }
 
