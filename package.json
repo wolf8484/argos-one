@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:reference": "tsx scripts/seed-reference-data.ts"
+    "seed:reference": "tsx scripts/seed-reference-data.ts",
+    "seed:complaints": "tsx scripts/seed-complaint-trends.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -63,6 +63,10 @@ export const repairSchema = z.object({
   verificationNotes: nullableText,
   dtcs: z.array(z.string().trim().toUpperCase().regex(/^[A-Z][0-9A-Z]{4,6}$/)).max(30).default([]),
   referenceRepairId: z.string().uuid().nullable().optional(),
+  system: z.enum([
+    'engine_fuel_air', 'ignition', 'transmission', 'emissions', 'cooling_hvac',
+    'brakes', 'suspension_steering', 'electrical', 'body_interior', 'other',
+  ]).nullable().optional(),
   items: z.array(repairItemSchema).max(200).default([]),
   resolve: z.boolean().default(false),
 })

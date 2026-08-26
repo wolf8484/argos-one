@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server'
 
 import { requireWorkshopUser } from '@/lib/server/auth'
+import { apiError } from '@/lib/server/http'
 
 export async function GET() {
   const auth = await requireWorkshopUser()
   if ('error' in auth) return auth.error
-  const { data: shop } = await auth.supabase
-    .from('shops')
-    .select('id,name,timezone,currency')
-    .eq('id', auth.profile.shop_id)
-    .single()
-  return NextResponse.json({ profile: auth.profile, shop })
+  try {
+    const { data: shop, error } = await auth.supabase
+      .from('shops')
+      .select('id,name,timezone,shares_repair_data')
+      .eq('id', auth.profile.shop_id)
+      .single()
+    if (error) throw error
+    return NextResponse.json({ profile: auth.profile, shop })
+  } catch (error) {
+    return apiError(error, 'Could not load account')
+  }
 }

@@ -10,7 +10,7 @@ export default function DashboardPage() {
     const script = document.createElement('script')
     // Keep the UI runtime cacheable while ensuring remote tablets do not reuse
     // the pre-hydration build that rendered only the persistent navigation.
-    script.src = '/argos-ui/app.js?v=20260821-known-issues-reference'
+    script.src = '/argos-ui/app.js?v=20260826-recall-body-spacing'
     script.dataset.argosUi = 'true'
     document.body.appendChild(script)
   }, [])

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
+import { hashPatternSource, summarizeNetworkPattern } from '@/lib/server/network-summary'
 import { generateRepairSummary } from '@/lib/server/repair-summary'
 
 type Profile = { id: string; shop_id: string; full_name: string; role: string }
@@ -24,7 +25,7 @@ export class WorkshopRepository {
     const { data, error } = await this.supabase
       .from('jobs')
       .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
-        repair:repair_records!repair_records_job_id_fkey(*,items:repair_items(*)),photos:job_photos(*)`)
+        repair:repair_records!repair_records_job_id_fkey(*,items:repair_items(*),reference:repair_records!repair_records_reference_repair_id_fkey(job_id)),photos:job_photos(*)`)
       .eq('id', id)
       .single()
     if (error) throw error
@@ -209,12 +210,30 @@ export class WorkshopRepository {
       .in('id', repairIds)
     if (detailsError) throw detailsError
     const detailMap = new Map((details ?? []).map((row) => [row.id, row]))
+
+    // The matched job's own complaint/observations/DTCs -- find_similar_repairs
+    // only ever returned the matched repair's cause/work_performed/verification,
+    // so the match card had a fix with no problem to judge it against.
+    const jobIds = [...new Set(data.map((row: { job_id: string }) => row.job_id).filter(Boolean))]
+    const { data: matchedJobs, error: jobsError } = await this.supabase
+      .from('jobs')
+      .select('id,complaint,observations,dtcs:job_dtc_codes(code)')
+      .in('id', jobIds)
+    if (jobsError) throw jobsError
+    const jobMap = new Map((matchedJobs ?? []).map((row) => [row.id, row]))
+
     const insightsByRepair = await this.getMatchInsights(jobId, data.slice(0, 2))
-    return data.map((row: { repair_id: string; evidence: string[] }) => ({
-      ...row,
-      ...detailMap.get(row.repair_id),
-      evidence: this.ensureMinEvidence([...(row.evidence ?? []), ...(insightsByRepair.get(row.repair_id) ?? [])]),
-    }))
+    return data.map((row: { repair_id: string; job_id: string; evidence: string[] }) => {
+      const matchedJob = jobMap.get(row.job_id) as { complaint: string | null; observations: string | null; dtcs: Array<{ code: string }> } | undefined
+      return {
+        ...row,
+        ...detailMap.get(row.repair_id),
+        complaint: matchedJob?.complaint ?? null,
+        observations: matchedJob?.observations ?? null,
+        dtcs: (matchedJob?.dtcs ?? []).map((d) => d.code),
+        evidence: this.ensureMinEvidence([...(row.evidence ?? []), ...(insightsByRepair.get(row.repair_id) ?? [])]),
+      }
+    })
   }
 
   // Weak candidates can surface with fewer than 2 SQL/AI reasons (e.g. no
@@ -270,6 +289,7 @@ export class WorkshopRepository {
 
   async saveRepair(jobId: string, input: {
     workPerformed: string; verificationNotes?: string | null; referenceRepairId?: string | null
+    system?: string | null
     dtcs: string[]; items: Array<Record<string, unknown>>; resolve: boolean
   }) {
     // repair_records.cause holds an AI-generated summary of work_performed +
@@ -284,6 +304,7 @@ export class WorkshopRepository {
       work_performed: input.workPerformed || null,
       verification_notes: input.verificationNotes || null,
       reference_repair_id: input.referenceRepairId || null,
+      system: input.system || null,
       verified: input.resolve,
       completed_by: input.resolve ? this.profile.id : null,
     }
@@ -334,6 +355,14 @@ export class WorkshopRepository {
       selected_reference_id: input.referenceRepairId || null,
     }).eq('id', jobId)
     if (jobError) throw jobError
+
+    // Resolving a job changes what this shop contributes to the network.
+    // Best-effort: a failure here must not fail the mechanic's save, and the
+    // function is a no-op for shops that have not opted into sharing.
+    if (input.resolve) {
+      const { error: networkError } = await this.supabase.rpc('refresh_network_contributions')
+      if (networkError) console.error('refresh_network_contributions failed', networkError)
+    }
     return this.getJob(jobId)
   }
 
@@ -351,13 +380,15 @@ export class WorkshopRepository {
       .single()
     if (profileError) throw profileError
 
-    const [notes, insights, repairs, recalls] = await Promise.all([
+    const [notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns] = await Promise.all([
       this.listProfileNotes(profileId),
-      this.getProfileMileageInsights(profileId),
+      this.getProfileRepairGroups(profileId),
       this.listProfileRepairs(profileId),
       this.getMatchingRecalls(profile.make, profile.model),
+      this.getComplaintTrends(profile.make, profile.model),
+      this.getNetworkRepairPatterns(profile.make, profile.model),
     ])
-    return { profile, notes, insights, repairs, recalls }
+    return { profile, notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns }
   }
 
   async listProfileNotes(profileId: string) {
@@ -371,8 +402,11 @@ export class WorkshopRepository {
     return data ?? []
   }
 
-  async getProfileMileageInsights(profileId: string) {
-    const { data, error } = await this.supabase.rpc('vehicle_profile_mileage_insights', {
+  // Verified repairs for this profile, grouped by system. Supersedes the
+  // older vehicle_profile_mileage_insights RPC, which bucketed by mileage
+  // band instead -- mileage is now a detail on each row.
+  async getProfileRepairGroups(profileId: string) {
+    const { data, error } = await this.supabase.rpc('vehicle_profile_repair_groups', {
       target_profile_id: profileId,
     })
     if (error) throw error
@@ -456,7 +490,7 @@ export class WorkshopRepository {
     const escapedModel = model.replace(/[%_]/g, (char) => `\\${char}`)
     let query = this.supabase
       .from('recalls')
-      .select('id,make,model,year_from,year_to,defect_description,source_url,recall_date')
+      .select('id,make,model,year_from,year_to,defect_description,remedy,source_url,recall_date')
       .ilike('make', make)
       .ilike('model', `${escapedModel}%`)
       .order('recall_date', { ascending: false, nullsFirst: false })
@@ -464,6 +498,105 @@ export class WorkshopRepository {
       query = query.or(`year_from.is.null,year_from.lte.${year}`).or(`year_to.is.null,year_to.gte.${year}`)
     }
     const { data, error } = await query
+    if (error) throw error
+    return data ?? []
+  }
+
+  // Anonymised repair patterns from other shops on the platform. Returns
+  // nothing unless this shop has opted into sharing (reciprocity) and at
+  // least two *other* shops have logged the same pattern -- both rules are
+  // enforced inside the SQL function, not here, so the UI cannot bypass
+  // them. Never merged into getProfileRepairGroups: this shop's own
+  // "Common symptoms & repairs" stays its own verified work only.
+  async getNetworkRepairPatterns(make: string, model: string) {
+    const { data, error } = await this.supabase.rpc('network_repair_patterns', {
+      target_make: make,
+      target_model: model,
+    })
+    if (error) throw error
+    const rows = (data ?? []) as Array<{
+      system: string; label: string; occurrences: number; shop_count: number
+      symptoms: string[] | null; repairs: string[] | null
+    }>
+    if (!rows.length) return []
+
+    // One card per label, not just the top label per system: a rare fault
+    // is exactly the kind of thing nobody remembers, so it can't be the
+    // one that gets hidden. Cards nest under a system accordion the same
+    // way the shop's own "Common symptoms & repairs" does.
+    const summarizedRows = await Promise.all(rows.map(async (row) => {
+      const symptoms = row.symptoms ?? []
+      const repairs = row.repairs ?? []
+      const sourceHash = hashPatternSource(row.label, symptoms, repairs)
+
+      const { data: cached } = await this.supabase
+        .from('network_pattern_summaries')
+        .select('most_common_issue,symptoms_summary,repair_summary,source_hash')
+        .eq('make', make).eq('model', model).eq('system', row.system).eq('label', row.label)
+        .maybeSingle()
+
+      const summary = cached && cached.source_hash === sourceHash
+        ? { mostCommonIssue: cached.most_common_issue, symptomsSummary: cached.symptoms_summary, repairSummary: cached.repair_summary }
+        : await summarizeNetworkPattern({ label: row.label, symptoms, repairs })
+
+      if (!cached || cached.source_hash !== sourceHash) {
+        await this.supabase.from('network_pattern_summaries').upsert({
+          make, model, system: row.system, label: row.label, source_hash: sourceHash,
+          most_common_issue: summary.mostCommonIssue,
+          symptoms_summary: summary.symptomsSummary,
+          repair_summary: summary.repairSummary,
+          updated_at: new Date().toISOString(),
+        })
+      }
+
+      return {
+        system: row.system,
+        label: row.label,
+        occurrences: row.occurrences,
+        shopCount: row.shop_count,
+        mostCommonIssue: summary.mostCommonIssue,
+        symptomsSummary: summary.symptomsSummary,
+        repairSummary: summary.repairSummary,
+      }
+    }))
+
+    const bySystem = new Map<string, typeof summarizedRows>()
+    for (const row of summarizedRows) {
+      const list = bySystem.get(row.system) ?? []
+      list.push(row)
+      bySystem.set(row.system, list)
+    }
+
+    return [...bySystem.entries()].map(([system, systemRows]) => ({
+      system,
+      occurrences: systemRows.reduce((sum, row) => sum + row.occurrences, 0),
+      rows: systemRows.sort((a, b) => b.occurrences - a.occurrences),
+    })).sort((a, b) => b.occurrences - a.occurrences)
+  }
+
+  // Shop-scoped, term-matched search across every profile's repair history
+  // (system + fault label) -- lets a search like "Corolla suspension"
+  // surface a specific past repair, not just cars whose name matches.
+  async searchShopRepairs(query: string) {
+    const { data, error } = await this.supabase.rpc('search_shop_repairs', { search_query: query })
+    if (error) throw error
+    return data ?? []
+  }
+
+  // Aggregated NHTSA owner-complaint counts per component, seeded from the
+  // makes/models catalog (scripts/seed-complaint-trends.ts) rather than
+  // scraped per-shop, so every catalog car has a row set regardless of
+  // whether this shop has ever serviced one. Top 5 components by complaint
+  // count -- enough to show a genuine pattern without turning into a wall
+  // of noise.
+  async getComplaintTrends(make: string, model: string) {
+    const { data, error } = await this.supabase
+      .from('complaint_trends')
+      .select('component,complaint_count,sample_summary')
+      .ilike('make', make)
+      .ilike('model', model)
+      .order('complaint_count', { ascending: false })
+      .limit(5)
     if (error) throw error
     return data ?? []
   }

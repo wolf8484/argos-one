@@ -20,6 +20,7 @@ let activeAudioStream = null;
 let recordedAudioChunks = [];
 let vinDecodeTimer;
 let repairAutosaveTimer;
+let libraryRepairSearchTimer;
 let repairAutosaveInFlight = false;
 let animateNextScreen = false;
 let pendingMatchCarouselRestore = null;
@@ -36,8 +37,11 @@ const state = {
   jobFilter: "all",
   jobSearch: "",
   librarySearch: "",
+  libraryBrand: null,
   libraryProfiles: [],
   libraryStatus: "loading",
+  libraryRepairMatches: [],
+  libraryRepairQuery: "",
   activeProfile: null,
   activeProfileId: null,
   profileTab: "notes",
@@ -86,6 +90,7 @@ const state = {
   repair: {
     workNotes: "",
     verificationNotes: "",
+    system: "",
     parts: [],
     photos: [],
   },
@@ -252,6 +257,9 @@ let repairMatches = [
     mileageLabel: "78,240 km",
     repairedDateLabel: "14 Mar 2026",
     repairSummary: "PCV system air leak caused by a cracked diaphragm and hardened breather hose. Both components were replaced and the throttle body cleaned.",
+    complaint: "Rough idle and check engine light.",
+    observations: "Idle fluctuated between 550-900 RPM when cold; smoothed out once warm.",
+    dtcs: ["P0171"],
     workPerformed: "Smoke-tested the intake after the engine reached operating temperature. Isolated the leak to the oil filter housing PCV diaphragm and breather elbow. Replaced the diaphragm kit and hardened breather hose, cleaned the throttle body and reset adaptations.",
     verificationNotes: "Road-tested for 18 km and confirmed fuel trims remained below +4%. Idle remained stable after reaching operating temperature.",
     parts: [
@@ -274,6 +282,9 @@ let repairMatches = [
     mileageLabel: "91,600 km",
     repairedDateLabel: "21 Jun 2026",
     repairSummary: "Intake manifold air leak at the cylinder 1 runner caused by a failed gasket. The complete gasket set was replaced.",
+    complaint: "Lean idle and occasional stumble on acceleration.",
+    observations: "Fuel trims elevated at idle, normalised above 2,500 RPM.",
+    dtcs: [],
     workPerformed: "Verified positive trims at idle and near-normal trims above 2,500 RPM. Smoke-tested the warm engine and isolated the leak at the cylinder 1 runner. Removed the intake manifold and replaced the complete gasket set.",
     verificationNotes: "Reset adaptations, road-tested the vehicle and confirmed fuel trims remained below +5%.",
     parts: [
@@ -327,6 +338,15 @@ const icons = {
   calendar: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
   gauge: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   externalLink: '<path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/><path d="M14 3h7v7"/><path d="M10 14 21 3"/>',
+  cloud: '<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7-1.8A4.2 4.2 0 0 1 17 18Z"/><path d="M8 21v-1M12 21.5v-1.5M16 21v-1"/>',
+  engineWarning: '<path d="M4 15V9h2l2-2h2v2h4V7h2l2 2v6"/><rect x="4" y="15" width="14" height="4" rx="0"/><path d="M20 12v3"/>',
+  brakeDisc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6"/>',
+};
+
+const REPAIR_SYSTEM_ICONS = {
+  emissions: "cloud",
+  ignition: "engineWarning",
+  brakes: "brakeDisc",
 };
 
 const filledIcons = {
@@ -448,9 +468,10 @@ function databaseJobToUi(row) {
     resume: stageResume(row.stage),
     repairSummary: repair.cause || "",
     workPerformed: repair.work_performed || "",
+    system: repair.system || "",
     parts: repairedItems,
     verification: repair.verification_notes || "No verification notes recorded.",
-    reference: repair.reference_repair_id ? "Previous repair reference saved" : "No previous repair reference used",
+    referenceJobId: relatedRecord(repair.reference)?.job_id || null,
     raw: row,
   };
 }
@@ -475,6 +496,9 @@ function databaseMatchToUi(row, index) {
     mileageLabel: row.vehicle_mileage ? `${Number(row.vehicle_mileage).toLocaleString()} km` : "",
     repairedDateLabel: row.repaired_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)) : "",
     repairSummary: row.cause || "",
+    complaint: row.complaint || "",
+    observations: row.observations || "",
+    dtcs: row.dtcs || [],
     workPerformed: row.work_performed || "",
     verificationNotes: row.verification_notes || "",
     parts: items,
@@ -532,10 +556,10 @@ function specFieldHtml(field, label, placeholder, fallbackOptions) {
   const value = state.vehicle[field] || "";
   const options = specOptions(field);
   const asSelect = (opts) =>
-    `<label class="form-field"><span class="field-label">${label}</span><span class="select-control"><select class="select${value ? "" : " is-placeholder"}" name="${field}" required aria-label="${label}"><option value=""${value ? "" : " selected"}></option>${opts.map((option) => `<option${value === option ? " selected" : ""}>${escapeHTML(option)}</option>`).join("")}</select>${icon("down")}</span></label>`;
+    `<label class="form-field"><div class="field-header"><span class="field-label">${label}</span></div><span class="select-control"><select class="select${value ? "" : " is-placeholder"}" name="${field}" required aria-label="${label}"><option value=""${value ? "" : " selected"}></option>${opts.map((option) => `<option${value === option ? " selected" : ""}>${escapeHTML(option)}</option>`).join("")}</select>${icon("down")}</span></label>`;
   if (options.length > 1) return asSelect(options);
   if (options.length === 0 && fallbackOptions && fallbackOptions.length) return asSelect(fallbackOptions);
-  return `<label class="form-field"><span class="field-label">${label}</span><input class="input" name="${field}" value="${escapeHTML(value)}" placeholder="${placeholder}" required /></label>`;
+  return `<label class="form-field"><div class="field-header"><span class="field-label">${label}</span></div><input class="input" name="${field}" value="${escapeHTML(value)}" placeholder="${placeholder}" required /></label>`;
 }
 
 async function loadBackendData() {
@@ -549,7 +573,7 @@ async function loadBackendData() {
     await apiRequest("/api/demo-jobs", { method: "POST" });
     const [{ jobs }, account] = await Promise.all([apiRequest("/api/jobs"), apiRequest("/api/me")]);
     state.profile = account.profile || null;
-    state.shop = account.shop || null;
+    state.shop = account.shop ? { ...account.shop, sharesRepairData: Boolean(account.shop.shares_repair_data) } : null;
     const profileInitials = state.profile?.full_name?.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
     const profileLabel = document.querySelector(".profile-button span");
     if (profileInitials && profileLabel) profileLabel.textContent = profileInitials;
@@ -605,7 +629,7 @@ async function persistVehicleDetails() {
 
 async function persistAssessment(nextStage) {
   const complaint = String(state.complaint || "").trim();
-  if (!complaint) throw new Error("Enter the customer complaint to continue.");
+  if (!complaint) throw new Error("Enter the symptoms to continue.");
   if (!state.currentJobId) await persistVehicleDetails();
   const { job } = await apiRequest(`/api/jobs/${state.currentJobId}/assessment`, {
     method: "PUT",
@@ -648,6 +672,7 @@ function repairPayload(resolve = false) {
   return {
     workPerformed: state.repair.workNotes,
     verificationNotes: state.repair.verificationNotes || null,
+    system: state.repair.system || null,
     dtcs: state.dtcs,
     referenceRepairId: selected && /^[0-9a-f-]{36}$/i.test(selected.id) ? selected.id : null,
     items: state.repair.parts.map((part) => ({
@@ -852,7 +877,7 @@ function resetJobDraft() {
   state.notes = "";
   state.dtcs = [];
   state.photos = [];
-  state.repair = { workNotes: "", verificationNotes: "", parts: [], photos: [] };
+  state.repair = { workNotes: "", verificationNotes: "", system: "", parts: [], photos: [] };
   state.catalog.models = [];
 }
 
@@ -1068,7 +1093,7 @@ function renderHome() {
     </div>
 
     <div class="home-jobs-section">
-      <div class="section-heading">
+      <div class="field-header">
         <div><h2>Currently active</h2></div>
         <button class="secondary-button view-all-button" type="button" data-action="view-active-jobs">View all ${icon("arrow")}</button>
       </div>
@@ -1116,7 +1141,7 @@ function renderJobs() {
   app.innerHTML = `<section class="screen workflow-shell">
     <div class="page-header"><div><h1>Jobs</h1></div></div>
     <label class="form-field jobs-search-field" for="job-search">
-      <span class="field-label">Search jobs</span>
+      <div class="field-header"><span class="field-label">Search jobs</span></div>
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="job-search" type="search" value="${escapeHTML(state.jobSearch)}" placeholder="Vehicle or customer" autocomplete="off" /></span>
     </label>
     <div class="quick-row job-filters" role="group" aria-label="Filter jobs">
@@ -1181,56 +1206,136 @@ function formatShortDate(value) {
 
 function profileCard(profile, { hidden = false } = {}) {
   const repairs = Number(profile.repair_count || 0);
-  const notes = Number(profile.note_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
     <span class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</span>
     <span class="library-result-counts">
       <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
-      <span>${notes} ${notes === 1 ? "note" : "notes"}</span>
     </span>
     <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
 }
 
-function libraryBrandDivider(make) {
-  return `<div class="library-brand-divider" role="presentation">${escapeHTML(make)}</div>`;
+
+function libraryBrandGroups(profiles) {
+  const groups = new Map();
+  profiles.forEach((profile) => {
+    const make = profile.make || "Other";
+    if (!groups.has(make)) groups.set(make, { make, profiles: [] });
+    groups.get(make).profiles.push(profile);
+  });
+  return Array.from(groups.values()).sort((a, b) => a.make.localeCompare(b.make));
+}
+
+function libraryBrandTile(group) {
+  const modelCount = group.profiles.length;
+  const repairCount = group.profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
+  return `<button class="library-brand-tile" type="button" data-action="open-library-brand" data-brand="${escapeHTML(group.make)}" aria-label="Open ${escapeHTML(group.make)} car profiles">
+    <span class="library-brand-name">${escapeHTML(group.make)}</span>
+    <span class="library-brand-counts">
+      <span class="library-brand-count">${modelCount} ${modelCount === 1 ? "model" : "models"}</span>
+      <span class="library-brand-count">${repairCount} ${repairCount === 1 ? "repair" : "repairs"}</span>
+    </span>
+  </button>`;
+}
+
+function librarySearchField() {
+  return `<label class="form-field jobs-search-field" for="library-search">
+      <div class="field-header"><span class="field-label">Search cars &amp; repairs</span></div>
+      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="library-search" type="search" value="${escapeHTML(state.librarySearch)}" placeholder="Search by make, model, or repair" autocomplete="off" /></span>
+      <span class="helper">Example: Civic throttle response</span>
+    </label>`;
+}
+
+function sortedProfileList(profiles) {
+  return [...profiles].sort((a, b) => {
+    const makeCompare = (a.make || "").localeCompare(b.make || "");
+    return makeCompare !== 0 ? makeCompare : (a.model || "").localeCompare(b.model || "");
+  });
+}
+
+function restoreLibrarySearchFocus(caretPos) {
+  requestAnimationFrame(() => {
+    const input = document.querySelector("#library-search");
+    if (!input) return;
+    input.focus();
+    if (typeof caretPos === "number") input.setSelectionRange(caretPos, caretPos);
+  });
+}
+
+// Debounced so it only fires once typing pauses -- the instant "Cars" list
+// filtering above stays snappy and caret-safe, this just adds a slower
+// "Repairs" tier underneath once there's something worth asking the server.
+async function runLibraryRepairSearch(query, caretPos) {
+  try {
+    const { repairs } = await apiRequest(`/api/library/search?q=${encodeURIComponent(query)}`);
+    if (state.librarySearch.trim() !== query) return;
+    state.libraryRepairQuery = query;
+    state.libraryRepairMatches = Array.isArray(repairs) ? repairs : [];
+  } catch (_) {
+    state.libraryRepairQuery = query;
+    state.libraryRepairMatches = [];
+  }
+  render();
+  restoreLibrarySearchFocus(caretPos);
+}
+
+function libraryRepairMatchCard(repair) {
+  const carName = [repair.make, repair.model].filter(Boolean).join(" ");
+  return `<button class="library-repair-match" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(repair.profile_id)}">
+    <span class="library-repair-match-main">
+      <span class="library-repair-match-car">${escapeHTML(carName)}</span>
+      <span class="profile-repair-label">${escapeHTML(repair.label)}</span>
+      <span class="profile-repair-mileage">${escapeHTML(REPAIR_SYSTEM_LABELS.get(repair.system) || "Other")}</span>
+    </span>
+    <span class="profile-repair-meta"><strong>${repair.occurrences} repair${repair.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span>
+  </button>`;
 }
 
 function renderKnowledge() {
   const normalizedSearch = state.librarySearch.trim().toLowerCase();
   const profiles = state.libraryProfiles;
-  const hasSearchResults = !normalizedSearch || profiles.some((profile) => profileSearchText(profile).includes(normalizedSearch));
-  const totalRepairs = profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
-  const totalNotes = profiles.reduce((sum, profile) => sum + Number(profile.note_count || 0), 0);
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const makeCompare = (a.make || "").localeCompare(b.make || "");
-    return makeCompare !== 0 ? makeCompare : (a.model || "").localeCompare(b.model || "");
-  });
-  let lastMake = null;
-  const listMarkup = sortedProfiles.map((profile) => {
-    const isHidden = Boolean(normalizedSearch && !profileSearchText(profile).includes(normalizedSearch));
-    const make = profile.make || "Other";
-    const divider = !normalizedSearch && make !== lastMake ? libraryBrandDivider(make) : "";
-    lastMake = make;
-    return divider + profileCard(profile, { hidden: isHidden });
-  }).join("");
+
+  // Searching cuts across the whole library, so it bypasses the brand drill-in
+  // entirely rather than hiding matches that sit under another brand.
+  if (normalizedSearch) {
+    const matches = sortedProfileList(profiles).filter((profile) => profileSearchText(profile).includes(normalizedSearch));
+    const repairMatches = state.libraryRepairQuery === state.librarySearch.trim() ? state.libraryRepairMatches : [];
+    const searchLongEnough = normalizedSearch.length >= 3;
+    const noResults = !matches.length && !repairMatches.length;
+    app.innerHTML = `<section class="screen workflow-shell">
+      <div class="page-header"><div><h1>Repair library</h1></div></div>
+      ${librarySearchField()}
+      ${matches.length ? `<div class="field-header"><div><span class="field-label">Cars</span></div></div>` : ""}
+      <div class="library-result-list">${matches.map((profile) => profileCard(profile)).join("")}</div>
+      <div class="jobs-empty library-empty"${matches.length ? " hidden" : ""} role="status">No cars match your search.</div>
+      ${repairMatches.length ? `<div class="field-header"><div><span class="field-label">Repairs</span></div></div>
+        <div class="library-repair-match-list">${repairMatches.map(libraryRepairMatchCard).join("")}</div>` : ""}
+      ${noResults && searchLongEnough ? `<div class="library-web-fallback">
+        <p class="profile-empty">No matches in your shop's history.</p>
+        <button class="secondary-button" type="button" data-action="search-library-web">${icon("search")} Search the web for "${escapeHTML(state.librarySearch.trim())}"</button>
+      </div>` : ""}
+    </section>`;
+    return;
+  }
+
+  const groups = libraryBrandGroups(profiles);
+  const activeGroup = state.libraryBrand ? groups.find((group) => group.make === state.libraryBrand) : null;
+
+  if (activeGroup) {
+    const models = sortedProfileList(activeGroup.profiles);
+    app.innerHTML = `<section class="screen workflow-shell">
+      ${taskHeader({ context: "Repair library", title: activeGroup.make, backAction: "back-to-library-brands", backLabel: "Back to all brands" })}
+      <div class="library-result-list">${models.map((profile) => profileCard(profile)).join("")}</div>
+    </section>`;
+    return;
+  }
+
   app.innerHTML = `<section class="screen workflow-shell">
     <div class="page-header"><div><h1>Repair library</h1></div></div>
-    <label class="form-field jobs-search-field" for="library-search">
-      <span class="field-label">Search cars</span>
-      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="library-search" type="search" value="${escapeHTML(state.librarySearch)}" placeholder="Make, model, engine" autocomplete="off" /></span>
-    </label>
-    <div class="stat-grid">
-      <div class="stat"><span class="stat-value">${profiles.length}</span><span class="stat-label">Car profiles</span></div>
-      <div class="stat"><span class="stat-value">${totalRepairs}</span><span class="stat-label">Verified repairs</span></div>
-      <div class="stat"><span class="stat-value">${totalNotes}</span><span class="stat-label">Shop notes</span></div>
-    </div>
-    <div class="section-heading"><div><span class="section-label">Cars in the library</span><h2>Grouped by brand</h2></div></div>
-    <div class="library-result-list">
-      ${listMarkup}
-    </div>
+    ${librarySearchField()}
+    <div class="field-header"><div><span class="field-label">Brands</span></div></div>
+    <div class="library-brand-grid">${groups.map(libraryBrandTile).join("")}</div>
     ${profiles.length === 0 && state.libraryStatus !== "loading" ? `<div class="jobs-empty library-zero-state" role="status">No cars in the library yet. Profiles are created automatically as jobs come through the shop.</div>` : ""}
-    <div class="jobs-empty library-empty"${hasSearchResults || profiles.length === 0 ? " hidden" : ""} role="status">No cars match your search.</div>
   </section>`;
 }
 
@@ -1250,29 +1355,156 @@ function profileNoteCard(note) {
   </article>`;
 }
 
-function profileInsightGroups(insights) {
+function profileRepairGroups(rows) {
   const groups = new Map();
-  insights.forEach((row) => {
-    const key = `${row.bucket_start}`;
-    if (!groups.has(key)) groups.set(key, { start: row.bucket_start, end: row.bucket_end, rows: [] });
-    groups.get(key).rows.push(row);
+  rows.forEach((row) => {
+    const key = row.system || "other";
+    if (!groups.has(key)) groups.set(key, { system: key, rows: [], total: 0 });
+    const group = groups.get(key);
+    group.rows.push(row);
+    group.total += row.occurrences;
   });
-  return Array.from(groups.values());
+  return Array.from(groups.values()).sort((a, b) => b.total - a.total);
 }
 
-function profileInsightsSection(insights) {
-  const groups = profileInsightGroups(insights);
-  if (!groups.length) {
-    return `<p class="profile-empty">Not enough repair history yet. A pattern shows here once the same fault has been fixed twice in the same mileage range.</p>`;
+function repairMileageLabel(row) {
+  if (row.mileage_low == null && row.mileage_high == null) return "";
+  if (row.mileage_low == null || row.mileage_high == null || row.mileage_low === row.mileage_high) {
+    return formatKilometres(row.mileage_low ?? row.mileage_high);
   }
-  return `<div class="profile-insight-list">
-    ${groups.map((group) => `<div class="profile-insight">
-      <span class="profile-insight-range">${formatKilometres(group.start)} – ${formatKilometres(group.end)}</span>
-      <ul class="profile-insight-items">
-        ${group.rows.map((row) => `<li><span>${escapeHTML(row.label)}</span><strong>${row.occurrences}×</strong></li>`).join("")}
-      </ul>
-    </div>`).join("")}
+  return `${formatKilometres(row.mileage_low)} – ${formatKilometres(row.mileage_high)}`;
+}
+
+// Opening the system accordion goes straight to the flat list of repairs --
+// no second accordion click needed to see what's inside. Tapping a repair
+// opens a sheet (the app's existing modal) with the Symptom/Repair preview;
+// "View full repair" inside that sheet is the one deliberate way to leave
+// the page, listed once per instance since the fix may not have been
+// identical every time.
+function profileRepairRow(row) {
+  const mileage = repairMileageLabel(row);
+  const countLabel = `${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}`;
+  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="shop" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}">
+    <span class="profile-repair-body">
+      <span class="profile-repair-label">${escapeHTML(row.label)}</span>
+      <span class="profile-repair-meta">${mileage ? `<span class="profile-repair-mileage">${escapeHTML(mileage)}</span>` : ""}<span class="profile-repair-count">${countLabel}</span></span>
+    </span>
+    <span class="profile-repair-view">View</span>
+  </button></li>`;
+}
+
+// The sheet is a preview, not the report: same field labels/order as the
+// full repair (Symptoms, Work performed), verbatim, just fewer of them --
+// Verification/DTCs/Parts/Photos only live on the full page, one tap away
+// via the CTA. Multiple instances share one label (e.g. the same DTC fixed
+// 4 times) but may not be the same fix each time, so a numbered case
+// picker swaps which instance's real text is shown and which job the CTA
+// opens -- never blending them into one paragraph.
+let activeRepairCase = { system: null, label: null, index: 0 };
+
+function repairCaseOptionLabel(instance, index) {
+  const bits = [instance.year, instance.mileage != null ? formatKilometres(instance.mileage) : "", instance.repaired_at ? formatShortDate(instance.repaired_at) : ""].filter(Boolean);
+  return `${String(index + 1).padStart(2, "0")} · ${bits.join(" · ") || "Repair"}`;
+}
+
+function shopRepairCaseSheet(row, selectedIndex = 0) {
+  const instances = Array.isArray(row.instances) ? row.instances : [];
+  const index = Math.min(Math.max(selectedIndex, 0), Math.max(instances.length - 1, 0));
+  activeRepairCase = { system: row.system || "other", label: row.label, index };
+  const current = instances[index] || {};
+  const countLabel = `${instances.length} repair${instances.length === 1 ? "" : "s"}`;
+  const caseSelector = instances.length > 1 ? `<label class="form-field repair-case-select-field">
+    <div class="field-header"><span class="field-label">Select repair</span></div>
+    <span class="select-control"><select class="select" id="repair-case-select">
+      ${instances.map((instance, i) => `<option value="${i}"${i === index ? " selected" : ""}>${escapeHTML(repairCaseOptionLabel(instance, i))}</option>`).join("")}
+    </select>${icon("down")}</span>
+  </label>` : "";
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.label)}</h2><span class="task-context">${escapeHTML(countLabel)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body repair-case-sheet-body">
+      ${caseSelector}
+      ${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(current.symptom_text || "No complaint recorded.")}</p></div>`)}
+      ${resolvedDetailSection("Work performed", `<div class="repair-summary-box"><p>${escapeHTML(current.repair_text || "No work performed recorded.")}</p></div>`)}
+    </div>
+    <div class="sheet-footer">
+      <button class="primary-button full repair-case-cta" type="button" data-action="open-job" data-job-id="${escapeHTML(current.job_id)}">View full repair ${icon("arrow")}</button>
+    </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.label });
+}
+
+// The accordion header counts distinct repair cases in the category, not
+// total times repaired -- "3x" at category level previously meant "sum of
+// occurrences across every fault in here," which read as "3 different
+// repairs" when it was really 1 fault that recurred 3 times. Each row's
+// own "N shops · Nx" (network) or "Nx" (own shop) still carries the true
+// per-fault frequency.
+function caseCountLabel(count) {
+  return `${count} common case${count === 1 ? "" : "s"}`;
+}
+
+function profileRepairsSection(rows) {
+  const groups = profileRepairGroups(rows);
+  if (!groups.length) {
+    return `<p class="profile-empty">Not enough repair data to be shown yet.</p>`;
+  }
+  return `<div class="known-issues-list">
+    ${groups.map((group) => `<details class="known-issues-accordion">
+      <summary>
+        <span class="known-issues-system-icon">${icon(REPAIR_SYSTEM_ICONS[group.system] || "wrench")}</span>
+        <span class="known-issues-summary-text known-issues-summary-text-stacked"><span class="field-label">${escapeHTML(REPAIR_SYSTEM_LABELS.get(group.system) || "Other")}</span><span class="known-issues-case-count">${caseCountLabel(group.rows.length)}</span></span>
+        <span class="known-issues-count">${icon("down")}</span>
+      </summary>
+      <ul class="profile-repair-list">${group.rows.map((row) => profileRepairRow(row)).join("")}</ul>
+    </details>`).join("")}
   </div>`;
+}
+
+// Deliberately a separate section from "Common symptoms & repairs": this is
+// other shops' work, not this shop's verified history, and the two must stay
+// visually and structurally distinct. Always rendered (even sharing-off)
+// so the feature isn't buried three taps deep in Settings -- the empty
+// states carry the call to action instead of hiding entirely.
+//
+// Every label within a system gets its own row (not just the top one) --
+// a rare cross-shop fault is exactly what a mechanic won't already know,
+// so it can't be the one that gets buried behind a "most common" pick.
+function networkPatternRow(row) {
+  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="network" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}">
+    <span class="profile-repair-label">${escapeHTML(row.mostCommonIssue || row.label)}</span>
+    <span class="profile-repair-meta">${row.shopCount} shops · <strong>${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span>
+  </button></li>`;
+}
+
+function networkRepairCaseSheet(row) {
+  const meta = `${row.shopCount} shops · ${row.occurrences} repair${row.occurrences === 1 ? "" : "s"} reported`;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.mostCommonIssue || row.label)}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      ${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(row.symptomsSummary)}</p></div>`)}
+      ${resolvedDetailSection("Repair", `<div class="repair-summary-box"><p>${escapeHTML(row.repairSummary)}</p></div>`)}
+    </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.mostCommonIssue || row.label });
+}
+
+function profileNetworkSection(networkGroups) {
+  const sharing = Boolean(state.shop?.sharesRepairData);
+  const statusTag = sharing
+    ? `<span class="reference-tag reference-tag-active">Active</span>`
+    : `<span class="reference-tag">Off</span>`;
+  const heading = `<div class="field-header"><span class="field-label">Network cases${statusTag}</span></div>`;
+
+  if (!sharing) {
+    return `${heading}<p class="profile-empty">Turn on sharing in Settings to see what other shops found for this model.</p>`;
+  }
+  if (!networkGroups.length) {
+    return `${heading}<p class="profile-empty">No shared repairs for this model yet.</p>`;
+  }
+  return `${heading}
+    <div class="known-issues-list">
+      ${networkGroups.map((group) => `<details class="known-issues-accordion">
+        <summary>
+          <span class="known-issues-summary-text known-issues-summary-text-stacked"><span class="field-label">${escapeHTML(REPAIR_SYSTEM_LABELS.get(group.system) || "Other")}</span><span class="known-issues-case-count">${caseCountLabel(group.rows.length)}</span></span>
+          <span class="known-issues-count">${icon("down")}</span>
+        </summary>
+        <ul class="profile-repair-list">${group.rows.map(networkPatternRow).join("")}</ul>
+      </details>`).join("")}
+    </div>`;
 }
 
 function recallCard(recall) {
@@ -1282,6 +1514,7 @@ function recallCard(recall) {
   return `<a class="profile-recall" href="${escapeHTML(recall.source_url)}" target="_blank" rel="noopener noreferrer">
     <span class="profile-recall-meta">${[yearLabel, dateLabel].filter(Boolean).map(escapeHTML).join(" · ")}</span>
     <p class="profile-recall-body">${escapeHTML(recall.defect_description)}</p>
+    ${recall.remedy ? `<div class="profile-recall-fix"><div class="field-header"><span class="field-label">Fix</span></div><p>${escapeHTML(recall.remedy)}</p></div>` : ""}
     <span class="profile-recall-link">View recall notice ${icon("arrow")}</span>
   </a>`;
 }
@@ -1291,6 +1524,53 @@ function profileRecallsSection(recalls) {
     return `<p class="profile-empty">No known recalls for this model.</p>`;
   }
   return `<div class="profile-recall-list">${recalls.map(recallCard).join("")}</div>`;
+}
+
+function titleCase(value) {
+  return value.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function complaintTrendCard(trend) {
+  return `<div class="profile-recall">
+    <span class="profile-recall-meta">${trend.complaint_count.toLocaleString()} NHTSA complaints</span>
+    <p class="profile-recall-body"><strong>${escapeHTML(titleCase(trend.component))}</strong>${trend.sample_summary ? ` — ${escapeHTML(trend.sample_summary)}` : ""}</p>
+  </div>`;
+}
+
+function profileComplaintTrendsSection(complaintTrends) {
+  if (!complaintTrends.length) {
+    return `<p class="profile-empty">No commonly reported issues on file for this model.</p>`;
+  }
+  return `<div class="profile-recall-list">${complaintTrends.map(complaintTrendCard).join("")}</div>`;
+}
+
+// Recalls/NHTSA are reference data a mechanic looks up occasionally, not
+// day-to-day info like Shop notes -- collapsed by default so they don't
+// dominate the page, with a one-line summary visible when closed.
+function knownIssuesAccordion(label, summaryText, bodyHtml, caption) {
+  return `<details class="known-issues-accordion">
+    <summary>
+      <span class="known-issues-summary-text known-issues-summary-text-stacked"><span class="field-label">${escapeHTML(label)}</span>${caption ? `<span class="known-issues-case-count">${escapeHTML(caption)}</span>` : ""}</span>
+      <span class="known-issues-count">${escapeHTML(summaryText)}${icon("down")}</span>
+    </summary>
+    ${bodyHtml}
+  </details>`;
+}
+
+function recallsSummaryText(recalls) {
+  if (!recalls.length) return "No recalls on file";
+  return `${recalls.length} recall${recalls.length === 1 ? "" : "s"} on file`;
+}
+
+function complaintTrendsSummaryText(complaintTrends) {
+  if (!complaintTrends.length) return "None on file";
+  const top = complaintTrends[0];
+  return `Top: ${titleCase(top.component)} (${top.complaint_count.toLocaleString()})`;
+}
+
+function complaintTrendsCaption(complaintTrends) {
+  if (!complaintTrends.length) return "US market data";
+  return `US market data · ${complaintTrendsSummaryText(complaintTrends)}`;
 }
 
 function renderCarProfile() {
@@ -1304,7 +1584,7 @@ function renderCarProfile() {
       : `<section class="screen workflow-shell"><section class="empty-state"><h1>Car profile not found</h1><p>That car profile is unavailable.</p><button class="secondary-button" type="button" data-route="knowledge">Back to library</button></section></section>`;
     return;
   }
-  const { profile, notes, insights, repairs, recalls = [] } = detail;
+  const { profile, notes, repairGroups = [], repairs, recalls = [], complaintTrends = [], networkPatterns = [] } = detail;
   const variantOptions = profileVariantOptions(repairs);
   const activeVariant = state.profileVariantFilter;
   const visibleRepairs = activeVariant === "all" ? repairs : repairs.filter((job) => repairVariantKey(job) === activeVariant);
@@ -1313,14 +1593,14 @@ function renderCarProfile() {
     ${taskHeader({ context: profile.make || "Car profile", title: profile.model || profileName(profile), backAction: "back-to-library", backLabel: "Back to the repair library" })}
 
     <div class="quick-row profile-tabs" role="tablist" aria-label="Car profile sections">
-      <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights ${notes.length}</button>
+      <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
       <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
       <form class="profile-note-form" id="profile-note-form" autocomplete="off">
         <label class="form-field" for="profile-note-input">
-          <span class="field-label">Add a note</span>
+          <div class="field-header"><span class="field-label">Add a note</span></div>
           <textarea class="textarea" id="profile-note-input" name="body" rows="2" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
         </label>
         <div class="profile-note-actions">
@@ -1328,12 +1608,16 @@ function renderCarProfile() {
           <button class="primary-button" type="submit">${icon("save")} Save note</button>
         </div>
       </form>
-      <div class="section-heading"><div><span class="section-label">Common failures by mileage</span><h2>From verified repairs</h2></div></div>
-      ${profileInsightsSection(insights)}
-      <div class="section-heading"><div><span class="section-label">Shop notes</span><h2>Everyone in the shop can see these</h2></div></div>
+      <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
+      ${profileRepairsSection(repairGroups)}
+      <div class="field-header"><span class="field-label">Shop notes</span></div>
       ${notes.length ? `<div class="profile-note-list">${notes.map(profileNoteCard).join("")}</div>` : `<p class="profile-empty">No notes yet. Add the first one above.</p>`}
-      <div class="section-heading"><div><span class="section-label section-label-reference">${icon("info")} Known issues<span class="reference-tag">Reference</span></span><h2>From recall data &amp; fault code reference</h2></div></div>
-      ${profileRecallsSection(recalls)}
+      ${profileNetworkSection(networkPatterns)}
+      <div class="field-header"><span class="field-label">Known issues<span class="reference-tag">Reference</span></span></div>
+      <div class="known-issues-list">
+        ${knownIssuesAccordion("Recalls", "", profileRecallsSection(recalls), recallsSummaryText(recalls))}
+        ${knownIssuesAccordion("Commonly reported", "", profileComplaintTrendsSection(complaintTrends), complaintTrendsCaption(complaintTrends))}
+      </div>
     </div>
 
     <div class="profile-panel"${isNotesTab ? " hidden" : ""} role="tabpanel" aria-label="Repair history">
@@ -1360,6 +1644,145 @@ async function loadLibraryProfiles() {
   }
 }
 
+// UI-only dev fixture for the Honda Civic library profile -- this is the
+// permanent client-demo profile ("what an active profile looks like"), and
+// it never writes to the database. Toggle from the browser console with
+// localStorage.setItem("argos-dev-fixtures", "on") (persists across
+// reloads/navigation, unlike a fetch-interceptor which resets every full
+// page load).
+//
+// Headline rule: a case's display label is ALWAYS a plain-language symptom
+// phrase, NEVER the raw DTC code -- the code is not surfaced anywhere in the
+// sheet (see shopRepairCaseSheet). Content lengths deliberately vary within a
+// case (one-line vs multi-sentence) so the fixed-height sheet can be verified
+// against real content instead of uniformly-sized placeholder text.
+const DEV_FIXTURE_CASES = [
+  {
+    system: "emissions",
+    label: "Catalytic converter efficiency fault",
+    dtc: "P0420",
+    instances: [
+      { key: "p0420-1", year: 2019, mileage: 91200, resolvedAt: "2026-08-16",
+        complaint: "Check-engine light on.",
+        workPerformed: "Replaced downstream O2 sensor." },
+      { key: "p0420-2", year: 2018, mileage: 78000, resolvedAt: "2026-05-02",
+        complaint: "Check-engine light on, slight rotten egg smell from exhaust noticed by customer during highway driving.",
+        workPerformed: "Replaced catalytic converter and both oxygen sensors, cleared codes and verified with a full drive cycle before returning the vehicle." },
+      { key: "p0420-3", year: 2020, mileage: 64500, resolvedAt: "2026-02-10",
+        complaint: "Customer reported the check-engine light flashing intermittently on cold starts, mostly in the mornings, and said it would sometimes go off after the car warmed up for ten minutes or so. No other drivability complaints -- engine ran smoothly with no hesitation or rough idle during the test drive we did with the customer present.",
+        workPerformed: "Diagnosed an exhaust leak upstream of the catalytic converter caused by a cracked manifold gasket, which was letting in extra oxygen and skewing the downstream O2 sensor reading enough to trip the efficiency code intermittently. Replaced the manifold gasket, retorqued the manifold bolts to spec, cleared the code, and completed a full drive cycle with a scan tool connected to confirm the readiness monitor passed with no code recurrence." },
+      { key: "p0420-4", year: 2017, mileage: 103000, resolvedAt: "2025-11-20",
+        complaint: "No symptoms noticed by customer; code found during scheduled service scan.",
+        workPerformed: "Cat efficiency below threshold. Replaced converter and both O2 sensors." },
+    ],
+  },
+  {
+    system: "emissions",
+    label: "Fuel trim drifting rich at idle",
+    dtc: null,
+    instances: [
+      { key: "fueltrim-1", year: 2021, mileage: 45000, resolvedAt: "2026-07-01",
+        complaint: "Fuel trim drifting rich at idle, no code stored, customer noticed a slightly rough idle after cold start only.",
+        workPerformed: "Found a vacuum leak at the intake manifold gasket, replaced the gasket and reset the adaptive fuel trims; confirmed the idle smoothed out on a 20 minute test drive." },
+    ],
+  },
+  {
+    system: "ignition",
+    label: "Rough idle with cylinder misfire",
+    dtc: "P0301",
+    instances: [
+      { key: "p0301-1", year: 2019, mileage: 88000, resolvedAt: "2026-08-01",
+        complaint: "Rough idle.",
+        workPerformed: "Replaced cylinder 1 coil pack." },
+      { key: "p0301-2", year: 2019, mileage: 71000, resolvedAt: "2026-03-15",
+        complaint: "Engine shaking at idle, customer says it's worse when the car is cold and settles down once warmed up.",
+        workPerformed: "Replaced the ignition coil and spark plugs on all cylinders as a preventive measure rather than just the failing one, since the plugs were near the end of their service interval anyway." },
+      { key: "p0301-3", year: 2016, mileage: 121000, resolvedAt: "2025-09-05",
+        complaint: "Customer reported hesitation on acceleration, most noticeable pulling out into traffic.",
+        workPerformed: "Found a fouled plug on cylinder 1, replaced the plug and coil, cleared the code and confirmed no misfire counts accumulating on a test drive." },
+    ],
+  },
+  {
+    system: "ignition",
+    label: "Misfire under acceleration",
+    dtc: "P0303",
+    instances: [
+      { key: "p0303-1", year: 2020, mileage: 52000, resolvedAt: "2026-06-20",
+        complaint: "Intermittent misfire under acceleration.",
+        workPerformed: "Replaced cylinder 3 coil pack." },
+    ],
+  },
+];
+
+function fixtureJobId(key) {
+  return `fixture-honda-civic-${key}`;
+}
+
+function fixtureResolvedJob({ key, year, mileage, resolvedAt, complaint, dtc, workPerformed }) {
+  const resolvedIso = `${resolvedAt}T09:00:00.000Z`;
+  return {
+    id: fixtureJobId(key),
+    jobNumber: `AO-DEMO-${key.toUpperCase()}`,
+    status: "resolved",
+    vehicle: {
+      year: String(year), make: "Honda", model: "Civic", mileage: Number(mileage).toLocaleString("en-AU"),
+      vin: "", customerName: "Demo customer", customerFirstName: "Demo", customerLastName: "Customer",
+      customerPhone: "", customerEmail: "",
+      trim: "VTi-LX", engine: "1.5L turbo petrol", drivetrain: "FWD", transmission: "CVT",
+    },
+    bay: "Bay 02",
+    time: "09:00",
+    createdAtShort: shortDate(resolvedIso),
+    resolvedAtShort: shortDate(resolvedIso),
+    updatedAtShort: shortDate(resolvedIso),
+    resolvedAt: new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(resolvedIso)),
+    updatedAt: new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(resolvedIso)),
+    technician: "Workshop technician",
+    complaint,
+    observations: "",
+    summary: "",
+    dtcs: dtc ? [dtc] : [],
+    resume: { route: "resolved", step: 5 },
+    repairSummary: "",
+    workPerformed,
+    system: "",
+    parts: [],
+    verification: "Verified with a post-repair test drive; no code recurrence.",
+    referenceJobId: null,
+    raw: { resolved_at: resolvedIso, updated_at: resolvedIso },
+  };
+}
+
+function applyDevFixtures(detail) {
+  const devOn = localStorage.getItem("argos-dev-fixtures") === "on"
+    || new URLSearchParams(location.search).get("dev") === "1";
+  if (!devOn) return detail;
+  if ((detail.profile?.make || "").toLowerCase() !== "honda" || (detail.profile?.model || "").toLowerCase() !== "civic") return detail;
+  detail.repairGroups = DEV_FIXTURE_CASES.map((repairCase) => ({
+    system: repairCase.system,
+    label: repairCase.label,
+    occurrences: repairCase.instances.length,
+    instances: repairCase.instances.map((instance) => ({
+      job_id: fixtureJobId(instance.key),
+      year: instance.year,
+      mileage: instance.mileage,
+      repaired_at: instance.resolvedAt,
+      symptom_text: instance.complaint,
+      repair_text: instance.workPerformed,
+      dtc_code: repairCase.dtc,
+    })).sort((a, b) => (a.repaired_at < b.repaired_at ? 1 : -1)),
+  }));
+  DEV_FIXTURE_CASES.forEach((repairCase) => {
+    repairCase.instances.forEach((instance) => {
+      const job = fixtureResolvedJob({ ...instance, dtc: repairCase.dtc });
+      const index = jobRecords.findIndex((record) => record.id === job.id);
+      if (index >= 0) jobRecords[index] = job;
+      else jobRecords.push(job);
+    });
+  });
+  return detail;
+}
+
 async function openCarProfile(profileId, { tab = "notes" } = {}) {
   state.activeProfileId = profileId;
   state.profileTab = tab;
@@ -1374,7 +1797,7 @@ async function openCarProfile(profileId, { tab = "notes" } = {}) {
     // The mechanic may have navigated away while this was in flight.
     if (state.activeProfileId !== profileId) return hideTopProgressBar();
     detail.repairs = (detail.repairs || []).map(databaseJobToUi);
-    state.activeProfile = detail;
+    state.activeProfile = applyDevFixtures(detail);
     state.profileStatus = "loaded";
   } catch (error) {
     if (state.activeProfileId !== profileId) return hideTopProgressBar();
@@ -1412,7 +1835,7 @@ function renderSettings() {
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
     <section class="settings-group" aria-labelledby="display-settings">
-      <div class="settings-section-head"><span class="section-label">Display</span><h2 id="display-settings">Theme</h2></div>
+      <div class="settings-section-head"><span class="field-label">Display</span><h2 id="display-settings">Theme</h2></div>
       <div class="theme-options" role="group" aria-label="Choose interface theme">
         <button class="setting-choice ${theme === "dark" ? "is-selected" : ""}" type="button" data-theme-choice="dark" aria-pressed="${theme === "dark"}">
           <span class="theme-swatch dark-swatch" aria-hidden="true"><i></i></span>
@@ -1428,13 +1851,21 @@ function renderSettings() {
     </section>
 
     <section class="settings-group" aria-labelledby="accessibility-settings">
-      <div class="settings-section-head"><span class="section-label">Readability</span><h2 id="accessibility-settings">Workshop accessibility</h2></div>
+      <div class="settings-section-head"><span class="field-label">Readability</span><h2 id="accessibility-settings">Workshop accessibility</h2></div>
       <div class="setting-row"><span><strong>Readable interface</strong><small>Body and control text never drops below 16px</small></span><span class="setting-value">On</span></div>
       <div class="setting-row"><span><strong>High-contrast primary text</strong><small>Important instructions stay bright in both themes</small></span><span class="setting-value">On</span></div>
     </section>
 
+    <section class="settings-group" aria-labelledby="network-settings">
+      <div class="settings-section-head"><span class="field-label">Network</span><h2 id="network-settings">Cross-shop repair patterns</h2></div>
+      <button class="setting-row is-action" type="button" data-action="toggle-network-sharing" aria-pressed="${state.shop?.sharesRepairData ? "true" : "false"}">
+        <span><strong>Share anonymised repair patterns</strong><small>Your verified repairs (never customer, VIN or job details) are pooled with other opted-in shops. Reciprocal: sharing is what unlocks seeing "Also seen at other shops" on a car profile.</small></span>
+        <span class="setting-value">${state.shop?.sharesRepairData ? "On" : "Off"}</span>
+      </button>
+    </section>
+
     <section class="settings-group" aria-labelledby="input-settings">
-      <div class="settings-section-head"><span class="section-label">Input</span><h2 id="input-settings">Workshop tools</h2></div>
+      <div class="settings-section-head"><span class="field-label">Input</span><h2 id="input-settings">Workshop tools</h2></div>
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Voice and dictation</strong><small>Microphone, language and transcription review</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Camera and photos</strong><small>Permissions, image quality and storage</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
       <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Workshop profile</strong><small>Bays, technicians and supplier region</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
@@ -1459,7 +1890,7 @@ function renderVehicle() {
     ${workflowJourney(1)}
     <form id="vehicle-form" class="form-grid two-col">
       <div class="form-field span-2 vin-field">
-        <label class="field-label" for="vin">Scan or enter VIN</label>
+        <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN</label></div>
         <div class="vin-row">
           <input class="input" id="vin" name="vin" maxlength="17" value="${state.vehicle.vin}" placeholder="17-character VIN" autocapitalize="characters" />
           <button class="icon-button vin-camera" type="button" data-action="scan-vin" aria-label="Open camera to scan VIN">${icon("scan")}</button>
@@ -1467,23 +1898,23 @@ function renderVehicle() {
         <span class="helper">Use the camera on the dash or door-jamb plate. Vehicle data can still be corrected after decoding.</span>
       </div>
       <div class="vehicle-details-grid span-2">
-        <label class="form-field"><span class="field-label">Year</span><input class="input" name="year" inputmode="numeric" value="${state.vehicle.year}" placeholder="e.g. 2010" required /></label>
-        <label class="form-field"><span class="field-label">Make</span><span class="select-control"><select class="select${state.vehicle.make ? "" : " is-placeholder"}" name="make" id="vehicle-make" required aria-label="Make"><option value="" disabled${state.vehicle.make ? "" : " selected"}></option>${makes.map((make) => `<option${state.vehicle.make === make ? " selected" : ""}>${escapeHTML(make)}</option>`).join("")}</select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Model</span><span class="select-control"><select class="select${state.vehicle.model ? "" : " is-placeholder"}" name="model" id="vehicle-model"${state.vehicle.make ? "" : " disabled"} required aria-label="Model"><option value="" disabled${state.vehicle.model ? "" : " selected"}></option>${models.map((model) => `<option${state.vehicle.model === model ? " selected" : ""}>${escapeHTML(model)}</option>`).join("")}</select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Trim</span><span class="select-control"><select class="select${state.vehicle.trim ? "" : " is-placeholder"}" name="trim" id="vehicle-trim" required aria-label="Trim"><option value=""${state.vehicle.trim ? "" : " selected"}></option>${variants.map((variant) => `<option${state.vehicle.trim === variant ? " selected" : ""}>${escapeHTML(variant)}</option>`).join("")}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Year</span></div><input class="input" name="year" inputmode="numeric" value="${state.vehicle.year}" placeholder="e.g. 2010" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Make</span></div><span class="select-control"><select class="select${state.vehicle.make ? "" : " is-placeholder"}" name="make" id="vehicle-make" required aria-label="Make"><option value="" disabled${state.vehicle.make ? "" : " selected"}></option>${makes.map((make) => `<option${state.vehicle.make === make ? " selected" : ""}>${escapeHTML(make)}</option>`).join("")}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Model</span></div><span class="select-control"><select class="select${state.vehicle.model ? "" : " is-placeholder"}" name="model" id="vehicle-model"${state.vehicle.make ? "" : " disabled"} required aria-label="Model"><option value="" disabled${state.vehicle.model ? "" : " selected"}></option>${models.map((model) => `<option${state.vehicle.model === model ? " selected" : ""}>${escapeHTML(model)}</option>`).join("")}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Trim</span></div><span class="select-control"><select class="select${state.vehicle.trim ? "" : " is-placeholder"}" name="trim" id="vehicle-trim" required aria-label="Trim"><option value=""${state.vehicle.trim ? "" : " selected"}></option>${variants.map((variant) => `<option${state.vehicle.trim === variant ? " selected" : ""}>${escapeHTML(variant)}</option>`).join("")}</select>${icon("down")}</span></label>
         ${specFieldHtml("drivetrain", "Drivetrain", "e.g. AWD", ["FWD", "RWD", "AWD", "4WD"])}
         ${specFieldHtml("engine", "Engine", "e.g. 2.0L turbo", null)}
         ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
-        <label class="form-field"><span class="field-label">Registration <span class="muted">(optional)</span></span><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
-        <label class="form-field"><span class="field-label">Current mileage</span><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Registration <span class="muted">(optional)</span></span></div><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Current mileage</span></div><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add new vehicle</button></div>
       </div>
       <div class="customer-details-heading span-2"><h2>Customer details</h2></div>
       <div class="customer-details-grid span-2">
-        <label class="form-field"><span class="field-label">First name</span><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
-        <label class="form-field"><span class="field-label">Last name</span><input class="input" name="customerLastName" autocomplete="family-name" value="${escapeHTML(lastName)}" placeholder="Last name" required /></label>
-        <label class="form-field"><span class="field-label">Phone <span class="muted">(optional)</span></span><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" /></label>
-        <label class="form-field"><span class="field-label">Email <span class="muted">(optional)</span></span><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="customerLastName" autocomplete="family-name" value="${escapeHTML(lastName)}" placeholder="Last name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
       <div class="action-dock vehicle-actions span-2"><button class="secondary-button full" type="button" data-action="cancel-job">${icon("trash")} Cancel job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
@@ -1527,7 +1958,7 @@ function renderProblem() {
     ${workflowJourney(2)}
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
-        <div class="field-header"><label class="field-label intake-section-title" for="complaint">Customer complaint</label></div>
+        <div class="field-header"><label class="field-label intake-section-title" for="complaint">Symptoms</label></div>
         <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button></div>
       </div>
@@ -1544,7 +1975,7 @@ function renderProblem() {
         </div>
       </div>
       <div class="form-field">
-        <span class="field-label intake-section-title">Arrival photos <span class="optional-label">(optional)</span></span>
+        <div class="field-header"><span class="field-label intake-section-title">Arrival photos <span class="optional-label">(optional)</span></span></div>
         <div class="photo-panel">${photoStrip(state.photos, "inspection", "Arrival photo")}</div>
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
         ${photoActionButtons()}
@@ -1575,7 +2006,7 @@ function renderResults() {
 
     <section class="selected-repair-card" aria-live="polite" aria-labelledby="selected-repair-heading-label">
       <div class="selected-repair-top">
-        <span class="section-label result-section-label selected-repair-eyebrow${selected.rank === "01" ? " is-best" : ""}" id="selected-repair-heading-label">${selected.rank === "01" ? "Best match" : `Repair ${selected.rank}`}</span>
+        <span class="field-label selected-repair-eyebrow${selected.rank === "01" ? " is-best" : ""}" id="selected-repair-heading-label">${selected.rank === "01" ? "Best match" : `Repair ${selected.rank}`}</span>
         <span class="selected-match-value${selected.rank === "01" ? " is-best" : ""}">${selectedPercent}<span class="percent-symbol">%</span></span>
       </div>
       <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
@@ -1584,26 +2015,33 @@ function renderResults() {
         ${repairedLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(repairedLabel)}</span></span>` : ""}
       </div>
 
-      ${selected.repairSummary ? `<div class="result-detail-section" aria-labelledby="repair-summary-label">
-        <span class="section-label result-section-label" id="repair-summary-label">Repair summary <span class="optional-label">(AI-generated)</span></span>
-        <div class="repair-summary-box"><p>${escapeHTML(selected.repairSummary)}</p></div>
-      </div>` : ""}
-      <div class="result-detail-section" aria-labelledby="work-performed-label">
-        <span class="section-label result-section-label" id="work-performed-label">Work performed</span>
-        <div class="repair-summary-box"><p>${escapeHTML(selected.workPerformed || "No work performed recorded.")}</p></div>
-      </div>
-      <div class="result-detail-section" aria-labelledby="verification-label">
-        <span class="section-label result-section-label" id="verification-label">Verification</span>
-        <div class="repair-summary-box"><p>${escapeHTML(selected.verificationNotes || "No verification notes recorded.")}</p></div>
-      </div>
+      ${reportCoreSections({ complaint: selected.complaint, observations: selected.observations, dtcs: selected.dtcs, workPerformed: selected.workPerformed, verificationNotes: selected.verificationNotes })}
       <div class="result-detail-section" aria-labelledby="parts-used-label">
-        <div class="parts-heading result-section-head"><span class="section-label" id="parts-used-label">Parts & consumables used</span><span class="parts-item-count">${selected.parts.length} items</span></div>
+        <div class="field-header parts-heading"><span class="field-label" id="parts-used-label">Parts & consumables used</span><span class="parts-item-count">${selected.parts.length} items</span></div>
         <div class="parts-panel always-visible">${selected.parts.map(([name, number, key]) => partRow(name, number, key)).join("")}</div>
       </div>
     </section>
     <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button><button class="web-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
   </section>`;
 }
+
+// Controlled vocabulary for grouping repairs on the car profile. Wider than
+// the SAE code systems in dtc_reference, which only cover powertrain -- a
+// brake or suspension job has no fault code to derive a category from.
+const REPAIR_SYSTEMS = [
+  { value: "engine_fuel_air", label: "Engine — fuel & air" },
+  { value: "ignition", label: "Ignition & misfire" },
+  { value: "transmission", label: "Transmission & driveline" },
+  { value: "emissions", label: "Emissions" },
+  { value: "cooling_hvac", label: "Cooling & HVAC" },
+  { value: "brakes", label: "Brakes" },
+  { value: "suspension_steering", label: "Suspension & steering" },
+  { value: "electrical", label: "Electrical & battery" },
+  { value: "body_interior", label: "Body & interior" },
+  { value: "other", label: "Other" },
+];
+
+const REPAIR_SYSTEM_LABELS = new Map(REPAIR_SYSTEMS.map((entry) => [entry.value, entry.label]));
 
 function renderRepairRecord() {
   const selected = repairMatches.find((repair) => repair.id === state.selectedRepair) || repairMatches[0];
@@ -1629,13 +2067,22 @@ function renderRepairRecord() {
 
     <form id="repair-form" class="repair-form">
       <div class="form-field">
+        <div class="field-header"><label class="field-label" for="repair-system">System type</label></div>
+        <span class="select-control"><select class="select${state.repair.system ? "" : " is-placeholder"}" id="repair-system" name="system" aria-label="System type" required>
+          <option value=""${state.repair.system ? "" : " selected"} disabled>Select a system</option>
+          ${REPAIR_SYSTEMS.map((entry) => `<option value="${entry.value}"${state.repair.system === entry.value ? " selected" : ""}>${escapeHTML(entry.label)}</option>`).join("")}
+        </select>${icon("down")}</span>
+        <p class="photo-upload-hint">Groups this repair on the car profile so recurring issues surface for the next mechanic.</p>
+      </div>
+
+      <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
         <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>Show original</button></div>
         <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <section class="repair-parts-section" aria-labelledby="repair-parts-heading">
-        <div class="repair-section-head"><span class="section-label" id="repair-parts-heading">Parts & consumables <span class="optional-label">(optional)</span></span></div>
+        <div class="repair-section-head"><span class="field-label" id="repair-parts-heading">Parts & consumables <span class="optional-label">(optional)</span></span></div>
         ${repairPartsTable()}
         <button class="secondary-button add-parts-button" type="button" data-action="open-parts-editor">${icon("plus")} Add parts & consumables</button>
       </section>
@@ -1647,13 +2094,14 @@ function renderRepairRecord() {
       </div>
 
       <div class="form-field">
-        <span class="field-label">Repair photos <span class="optional-label">(optional)</span></span>
+        <div class="field-header"><span class="field-label">Repair photos <span class="optional-label">(optional)</span></span></div>
         <div class="photo-panel">${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
         ${photoActionButtons()}
       </div>
 
-      <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="delete-repair">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
+      <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
+      <div class="repair-danger-row"><button class="text-button danger-text-button" type="button" data-action="delete-repair">${icon("trash")} Delete repair</button></div>
     </form>
   </section>`;
 }
@@ -1685,9 +2133,23 @@ function resolvedPhotoGallery() {
 
 function resolvedDetailSection(label, content, { optional = "" } = {}) {
   return `<div class="result-detail-section">
-    <span class="section-label result-section-label">${label}${optional ? ` <span class="optional-label">${optional}</span>` : ""}</span>
+    <div class="field-header"><span class="field-label">${label}${optional ? ` <span class="optional-label">${optional}</span>` : ""}</span></div>
     ${content}
   </div>`;
+}
+
+// Shared by the resolved job report and the similar-repairs match card so
+// the two can't drift out of sync again -- same section order, same
+// labels, same fallback copy, regardless of which screen is asking. Parts
+// and photos are left to the caller since they genuinely differ (clickable
+// "add to repair" on a match vs. a static list on a finished job; a match
+// has no photos at all).
+function reportCoreSections(fields) {
+  return `${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(fields.complaint) || "No complaint recorded."}</p></div>`)}
+    ${resolvedDetailSection("Initial observations", `<div class="repair-summary-box"><p>${escapeHTML(fields.observations || "No initial observations recorded.")}</p></div>`)}
+    ${resolvedDetailSection("Diagnostic trouble codes", (fields.dtcs || []).length ? `<div class="quick-row">${fields.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<div class="repair-summary-box"><p>No scan codes recorded.</p></div>`)}
+    ${resolvedDetailSection("Work performed", `<div class="repair-summary-box"><p>${escapeHTML(fields.workPerformed || "No work performed recorded.")}</p></div>`)}
+    ${resolvedDetailSection("Verification", `<div class="repair-summary-box"><p>${escapeHTML(fields.verificationNotes || "No verification notes recorded.")}</p></div>`)}`;
 }
 
 // Read-only twin of partRow(): a resolved job is a finished record, so parts
@@ -1743,19 +2205,14 @@ function renderResolvedJob() {
         </div>
       </div>
 
-      ${resolvedDetailSection("Customer complaint", `<div class="repair-summary-box"><p>${escapeHTML(job.complaint) || "No complaint recorded."}</p></div>`)}
-      ${resolvedDetailSection("Initial observations", `<div class="repair-summary-box"><p>${escapeHTML(job.observations || "No initial observations recorded.")}</p></div>`)}
-      ${resolvedDetailSection("Diagnostic trouble codes", job.dtcs.length ? `<div class="quick-row">${job.dtcs.map((code) => `<span class="dtc-chip caps-text">${escapeHTML(code)}</span>`).join("")}</div>` : `<div class="repair-summary-box"><p>No scan codes recorded.</p></div>`)}
-      ${job.repairSummary ? resolvedDetailSection("Repair summary", `<div class="repair-summary-box"><p>${escapeHTML(job.repairSummary)}</p></div>`, { optional: "(AI-generated)" }) : ""}
-      ${resolvedDetailSection("Work performed", `<div class="repair-summary-box"><p>${escapeHTML(job.workPerformed || "No work performed recorded.")}</p></div>`)}
-      ${resolvedDetailSection("Verification", `<div class="repair-summary-box"><p>${escapeHTML(job.verification)}</p></div>`)}
+      ${reportCoreSections({ complaint: job.complaint, observations: job.observations, dtcs: job.dtcs, workPerformed: job.workPerformed, verificationNotes: job.verification })}
       <div class="result-detail-section">
-        <div class="parts-heading result-section-head"><span class="section-label">Parts &amp; consumables used</span><span class="parts-item-count">${job.parts.length} ${job.parts.length === 1 ? "item" : "items"}</span></div>
+        <div class="field-header parts-heading"><span class="field-label">Parts &amp; consumables used</span><span class="parts-item-count">${job.parts.length} ${job.parts.length === 1 ? "item" : "items"}</span></div>
         ${job.parts.length ? `<div class="parts-panel always-visible">${job.parts.map(resolvedPartRow).join("")}</div>` : `<div class="repair-summary-box"><p>No parts or consumables recorded.</p></div>`}
       </div>
-      ${resolvedDetailSection("Previous repair reference", `<div class="repair-summary-box"><p>${escapeHTML(job.reference)}</p></div>`)}
       ${resolvedDetailSection("Repair photos", resolvedPhotoGallery())}
     </section>
+    ${job.referenceJobId ? `<button class="text-button resolved-reference-link" type="button" data-action="open-job" data-job-id="${escapeHTML(job.referenceJobId)}">${icon("back")} Previous repair reference</button>` : ""}
     ${isDeleted ? `<div class="action-dock resolved-actions span-2">
       <button class="secondary-button full" type="button" data-action="restore-job" data-job-id="${job.id}">${icon("back")} Restore job</button>
       <button class="danger-button full" type="button" data-action="delete-forever" data-job-id="${job.id}">${icon("trash")} Delete forever</button>
@@ -1769,7 +2226,7 @@ function matchOption(repair, isSelected) {
   const vehicleName = repair.vehicle.split(" · ")[0];
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
     <span class="match-option-top"><span class="match-option-rank">${repair.rank}${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : ""}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
-    <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul></span>
+    <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul>${repair.repairSummary ? `<p class="match-option-summary">${escapeHTML(repair.repairSummary)}</p>` : ""}</span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
 }
@@ -1871,10 +2328,10 @@ function syncProblem(form) {
 function validateAssessment(form) {
   const complaint = form?.querySelector("#complaint");
   if (!complaint?.value.trim()) {
-    complaint?.setCustomValidity("Enter the customer complaint to continue.");
+    complaint?.setCustomValidity("Enter the symptoms to continue.");
     complaint?.reportValidity();
     complaint?.setCustomValidity("");
-    showToast("Add the customer complaint before continuing.");
+    showToast("Add the symptoms before continuing.");
     return false;
   }
   return true;
@@ -1887,6 +2344,15 @@ function syncRepairRecord(form) {
 }
 
 function validateRepairCompletion(form) {
+  const systemField = form.querySelector("#repair-system");
+  if (!state.repair.system) {
+    systemField?.scrollIntoView({ behavior: "smooth", block: "center" });
+    systemField?.setCustomValidity("Select a system before completing this job.");
+    systemField?.reportValidity();
+    systemField?.setCustomValidity("");
+    showToast("Select a system before completing this job.");
+    return false;
+  }
   const workField = form.querySelector("#repair-notes");
   if (!state.repair.workNotes) {
     workField?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1934,13 +2400,13 @@ function resumeSavedJob() {
   return setStep(state.savedJourney.step || 1);
 }
 
-function openJob(jobId) {
+function openJob(jobId, { reopenSheet = null } = {}) {
   const job = jobRecords.find((record) => String(record.id) === String(jobId));
   if (!job) return;
   state.selectedJobId = job.id;
   if (job.status === "resolved" || job.status === "deleted") {
     state.resolvedReturn = state.route === "car-profile"
-      ? { route: "car-profile", profileId: state.activeProfileId, tab: state.profileTab }
+      ? { route: "car-profile", profileId: state.activeProfileId, tab: state.profileTab, sheet: reopenSheet }
       : { route: "jobs" };
     state.route = "resolved";
     animateNextScreen = true;
@@ -1964,6 +2430,7 @@ function openJob(jobId) {
   state.repair = {
     workNotes: Array.isArray(job.workPerformed) ? job.workPerformed.join("\n") : job.workPerformed || "",
     verificationNotes: job.verification && !job.verification.startsWith("No verification") ? job.verification : "",
+    system: job.system || "",
     parts: (job.parts || []).map((part) => ({ ...part, key: part.id || part.number || part.name })),
     photos: [],
   };
@@ -2179,7 +2646,7 @@ function photoViewerSheet(scope, requestedIndex = 0) {
   if (!photos.length) return;
   const index = Math.max(0, Math.min(requestedIndex, photos.length - 1));
   const scopeLabel = scope === "repair" ? "Repair photos" : "Arrival photos";
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">${scopeLabel} · ${photos.length} saved</span><h2>Photo viewer</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close photo viewer">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label">${scopeLabel} · ${photos.length} saved</span><h2>Photo viewer</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close photo viewer">${icon("close")}</button></div>
     <div class="sheet-body photo-viewer-body">
       <div class="photo-viewer-track" data-photo-viewer-track tabindex="0" aria-label="Swipe through ${scopeLabel.toLowerCase()}">
         ${photos.map((photo, photoIndex) => `<figure class="photo-viewer-slide" data-photo-viewer-index="${photoIndex}"><div class="photo-viewer-frame" data-photo-zoom-frame><img src="${escapeHTML(photoUrl(photo))}" alt="${scopeLabel.slice(0, -1)} ${photoIndex + 1} of ${photos.length}" draggable="false" /><span class="photo-viewer-count">${photoIndex + 1} / ${photos.length}</span></div><button class="photo-delete-button" type="button" data-action="delete-photo" data-photo-scope="${scope}" data-photo-index="${photoIndex}">${icon("trash")} Delete photo</button></figure>`).join("")}
@@ -2330,7 +2797,7 @@ function calendarSheet() {
   }).join("");
   const trailingBlanks = Array.from({ length: (7 - ((leadingBlanks + daysInMonth) % 7)) % 7 }, () => '<span class="calendar-day-blank" aria-hidden="true"></span>').join("");
 
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Workshop schedule</span><h2>Calendar</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close calendar">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label">Workshop schedule</span><h2>Calendar</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close calendar">${icon("close")}</button></div>
     <div class="sheet-body calendar-sheet-body">
       <div class="calendar-toolbar">
         <button class="calendar-nav" type="button" data-action="calendar-previous" aria-label="Previous month">${icon("back")}</button>
@@ -2342,7 +2809,7 @@ function calendarSheet() {
         ${blankCells}${dayCells}${trailingBlanks}
       </div>
       <section class="calendar-agenda" aria-live="polite">
-        <span class="micro-label">${selectedLabel}</span>
+        <span class="field-label">${selectedLabel}</span>
         <h3>${activeDays.has(selectedDay) ? "3 workshop bookings" : "No scheduled bookings"}</h3>
         <p>${activeDays.has(selectedDay) ? "Bay activity, jobs and completed repairs for the selected day." : "The workshop schedule is clear for this date."}</p>
       </section>
@@ -2352,16 +2819,16 @@ function calendarSheet() {
 function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
   const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Technician account</span><h2>Profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label">Technician account</span><h2>Profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(state.shop?.name || "Workshop technician")}</p><span class="technician-status">Available</span></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
-        <div class="profile-fact"><span class="micro-label">Assigned bay</span><strong>Bay 03</strong></div>
-        <div class="profile-fact"><span class="micro-label">Shift</span><strong>07:00–16:00</strong></div>
-        <div class="profile-fact"><span class="micro-label">Employee ID</span><strong>ARG-024</strong></div>
+        <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>Bay 03</strong></div>
+        <div class="profile-fact"><span class="field-label">Shift</span><strong>07:00–16:00</strong></div>
+        <div class="profile-fact"><span class="field-label">Employee ID</span><strong>ARG-024</strong></div>
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         <button class="profile-menu-button" type="button" data-action="profile-jobs">${icon("clipboard")}<span>My active jobs</span>${icon("arrow")}</button>
@@ -2372,24 +2839,24 @@ function technicianProfileSheet() {
 }
 
 function catalogEditorSheet() {
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">Vehicle catalog</span><h2>Add make or model</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label">Vehicle catalog</span><h2>Add make or model</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Add a make, model, or an exact variant for your workshop. Variants can include its engine, drivetrain and transmission.</p>
       <form id="catalog-editor-form" class="form-grid">
-        <label class="form-field"><span class="field-label">Make</span><input class="input" name="catalog-make" value="${escapeHTML(state.vehicle.make)}" required /></label>
-        <label class="form-field"><span class="field-label">Model <span class="muted">(optional)</span></span><input class="input" name="catalog-model" value="${escapeHTML(state.vehicle.model)}" placeholder="e.g. Golf" /></label>
-        <label class="form-field"><span class="field-label">Variant / trim <span class="muted">(optional)</span></span><input class="input" name="catalog-variant" placeholder="e.g. GTI" /></label>
-        <label class="form-field"><span class="field-label">Engine <span class="muted">(optional)</span></span><input class="input" name="catalog-engine" placeholder="e.g. 2.0L turbo" /></label>
-        <label class="form-field"><span class="field-label">Drivetrain <span class="muted">(optional)</span></span><span class="select-control"><select class="select" name="catalog-drivetrain"><option value="">Choose drivetrain</option><option>FWD</option><option>RWD</option><option>AWD</option><option>4WD</option></select>${icon("down")}</span></label>
-        <label class="form-field"><span class="field-label">Transmission <span class="muted">(optional)</span></span><input class="input" name="catalog-transmission" placeholder="e.g. 7-speed DSG" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Make</span></div><input class="input" name="catalog-make" value="${escapeHTML(state.vehicle.make)}" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Model <span class="muted">(optional)</span></span></div><input class="input" name="catalog-model" value="${escapeHTML(state.vehicle.model)}" placeholder="e.g. Golf" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Variant / trim <span class="muted">(optional)</span></span></div><input class="input" name="catalog-variant" placeholder="e.g. GTI" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Engine <span class="muted">(optional)</span></span></div><input class="input" name="catalog-engine" placeholder="e.g. 2.0L turbo" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Drivetrain <span class="muted">(optional)</span></span></div><span class="select-control"><select class="select" name="catalog-drivetrain"><option value="">Choose drivetrain</option><option>FWD</option><option>RWD</option><option>AWD</option><option>4WD</option></select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Transmission <span class="muted">(optional)</span></span></div><input class="input" name="catalog-transmission" placeholder="e.g. 7-speed DSG" /></label>
         <button class="primary-button full" type="submit">${icon("save")} Save to catalog</button>
       </form>
     </div>`);
 }
 
 function dtcEditorSheet() {
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow">${vehicleName()}</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label">${vehicleName()}</span><h2>Add scan code</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><form id="dtc-editor-form" class="form-grid">
-      <label class="form-field"><span class="field-label">Diagnostic trouble code</span><input class="input caps-text" name="dtc-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. P0171" required /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Diagnostic trouble code</span></div><input class="input caps-text" name="dtc-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. P0171" required /></label>
       <button class="primary-button full" type="submit">${icon("plus")} Add code</button>
     </form></div>`);
   setTimeout(() => document.querySelector('[name="dtc-code"]')?.focus(), 50);
@@ -2433,10 +2900,10 @@ function addRepairPart(part) {
 
 function partsEditorSheet() {
   const selected = repairMatches.find((repair) => repair.id === state.selectedRepair) || repairMatches[0];
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>Repair record</strong> · ${state.repair.parts.length} saved</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> · ${state.repair.parts.length} saved</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body parts-editor-body">
       ${state.repairReferenceEnabled ? `<section class="parts-editor-section" aria-labelledby="suggested-parts-heading">
-        <div class="parts-editor-heading"><span class="micro-label">From selected repair ${selected.rank}</span><h3 id="suggested-parts-heading">Previously used on this fix</h3><p>Add only the items you actually use. Search pricing later from the repair record.</p></div>
+        <div class="parts-editor-heading"><span class="field-label">From selected repair ${selected.rank}</span><h3 id="suggested-parts-heading">Previously used on this fix</h3><p>Add only the items you actually use. Search pricing later from the repair record.</p></div>
         <div class="suggested-parts-list">${selected.parts.map(([name, number, key]) => {
           const isAdded = state.repair.parts.some((part) => part.key === key || part.name === name);
           return `<div class="suggested-part-row"><div><strong>${name}</strong><span>${number}</span></div><div class="suggested-part-actions"><button class="part-button reference-toggle-button${isAdded ? " is-remove" : ""}" type="button" data-action="toggle-reference-part" data-reference-key="${key}" data-reference-name="${name}" data-reference-number="${number}" aria-pressed="${isAdded}">${isAdded ? `${icon("close")} Remove` : `${icon("plus")} Add`}</button></div></div>`;
@@ -2444,12 +2911,12 @@ function partsEditorSheet() {
       </section>` : ""}
 
       <section class="parts-editor-section custom-part-section" aria-labelledby="custom-part-heading">
-        <div class="parts-editor-heading"><span class="micro-label">Different item</span><h3 id="custom-part-heading">Add a custom part</h3></div>
+        <div class="parts-editor-heading"><span class="field-label">Different item</span><h3 id="custom-part-heading">Add a custom part</h3></div>
         <form id="part-editor-form" class="custom-part-form">
-          <label class="form-field"><span class="field-label">Type</span><span class="select-control"><select class="select" name="custom-type"><option>Part</option><option>Consumable</option></select>${icon("down")}</span></label>
-          <label class="form-field custom-part-name"><span class="field-label">Part or consumable</span><input class="input" name="custom-name" placeholder="e.g. Oil filter" /></label>
-          <label class="form-field"><span class="field-label">Part number</span><input class="input" name="custom-number" placeholder="Optional" /></label>
-          <label class="form-field"><span class="field-label">Qty</span><input class="input" name="custom-quantity" value="1" inputmode="numeric" /></label>
+          <label class="form-field"><div class="field-header"><span class="field-label">Type</span></div><span class="select-control"><select class="select" name="custom-type"><option>Part</option><option>Consumable</option></select>${icon("down")}</span></label>
+          <label class="form-field custom-part-name"><div class="field-header"><span class="field-label">Part or consumable</span></div><input class="input" name="custom-name" placeholder="e.g. Oil filter" /></label>
+          <label class="form-field"><div class="field-header"><span class="field-label">Part number</span></div><input class="input" name="custom-number" placeholder="Optional" /></label>
+          <label class="form-field"><div class="field-header"><span class="field-label">Qty</span></div><input class="input" name="custom-quantity" value="1" inputmode="numeric" /></label>
           <button class="primary-button full custom-part-save" type="button" data-action="save-custom-part">${icon("save")} Save item to repair</button>
         </form>
       </section>
@@ -2474,7 +2941,7 @@ async function priceSheet(partName, partKey = "") {
   const savedPart = state.repair.parts.find((part) => part.key === partKey || part.name === partName);
   const recordNumber = savedPart?.number || product.recordNumber;
   const query = [state.vehicle.year, state.vehicle.make, state.vehicle.model, partName].filter(Boolean).join(" ");
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>Live part search</strong></span><h2>Searching prices…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Live part search</strong></span><h2>Searching prices…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Checking Australian suppliers for ${escapeHTML(partName)}</span></div></div>`);
   try {
     const response = await fetch("/api/parts/search", {
@@ -2485,18 +2952,18 @@ async function priceSheet(partName, partKey = "") {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Part search failed");
     const offers = Array.isArray(result.offers) ? result.offers : [];
-    openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>Live part search</strong> · ${offers.length} offer${offers.length === 1 ? "" : "s"}</span><h2>Compare prices</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Live part search</strong> · ${offers.length} offer${offers.length === 1 ? "" : "s"}</span><h2>Compare prices</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
       <div class="part-search-summary">
         <div class="part-product-media">${product.image ? `<img class="part-product-image" src="${product.image}" alt="Reference catalogue photo of ${partName}" /><span class="reference-chip">Reference image</span>` : `<div class="part-product-placeholder">${icon("search")}<span>Catalogue search</span></div>`}</div>
-        <div class="part-product-copy"><span class="micro-label">Requested part</span><h3>${escapeHTML(partName)}</h3><span class="part-product-number">${escapeHTML(product.number)}</span><span class="part-product-fitment">${escapeHTML(product.category)}<br>${escapeHTML(`${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`)}</span></div>
+        <div class="part-product-copy"><span class="field-label">Requested part</span><h3>${escapeHTML(partName)}</h3><span class="part-product-number">${escapeHTML(product.number)}</span><span class="part-product-fitment">${escapeHTML(product.category)}<br>${escapeHTML(`${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`)}</span></div>
       </div>
       <p class="part-search-note">Compare one part at a time by price, availability and supplier. Product imagery is illustrative; confirm the catalogue image and fitment before ordering.</p>
       <div class="price-list" aria-label="Supplier offers">${offers.length ? offers.map((offer, i) => `<button class="price-card" type="button" data-action="select-price" data-part-key="${escapeHTML(partKey)}" data-part-name="${escapeHTML(partName)}" data-part-number="${escapeHTML(recordNumber)}" data-part-type="${product.type}" data-supplier="${escapeHTML(offer.merchant || "Unknown supplier")}" data-price="${escapeHTML(offer.price || "Quote required")}" data-offer-url="${escapeHTML(offer.link || "")}" data-offer-image-url="${escapeHTML(offer.imageUrl || "")}">${offer.imageUrl ? `<img class="offer-image" src="${escapeHTML(offer.imageUrl)}" alt="" />` : product.image ? `<img class="offer-image" src="${product.image}" alt="" />` : `<span class="offer-image offer-image-placeholder">${icon("search")}</span>`}<span class="offer-copy"><span class="supplier">${i === 0 ? `<strong class="offer-badge">Lowest listed</strong>` : ""}${escapeHTML(offer.merchant || "Unknown supplier")}</span><span class="supplier-meta">${escapeHTML(offer.delivery || "Availability not listed")}</span><span class="offer-detail">${escapeHTML(offer.title || partName)}</span></span><span class="offer-price"><span class="price">${escapeHTML(offer.price || "Quote")}</span><span class="offer-action">Use offer ${icon("arrow")}</span></span></button>`).join("") : `<div class="source-card"><h3>No current offers found</h3><p>Try a more specific part number or confirm availability with a supplier.</p></div>`}</div>
       <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>
     </div>`);
   } catch (error) {
-    openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>Live part search</strong></span><h2>Search unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Live part search</strong></span><h2>Search unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
       <div class="sheet-body"><div class="source-card"><h3>Could not load supplier offers</h3><p>${escapeHTML(error?.message || "Try again in a moment.")}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
   }
 }
@@ -2582,14 +3049,15 @@ function researchVehicleMoustache() {
   return specs ? `${icon("car")}<span>${escapeHTML(specs)}</span>` : "";
 }
 
-function renderResearchSourceList() {
+function renderResearchSourceList(options = {}) {
   const { sources, synthesis } = lastResearchResult;
-  const moustache = researchVehicleMoustache();
+  const moustache = options.moustache !== undefined ? options.moustache : researchVehicleMoustache();
+  const title = options.title || "Web repair tips";
   const resultCount = `${sources.length} result${sources.length === 1 ? "" : "s"}`;
-  openSheet(`<div class="sheet-head"><div><h2>Web repair tips</h2>${moustache ? `<span class="task-context">${moustache}</span>` : ""}</div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(title)}</h2>${moustache ? `<span class="task-context">${moustache}</span>` : ""}</div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body"><p class="muted">Your verified shop repairs remain the primary reference. External findings are diagnostic directions, not confirmed fixes.</p>
-      <details class="source-card internal synthesis-accordion"><summary class="micro-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
-      <span class="section-label results-heading">External research · <strong class="results-heading-count">${escapeHTML(resultCount)}</strong></span>
+      <details class="source-card internal synthesis-accordion"><summary class="field-label">AI synthesis with source citations${icon("down")}</summary><p>${synthesis ? formatResearchSynthesis(synthesis, sources.length) : "No summary was returned."}</p></details>
+      <span class="field-label results-heading">External research · <strong class="results-heading-count">${escapeHTML(resultCount)}</strong></span>
       <div class="source-list">${sources.map((source) => `<a class="source-list-item" href="${escapeHTML(source.url)}" target="_blank" rel="noopener noreferrer"><span class="source-list-main"><span class="source-list-meta"><img class="source-favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${escapeHTML(sourceDomain(source.url))}" alt="" /><span class="source-domain">${escapeHTML(sourceDomain(source.url))}</span>${source.date ? `<span class="source-date">· ${escapeHTML(source.date)}</span>` : ""}</span><span class="source-list-title">${escapeHTML(source.title)}</span><span class="source-list-snippet">${escapeHTML(source.snippet || "Open source")}</span></span><span class="source-list-external" aria-hidden="true">${icon("externalLink")}</span></a>`).join("")}</div>
       <div class="disclaimer">Verify procedures, specifications, part fitment and safety steps against official service information before work begins.</div>
     </div>`);
@@ -2598,7 +3066,7 @@ function renderResearchSourceList() {
 async function webResearchSheet() {
   const vehicle = `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
   const query = [state.complaint, state.notes].filter(Boolean).join(" ").slice(0, 450) || "diagnostic repair guidance";
-  openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Searching repair sources…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Researching ${escapeHTML(vehicle)} and cross-checking sources</span></div></div>`);
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>External research</strong></span><h2>Searching repair sources…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Researching ${escapeHTML(vehicle)} and cross-checking sources</span></div></div>`);
   showTopProgressBar();
   try {
     const result = await apiRequest("/api/research", { method: "POST", body: JSON.stringify({ jobId: state.currentJobId || undefined, query, vehicle, dtcs: state.dtcs, complaint: state.complaint, observations: state.notes }) });
@@ -2607,7 +3075,25 @@ async function webResearchSheet() {
     renderResearchSourceList();
   } catch (error) {
     if (sheetLayer.hidden) return;
-    openSheet(`<div class="sheet-head"><div><span class="eyebrow"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
+    openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
+  } finally {
+    hideTopProgressBar();
+  }
+}
+
+async function libraryWebResearchSheet() {
+  const query = state.librarySearch.trim();
+  if (!query) return;
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>External research</strong></span><h2>Searching repair sources…</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="part-product-placeholder">${icon("search")}<span>Researching "${escapeHTML(query)}"</span></div></div>`);
+  showTopProgressBar();
+  try {
+    const result = await apiRequest("/api/research", { method: "POST", body: JSON.stringify({ query }) });
+    if (sheetLayer.hidden) return;
+    lastResearchResult = { synthesis: result.synthesis, sources: Array.isArray(result.sources) ? result.sources : [] };
+    renderResearchSourceList({ title: "Web repair tips", moustache: "" });
+  } catch (error) {
+    if (sheetLayer.hidden) return;
+    openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>External research</strong></span><h2>Research unavailable</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div><div class="sheet-body"><div class="source-card"><h3>Could not search repair sources</h3><p>${escapeHTML(error.message)}</p></div><button class="secondary-button" type="button" data-action="close-sheet">Close</button></div>`);
   } finally {
     hideTopProgressBar();
   }
@@ -2678,6 +3164,16 @@ document.addEventListener("click", (event) => {
     }
     if (action === "scroll-next") return scrollToNextView();
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    if (action === "toggle-network-sharing") {
+      const next = !state.shop?.sharesRepairData;
+      return apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify({ sharesRepairData: next }) })
+        .then(({ shop }) => {
+          state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data) };
+          render();
+          showToast(next ? "Sharing anonymised repair patterns with the network." : "Stopped sharing with the network.");
+        })
+        .catch((error) => showToast(error.message));
+    }
     if (action === "continue-diagnosis") return resumeSavedJob();
     if (action === "open-calendar") return calendarSheet();
     if (action === "open-profile") return technicianProfileSheet();
@@ -2754,6 +3250,22 @@ document.addEventListener("click", (event) => {
       return showToast(`${code} removed.`);
     }
     if (action === "repair-back") return returnToResults();
+    if (action === "save-repair-draft") {
+      const repairForm = document.querySelector("#repair-form");
+      if (repairForm) syncRepairRecord(repairForm);
+      // Drafts already autosave (queueRepairAutosave), so this is an explicit
+      // "save and step away" -- flush now rather than waiting out the timer,
+      // then leave the job open in the jobs list to come back to.
+      clearTimeout(repairAutosaveTimer);
+      return persistRepair(false)
+        .then(() => {
+          state.route = "jobs";
+          updateNavigation();
+          render();
+          showToast("Job saved. Pick it back up from Jobs.");
+        })
+        .catch((error) => showToast(error.message));
+    }
     if (action === "delete-repair") {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
@@ -2835,6 +3347,7 @@ document.addEventListener("click", (event) => {
     }
     if (action === "close-sheet") return closeSheet();
     if (action === "web-research") return webResearchSheet();
+    if (action === "search-library-web") return libraryWebResearchSheet();
     if (action === "log-fix") {
       showTopProgressBar({ blocking: true });
       setButtonLoading(actionButton, "Saving…");
@@ -2854,12 +3367,37 @@ document.addEventListener("click", (event) => {
     if (action === "settings-info") return showToast("This preference will connect to the workshop profile.");
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
-    if (action === "open-job") return openJob(actionButton.dataset.jobId || state.activeJobId);
+    if (action === "open-job") {
+      const reopenSheet = actionButton.classList.contains("repair-case-cta")
+        ? { type: "shop-repair-case", system: activeRepairCase.system, label: activeRepairCase.label, index: activeRepairCase.index }
+        : null;
+      closeSheet();
+      return openJob(actionButton.dataset.jobId || state.activeJobId, { reopenSheet });
+    }
+    if (action === "open-repair-case") {
+      const detail = state.activeProfile;
+      if (!detail) return;
+      const { source, system, label } = actionButton.dataset;
+      if (source === "shop") {
+        const row = (detail.repairGroups || []).find((r) => (r.system || "other") === system && r.label === label);
+        if (row) shopRepairCaseSheet(row);
+        return;
+      }
+      const systemGroup = (detail.networkPatterns || []).find((g) => g.system === system);
+      const row = systemGroup?.rows.find((r) => r.label === label);
+      if (row) networkRepairCaseSheet(row);
+      return;
+    }
     if (action === "back-from-resolved") {
       const target = state.resolvedReturn;
       if (target.route === "car-profile" && state.activeProfile) {
         state.profileTab = target.tab || "history";
-        return setRoute("car-profile");
+        setRoute("car-profile");
+        if (target.sheet?.type === "shop-repair-case") {
+          const row = (state.activeProfile.repairGroups || []).find((r) => (r.system || "other") === target.sheet.system && r.label === target.sheet.label);
+          if (row) shopRepairCaseSheet(row, target.sheet.index);
+        }
+        return;
       }
       return setRoute("jobs");
     }
@@ -2868,6 +3406,14 @@ document.addEventListener("click", (event) => {
       state.activeProfile = null;
       state.activeProfileId = null;
       return setRoute("knowledge");
+    }
+    if (action === "open-library-brand") {
+      state.libraryBrand = actionButton.dataset.brand || null;
+      return render();
+    }
+    if (action === "back-to-library-brands") {
+      state.libraryBrand = null;
+      return render();
     }
     if (action === "set-profile-tab") {
       state.profileTab = actionButton.dataset.profileTab === "history" ? "history" : "notes";
@@ -2972,7 +3518,22 @@ document.addEventListener("input", (event) => {
   const isLibrarySearch = event.target.matches("#library-search");
   if (!isJobSearch && !isLibrarySearch) return;
   if (isJobSearch) state.jobSearch = event.target.value;
-  if (isLibrarySearch) state.librarySearch = event.target.value;
+  if (isLibrarySearch) {
+    state.librarySearch = event.target.value;
+    clearTimeout(libraryRepairSearchTimer);
+    const trimmed = event.target.value.trim();
+    const caretPos = event.target.selectionStart;
+    if (trimmed.length < 3) {
+      if (state.libraryRepairMatches.length || state.libraryRepairQuery) {
+        state.libraryRepairMatches = [];
+        state.libraryRepairQuery = "";
+        render();
+        restoreLibrarySearchFocus(caretPos);
+      }
+    } else {
+      libraryRepairSearchTimer = setTimeout(() => runLibraryRepairSearch(trimmed, caretPos), 350);
+    }
+  }
   const query = event.target.value.trim().toLowerCase();
   const cards = [...document.querySelectorAll(isJobSearch ? ".job-card[data-job-search]" : ".library-result-card[data-library-search]")];
   let visibleCount = 0;
@@ -2987,6 +3548,19 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches("#repair-case-select")) {
+    const detail = state.activeProfile;
+    const row = detail && (detail.repairGroups || []).find((r) => (r.system || "other") === activeRepairCase.system && r.label === activeRepairCase.label);
+    if (row) shopRepairCaseSheet(row, Number(event.target.value));
+    return;
+  }
+  if (event.target.matches("#repair-system")) {
+    // No re-render: the select already shows the new value, and rebuilding the
+    // repair form mid-edit would drop caret position in the textareas above.
+    state.repair.system = event.target.value;
+    event.target.classList.toggle("is-placeholder", !event.target.value);
+    return;
+  }
   const vehicleForm = event.target.closest("#vehicle-form");
   if (!vehicleForm) return;
   // A make change reloads the dependent model list. Capture every field first
@@ -3184,6 +3758,15 @@ window.addEventListener("load", () => {
   updateScrollCue();
   updateStickyJourney();
 });
+
+// Lets a browser opt into the Honda Civic demo fixtures via a one-time URL
+// visit (?dev=1 / ?dev=0) instead of needing devtools console access --
+// localStorage persists after that, same as setting it manually.
+(function syncDevFixturesFromUrl() {
+  const devParam = new URLSearchParams(location.search).get("dev");
+  if (devParam === "1") { localStorage.setItem("argos-dev-fixtures", "on"); location.replace(location.pathname); }
+  if (devParam === "0") { localStorage.removeItem("argos-dev-fixtures"); location.replace(location.pathname); }
+})();
 
 setTheme(preferredTheme(), false);
 hydrateIcons();

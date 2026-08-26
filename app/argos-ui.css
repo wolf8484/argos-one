@@ -15,12 +15,12 @@
   --journey-incomplete: #a6a6a2;
   --line: #2d2d2d;
   --line-strong: #565656;
-  --accent: #f67034;
-  --accent-fill: #f67034;
-  --accent-border: #f67034;
-  --secondary-border: #f67034;
+  --accent: #FFC001;
+  --accent-fill: #FFC001;
+  --accent-border: #FFC001;
+  --secondary-border: #707070;
   --on-accent: #111111;
-  --accent-deep: #d15f2c;
+  --accent-deep: #D19F00;
   --accent-on-inverse: #1e1e1e;
   --notice: #f7e75d;
   --danger: #b91c1c;
@@ -61,12 +61,12 @@
   --line: #d3d3d0;
   --line-strong: #92928e;
   --accent: #1e1e1e;
-  --accent-fill: #f67034;
+  --accent-fill: #FFC001;
   --accent-border: #1e1e1e;
-  --secondary-border: #111111;
+  --secondary-border: #1e1e1e;
   --on-accent: #111111;
-  --accent-deep: #d15f2c;
-  --accent-on-inverse: #f67034;
+  --accent-deep: #D19F00;
+  --accent-on-inverse: #FFC001;
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
@@ -89,6 +89,7 @@ html {
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
 }
 
 html::-webkit-scrollbar,
@@ -103,9 +104,10 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   background: var(--bg);
   color: var(--text);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-inter), "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: var(--copy-size);
   font-weight: 400;
   line-height: 1.35;
@@ -195,11 +197,13 @@ h2 {
 
 h3 {
   font-size: 18px;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 .app-frame {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
   background: var(--bg);
 }
 
@@ -332,7 +336,7 @@ h3 {
 }
 
 main {
-  min-height: calc(100vh - 68px);
+  flex: 1 1 auto;
   padding-bottom: calc(104px + var(--safe-bottom));
 }
 
@@ -679,12 +683,16 @@ main:focus {
   padding-top: 40px;
 }
 
-.section-heading {
-  display: flex;
-  align-items: end;
+.field-header {
   justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 24px;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+  display: flex;
+}
+
+.field-header .field-label {
+  margin: 0;
 }
 
 @media (max-width: 500px) {
@@ -696,31 +704,26 @@ main:focus {
     font-size: 20px;
   }
 
-  .section-heading {
+  .field-header {
     flex-wrap: wrap;
   }
 
-  .section-heading .view-all-button {
+  .field-header .view-all-button {
     flex: 1 0 100%;
     justify-content: center;
   }
 }
 
-.section-label,
-.field-label,
-.micro-label,
-.eyebrow {
-  display: block;
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: var(--heading);
   font-size: var(--caps-size);
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0;
   text-transform: uppercase;
-}
-
-.section-heading h2 {
-  margin-top: 5px;
 }
 
 .text-button {
@@ -966,7 +969,7 @@ main:focus {
 }
 
 .jobs-search-field {
-  margin-bottom: 16px;
+  margin-bottom: 40px;
 }
 
 .jobs-search-control {
@@ -1003,18 +1006,65 @@ main:focus {
   display: grid;
 }
 
-.library-brand-divider {
-  padding: 16px 4px 16px;
-  color: #f67034;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--line);
+/* Brand tiles are the library's entry point: pick a brand, then drill into
+   its models. Two columns on phones -- three would crush names like
+   "Volkswagen" at 375px -- widening to three once there's room. */
+.library-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  margin-bottom: 40px;
+  /* Deliberately no background here: the surface-2 tiles already separate
+     against the page, and a filled grid background would leave the last
+     row's empty cells looking like blank tiles. */
 }
 
-.library-brand-divider:first-child {
-  padding-top: 4px;
+@media (max-width: 500px) {
+  .library-brand-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.library-brand-tile {
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+  border: 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  transition: background 0.16s;
+  display: flex;
+}
+
+.library-brand-counts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library-brand-tile:active {
+  background: var(--surface-3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .library-brand-tile:hover {
+    background: var(--surface-3);
+  }
+}
+
+.library-brand-name {
+  color: var(--heading);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.library-brand-count {
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .library-result-card {
@@ -1038,6 +1088,54 @@ main:focus {
 .library-result-card:active,
 .library-result-card:focus-visible {
   background: var(--surface-2);
+}
+
+.library-repair-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.library-repair-match {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: 0 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.library-repair-match:hover,
+.library-repair-match:active,
+.library-repair-match:focus-visible {
+  background: var(--surface-2);
+}
+
+.library-repair-match-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.library-repair-match-car {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.library-web-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 8px;
 }
 
 .library-result-name {
@@ -1107,7 +1205,7 @@ main:focus {
   line-height: 1.25;
 }
 
-.resolved-summary span:not(.section-label) {
+.resolved-summary span:not(.field-label) {
   color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.4;
@@ -1237,7 +1335,7 @@ main:focus {
   width: 52px;
   height: 52px;
   background: var(--surface-2);
-  color: var(--text);
+  color: var(--accent);
   transition: background-color 160ms ease;
 }
 
@@ -1848,7 +1946,7 @@ button.journey-item:active {
 }
 
 .field-label {
-  margin-bottom: 12px;
+  /* margin-bottom: 12px; */
 }
 
 .field-label .muted,
@@ -2018,18 +2116,6 @@ button.journey-item:active {
   color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.5;
-}
-
-.field-header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.field-header .field-label {
-  margin: 0;
 }
 
 .field-actions {
@@ -2685,6 +2771,35 @@ button.journey-item:active {
   color: var(--accent);
 }
 
+.repair-case-select-field {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.match-option-summary {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.resolved-reference-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .selected-repair-card {
   padding: 20px;
   border-top: 1px solid var(--accent-fill);
@@ -2775,18 +2890,6 @@ button.journey-item:active {
 
 .result-detail-section + .result-detail-section {
   margin-top: 40px;
-}
-
-.result-section-label,
-.result-section-head {
-  margin-bottom: 12px;
-}
-
-.result-section-head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
 }
 
 .parts-panel {
@@ -3022,11 +3125,11 @@ button.setting-row:focus-visible .setting-row-action {
    it with the plain selector gives the two rules a real cascade difference an
    optimizer can't safely fold together, which survives minification. */
 .sheet-layer {
-  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
 }
 
 :where(.sheet-layer) {
-  backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
 }
 
 /* Frosted glass needs backdrop-filter to read; without it the lighter tint
@@ -3253,6 +3356,27 @@ button.setting-row:focus-visible .setting-row-action {
 
 .danger-button:active {
   background: #991b1b;
+}
+
+/* Destroying a job is deliberate but rare, so it sits below the action dock
+   as a quiet danger-coloured control rather than competing with Save. */
+.repair-danger-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.danger-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--danger);
+}
+
+.danger-text-button svg {
+  width: 18px;
+  height: 18px;
+  color: var(--danger);
 }
 
 .danger-button svg {
@@ -3501,8 +3625,9 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .vin-camera,
 :root[data-theme="light"] .calendar-nav,
 :root[data-theme="light"] .recorded-part-actions button {
-  background: #111111;
-  color: #e0e0dc;
+  background: transparent;
+  border-color: #1e1e1e;
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .secondary-button svg,
@@ -3514,7 +3639,7 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .vin-camera svg,
 :root[data-theme="light"] .calendar-nav svg,
 :root[data-theme="light"] .recorded-part-actions button svg {
-  color: var(--accent-fill);
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .text-field-shell::after {
@@ -3544,7 +3669,7 @@ button.setting-row:focus-visible .setting-row-action {
 :root[data-theme="light"] .vin-camera:active,
 :root[data-theme="light"] .calendar-nav:active,
 :root[data-theme="light"] .recorded-part-actions button:active {
-  background: #1d1d1d;
+  background: var(--surface-3);
 }
 
 :root[data-theme="light"] .job-card:hover .job-card-action,
@@ -3560,7 +3685,7 @@ button.setting-row:focus-visible .setting-row-action {
 
 :root[data-theme="light"] .input::placeholder,
 :root[data-theme="light"] .textarea::placeholder {
-  color: var(--muted);
+  color: #9b9b97;
 }
 
 /* Technician profile */
@@ -4832,12 +4957,36 @@ body.dictation-active .toast {
    above the tab panels so it stays reachable from either tab. */
 
 .profile-tabs {
+  gap: 2px;
   margin-bottom: 24px;
 }
 
 .profile-tabs .quick-chip {
-  flex: 1 1 0;
+  background: var(--surface-2);
   min-width: 0;
+  height: 52px;
+  min-height: 52px;
+  color: var(--text);
+  border: 0;
+  flex: 1 1 0;
+  padding: 0 10px;
+  font-weight: 400;
+  position: relative;
+}
+
+.profile-tabs .quick-chip.is-selected {
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+  color: #e0e0dc;
+}
+
+.profile-tabs .quick-chip.is-selected::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent-fill);
+  content: "";
 }
 
 .profile-note-form {
@@ -4896,56 +5045,114 @@ body.dictation-active .toast {
   font-size: var(--caps-size);
 }
 
-.profile-insight-list {
-  display: flex;
+.profile-repair-list {
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 40px;
-  background: var(--line);
-}
-
-.profile-insight {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  background: var(--surface-2);
-}
-
-.profile-insight-range {
-  color: var(--heading);
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.profile-insight-items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
+  gap: 0;
+  margin: 8px 0 0;
   padding: 0;
   list-style: none;
+  border-top: 1px solid var(--line);
+  display: flex;
 }
 
-.profile-insight-items li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+.profile-repair-row {
   color: var(--text);
   font-size: var(--copy-size);
 }
 
-.profile-insight-items strong {
+.profile-repair-body {
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  display: flex;
+}
+
+.profile-repair-label {
+  min-width: 0;
+  font-weight: 600;
+}
+
+.profile-repair-count {
+  color: var(--muted);
+  font-size: var(--caps-size);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.profile-repair-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: none;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.profile-repair-mileage {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.profile-repair-meta strong {
   color: var(--muted-strong);
   font-variant-numeric: tabular-nums;
+}
+
+.profile-repair-meta svg {
+  width: 14px;
+  height: 14px;
+  color: var(--muted);
+}
+
+.profile-repair-view {
+  color: var(--accent);
+  font-size: var(--caps-size);
+  white-space: nowrap;
+  flex: none;
+  font-weight: 400;
+}
+
+.profile-repair-row-button > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--accent);
+}
+
+.profile-repair-row-button {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 16px;
+  display: flex;
+}
+
+.profile-repair-list li:last-child .profile-repair-row-button {
+  border-bottom: none;
+}
+
+.profile-repair-row-button:hover {
+  background: var(--surface-3);
 }
 
 .profile-empty {
   margin: 0 0 40px;
   padding: 16px;
   background: var(--surface-2);
-  color: var(--muted);
+  color: #9b9b97;
+  font-style: italic;
   font-size: var(--copy-size);
   line-height: 1.45;
 }
@@ -4970,16 +5177,156 @@ body.dictation-active .toast {
 }
 
 .reference-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
   border: 1px solid var(--line-strong);
+  letter-spacing: .04em;
+  text-transform: uppercase;
   border-radius: 0;
-  color: var(--muted);
+  align-items: center;
+  padding: 2px 6px 1px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  display: inline-flex;
+}
+
+.reference-tag-active {
+  border-color: #3fae5a;
+  color: #3fae5a;
+}
+
+/* Symptom/work-performed text length varies a lot case to case -- without a
+   floor, the sheet's height (and so its header + case dropdown position)
+   would jump around as the mechanic switches between short and long cases.
+   The body scrolls on its own (flex: 1) so the CTA in .sheet-footer stays
+   pinned to the bottom of the sheet regardless of content length, instead
+   of trailing off after the last section on short cases. */
+.bottom-sheet.repair-case-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+  overflow: hidden;
+}
+
+.repair-case-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.sheet-footer {
+  flex: 0 0 auto;
+  padding: 16px var(--gutter) calc(16px + var(--safe-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--sheet-surface);
+}
+
+.subsection-caption {
+  margin-left: 8px;
+  color: var(--muted);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.known-issues-list {
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 40px;
+  display: flex;
+}
+
+.known-issues-accordion {
+  background: var(--surface-2);
+}
+
+.known-issues-accordion summary {
+  cursor: pointer;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  list-style: none;
+  display: flex;
+}
+
+.known-issues-system-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: var(--accent);
+}
+
+.known-issues-system-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.known-issues-summary-text {
+  flex: 1;
+}
+
+.known-issues-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.known-issues-summary-text {
+  display: flex;
+  align-items: baseline;
+}
+
+.known-issues-summary-text-stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.known-issues-case-count {
+  color: var(--muted);
+  font-size: var(--caps-size);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.known-issues-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.known-issues-count svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--accent);
+  transition: transform 160ms ease;
+}
+
+.known-issues-accordion[open] .known-issues-count svg {
+  transform: rotate(180deg);
+}
+
+.known-issues-accordion > .profile-recall-list,
+.known-issues-accordion > .profile-empty {
+  margin: 0 16px 16px;
+}
+
+.profile-recall-fix {
+  flex-direction: column;
+  gap: 0px;
+  margin: 0;
+  display: flex;
+}
+
+.profile-recall-fix p {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--copy-size);
+  line-height: 1.5;
 }
 
 .profile-recall-list {
@@ -4987,41 +5334,53 @@ body.dictation-active .toast {
   flex-direction: column;
   gap: 2px;
   margin-bottom: 40px;
+  border-top: 1px solid var(--line);
   background: var(--line);
 }
 
 .profile-recall {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 16px;
   background: var(--surface-2);
   color: var(--text);
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 0;
   text-decoration: none;
-  border-left: 2px solid var(--line-strong);
+  display: flex;
+}
+
+a.profile-recall {
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+a.profile-recall:hover,
+a.profile-recall:active,
+a.profile-recall:focus-visible {
+  background: var(--surface-3);
 }
 
 .profile-recall-meta {
   color: var(--muted);
-  font-size: 13px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  font-size: 14px;
 }
 
 .profile-recall-body {
-  margin: 0;
   color: var(--text);
   font-size: var(--copy-size);
+  margin: 0;
   line-height: 1.5;
+  margin-bottom: 16px;
 }
 
 .profile-recall-link {
-  display: inline-flex;
+  color: #ffc001;
   align-items: center;
   gap: 4px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
+  display: inline-flex;
 }
 
 .profile-recall-link svg {

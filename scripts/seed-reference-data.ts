@@ -7,29 +7,28 @@
 // script is safe to run repeatedly.
 //
 // Usage:
-//   npm run seed:reference                    # both datasets, default window
+//   npm run seed:reference                    # both datasets, all catalog models
 //   npm run seed:reference -- --skip-dtc
 //   npm run seed:reference -- --skip-recalls
-//   npm run seed:reference -- --recalls-pages=100   # widen the recall backfill window
+//   npm run seed:reference -- --recalls-pages=10   # raise per-model result-page cap
 //
 // Sources:
 //   DTC codes: https://github.com/todrobbins/dtcdb (MIT licensed, generic
 //     SAE J2012 P-codes only -- the dataset has no B/C/U codes).
 //   Recalls:   https://www.vehiclerecalls.gov.au/ (Australian Government
-//     Product Safety recall register). There's no public API/export, so
-//     this walks the public, robots.txt-permitted recall listing
-//     (/recalls/browse-all-recalls) page by page and reads each recall's
-//     own detail page for structured Make/Model/Year-range/Defect fields.
-//
-//   The listing's own category filter (?f[0]=product_category:7) is
-//     blocked by the site's WAF, so instead this walks the *unfiltered*
-//     listing (all vehicle types mixed) and discards anything whose detail
-//     page category isn't "Cars". `--recalls-pages` bounds how many listing
-//     pages to walk (10 recalls/page) -- default 50 (~500 recalls checked,
-//     recent-first) rather than the full ~5,500-recall history, to stay
-//     fast and avoid hammering their bot protection. Raise it on a later
-//     run to backfill further into the past; already-seen recalls are
-//     skipped via the upsert.
+//     Product Safety recall register). There's no public export/API, but the
+//     site's own search (?search=<make>+<model> on the public,
+//     robots.txt-permitted /recalls/browse-all-recalls path) returns
+//     genuinely filtered, relevant results -- so this is catalog-driven,
+//     same shape as scripts/seed-complaint-trends.ts: every make/model in
+//     the makes/models catalog is queried directly (not "whatever a scraped
+//     listing window happens to surface"), so every catalog car gets
+//     checked. Each recall's own detail page is then read for structured
+//     Make/Model/Year-range/Defect fields, and anything whose category isn't
+//     "Cars" is discarded (the search covers all vehicle types, not just
+//     cars). `--recalls-pages` bounds how many result pages to walk per
+//     model (default 3, 20 recalls/page) -- generous for a single
+//     make/model query, which rarely exceeds one page.
 
 import { createClient } from '@supabase/supabase-js'
 import { createHash } from 'node:crypto'
@@ -50,6 +49,12 @@ const option = (name: string, fallback: number) => {
   const match = args.find((arg) => arg.startsWith(`--${name}=`))
   return match ? Number(match.split('=')[1]) : fallback
 }
+const stringOption = (name: string): string | null => {
+  const match = args.find((arg) => arg.startsWith(`--${name}=`))
+  return match ? match.split('=').slice(1).join('=') : null
+}
+const ONLY_MAKE = stringOption('make')
+const ONLY_MODEL = stringOption('model')
 
 const DTC_CSV_URL = 'https://raw.githubusercontent.com/todrobbins/dtcdb/master/generic.csv'
 const RECALLS_BASE = 'https://www.vehiclerecalls.gov.au'
@@ -104,6 +109,7 @@ type ParsedRecall = {
   yearFrom: number | null
   yearTo: number | null
   defectDescription: string
+  remedy: string | null
   sourceUrl: string
   recallDate: string | null
 }
@@ -146,6 +152,7 @@ async function fetchRecallDetail(path: string): Promise<ParsedRecall | null> {
 
   const defectMatch = html.match(/field--name-field-r-defect[^>]*>[\s\S]*?field__item[^>]*>([\s\S]*?)<\/div>/)
   const defectDescription = defectMatch ? decodeHtmlEntities(defectMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()) : ''
+  const remedy = extractField(html, 'r-action')
 
   const make = makeRaw ? stripLabel(makeRaw, 'Make') : ''
   const model = modelRaw ? stripLabel(modelRaw, 'Model') : ''
@@ -160,7 +167,11 @@ async function fetchRecallDetail(path: string): Promise<ParsedRecall | null> {
   const publishDate = new Date(publishText)
   const recallDate = Number.isNaN(publishDate.getTime()) ? null : publishDate.toISOString().slice(0, 10)
 
-  return { make, model, yearFrom, yearTo, defectDescription, sourceUrl: url, recallDate }
+  // Mechanics care about what's realistically still on the road -- a
+  // recall notice from the 1980s/90s isn't useful reference data here.
+  if (recallDate && Number(recallDate.slice(0, 4)) < 2000) return null
+
+  return { make, model, yearFrom, yearTo, defectDescription, remedy, sourceUrl: url, recallDate }
 }
 
 function dedupeKey(recall: ParsedRecall): string {
@@ -175,38 +186,73 @@ function buildRecallRow(recall: ParsedRecall) {
     year_from: recall.yearFrom,
     year_to: recall.yearTo,
     defect_description: recall.defectDescription,
+    remedy: recall.remedy,
     source_url: recall.sourceUrl,
     recall_date: recall.recallDate,
     dedupe_key: dedupeKey(recall),
   }
 }
 
-async function seedRecalls(pageCount: number) {
-  console.log(`Walking ${pageCount} page(s) of the AU recall listing (unfiltered, all vehicle types)...`)
-  const detailPaths = new Set<string>()
+type CatalogModel = { make: string; model: string }
 
-  for (let page = 0; page < pageCount; page += 1) {
-    const url = page === 0 ? RECALLS_LISTING : `${RECALLS_LISTING}?page=${page}`
+// Same catalog-driven approach as scripts/seed-complaint-trends.ts: every
+// make/model in the makes/models catalog is queried directly, so coverage
+// isn't at the mercy of whatever a scraped listing window happens to
+// surface. The site's own search (?search=Make+Model on the same
+// robots.txt-permitted /recalls/browse-all-recalls path) returns genuinely
+// filtered, relevant results -- confirmed live against "Honda Civic"
+// (correct Civic-specific recalls back to 2018, 1 extra page).
+async function loadCatalog(): Promise<CatalogModel[]> {
+  const { data: makes, error: makesError } = await supabase.from('makes').select('id,name')
+  if (makesError) throw makesError
+  const { data: models, error: modelsError } = await supabase.from('models').select('make_id,name')
+  if (modelsError) throw modelsError
+
+  const makeById = new Map((makes ?? []).map((m) => [m.id, m.name]))
+  const catalog = (models ?? [])
+    .map((m) => ({ make: makeById.get(m.make_id), model: m.name }))
+    .filter((m): m is CatalogModel => Boolean(m.make))
+
+  if (ONLY_MAKE) {
+    return catalog.filter((m) => m.make.toLowerCase() === ONLY_MAKE.toLowerCase() && (!ONLY_MODEL || m.model.toLowerCase() === ONLY_MODEL.toLowerCase()))
+  }
+  return catalog
+}
+
+async function findRecallPathsForModel(make: string, model: string, maxPages: number): Promise<string[]> {
+  const query = encodeURIComponent(`${make} ${model}`)
+  const paths: string[] = []
+  for (let page = 0; page < maxPages; page += 1) {
+    const url = `${RECALLS_LISTING}?search=${query}${page > 0 ? `&page=${page}` : ''}`
     const res = await fetch(url)
-    if (!res.ok) {
-      console.warn(`  page ${page}: HTTP ${res.status}, stopping pagination early`)
-      break
-    }
+    if (!res.ok) break
     const html = await res.text()
-    const matches = html.matchAll(/<a href="(\/recalls\/rec-\d+)" class="text-primary">/g)
-    let found = 0
-    for (const m of matches) {
-      detailPaths.add(m[1])
-      found += 1
+    const matches = [...html.matchAll(/<a href="(\/recalls\/rec-\d+)" class="text-primary">/g)]
+    if (!matches.length) break
+    paths.push(...matches.map((m) => m[1]))
+    await sleep(200)
+  }
+  return paths
+}
+
+async function seedRecalls(maxPagesPerModel: number) {
+  const catalog = await loadCatalog()
+  console.log(`Seeding recalls for ${catalog.length} catalog model(s) via per-model search...`)
+
+  const detailPaths = new Set<string>()
+  let done = 0
+  for (const { make, model } of catalog) {
+    try {
+      const paths = await findRecallPathsForModel(make, model, maxPagesPerModel)
+      for (const path of paths) detailPaths.add(path)
+    } catch (err) {
+      console.warn(`  ${make} ${model}: search failed (${(err as Error).message})`)
     }
-    if (found === 0) {
-      console.warn(`  page ${page}: no recall links found, stopping pagination early`)
-      break
-    }
-    await sleep(300)
+    done += 1
+    if (done % 20 === 0) console.log(`  [${done}/${catalog.length}] models searched, ${detailPaths.size} distinct recall(s) found so far`)
   }
 
-  console.log(`Found ${detailPaths.size} recall detail pages to check. Fetching each (rate-limited)...`)
+  console.log(`Found ${detailPaths.size} distinct recall detail pages across the catalog. Fetching each (rate-limited)...`)
   const carRecalls: ParsedRecall[] = []
   let checked = 0
   for (const path of detailPaths) {
@@ -242,7 +288,7 @@ async function main() {
   if (!flag('skip-dtc')) await seedDtcReference()
   else console.log('Skipping DTC reference (--skip-dtc)')
 
-  if (!flag('skip-recalls')) await seedRecalls(option('recalls-pages', 50))
+  if (!flag('skip-recalls')) await seedRecalls(option('recalls-pages', 3))
   else console.log('Skipping recalls (--skip-recalls)')
 }
 
