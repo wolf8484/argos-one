@@ -454,6 +454,7 @@ main:focus {
 }
 
 .nav-update-dot {
+  display: none;
   background: var(--accent-fill);
   border-radius: 50%;
   width: 8px;
