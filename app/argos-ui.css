@@ -454,14 +454,13 @@ main:focus {
 }
 
 .nav-update-dot {
-  display: none;
-  position: absolute;
-  top: 8px;
-  left: calc(50% + 7px);
+  background: var(--accent-fill);
+  border-radius: 50%;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background: var(--accent-fill);
+  position: absolute;
+  top: 16px;
+  left: calc(50% + 8px);
 }
 
 .nav-item.has-update .nav-update-dot {
