@@ -5344,10 +5344,8 @@ body.dictation-active .toast {
 .profile-recall-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   margin-bottom: 40px;
-  border-top: 1px solid var(--line);
-  background: var(--line);
+  border-top: 1px solid #707070;
 }
 
 .profile-recall {
@@ -5356,8 +5354,13 @@ body.dictation-active .toast {
   flex-direction: column;
   gap: 16px;
   padding: 24px 0;
+  border-bottom: 1px solid #707070;
   text-decoration: none;
   display: flex;
+}
+
+.profile-recall-list > *:last-child {
+  border-bottom: none;
 }
 
 a.profile-recall {
