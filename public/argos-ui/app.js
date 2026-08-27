@@ -1745,7 +1745,7 @@ function renderCarProfile() {
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
         : `<p class="profile-empty">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one above."}</p>`}
       ${profileNetworkSection(visibleNetwork)}
-      <div class="field-header"><span class="field-label">Known issues<span class="reference-tag">Reference</span></span></div>
+      <div class="field-header"><span class="field-label">Known issues <span class="optional-label">(all trims)</span></span></div>
       <div class="known-issues-list">
         ${knownIssuesAccordion("Recalls", "", profileRecallsSection(recalls), recallsSummaryText(recalls))}
         ${knownIssuesAccordion("Commonly reported", "", profileComplaintTrendsSection(complaintTrends), complaintTrendsCaption(complaintTrends))}
