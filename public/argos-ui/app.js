@@ -2022,7 +2022,7 @@ function renderSettings() {
     <section class="settings-group" aria-labelledby="about-settings">
       <div class="settings-section-head"><span class="field-label">About</span><h2 id="about-settings">App version</h2></div>
       ${updateAvailable
-        ? `<button class="setting-row is-action" type="button" data-action="reload-app"><span><strong>Update available</strong><small>A newer version of Argos One is ready. Reload to switch to it.</small></span><span class="setting-value">Reload</span></button>`
+        ? `<button class="setting-row is-action" type="button" data-action="reload-app"><span><strong>Update available</strong><small>A newer version of Argos One is ready.</small></span><span class="setting-value">Update</span></button>`
         : `<div class="setting-row"><span><strong>You're up to date</strong><small>Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}</small></span><span class="setting-value">Up to date</span></div>`}
     </section>
   </section>`;
