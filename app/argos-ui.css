@@ -4194,6 +4194,41 @@ button.setting-row:focus-visible .setting-row-action {
   line-height: 1.4;
 }
 
+.settings-update-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 0;
+  background: var(--notice);
+  color: #111111;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-update-banner-icon svg,
+.settings-update-banner-arrow svg {
+  color: #111111;
+}
+
+.settings-update-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-update-banner-text strong {
+  color: #111111;
+}
+
+.settings-update-banner-text small {
+  color: #111111;
+  opacity: 0.75;
+}
+
 .top-progress-bar {
   position: fixed;
   top: 0;

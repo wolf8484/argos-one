@@ -1982,6 +1982,12 @@ function renderSettings() {
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
+    ${updateAvailable ? `<button class="settings-update-banner" type="button" data-action="reload-app">
+      <span class="settings-update-banner-icon" aria-hidden="true">${icon("sparkles")}</span>
+      <span class="settings-update-banner-text"><strong>A new version of Argos One is available</strong><small>Tap to update now.</small></span>
+      <span class="settings-update-banner-arrow" aria-hidden="true">${icon("arrow")}</span>
+    </button>` : ""}
+
     <section class="settings-group" aria-labelledby="display-settings">
       <div class="settings-section-head"><span class="field-label">Display</span><h2 id="display-settings">Theme</h2></div>
       <div class="theme-options" role="group" aria-label="Choose interface theme">
