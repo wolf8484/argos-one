@@ -86,11 +86,15 @@ $$;
 
 drop function if exists public.network_repair_patterns(text, text);
 
+-- Output column named vehicle_trim, not trim: `returns table (trim text, ...)`
+-- is a hard syntax error (SQLSTATE 42601) -- TRIM is a reserved keyword in
+-- that specific position, unlike as a plain table column (network_repair_
+-- contributions.trim, added above, parses fine) or an insert column list.
 create or replace function public.network_repair_patterns(target_make text, target_model text)
 returns table (
   system text,
   label text,
-  trim text,
+  vehicle_trim text,
   occurrences integer,
   shop_count integer,
   symptoms text[],
@@ -115,7 +119,7 @@ begin
   select
     c.system,
     c.label,
-    c.trim,
+    c.trim as vehicle_trim,
     count(*)::int,
     count(distinct c.shop_id)::int,
     array_remove(array_agg(distinct c.symptom_text), null),

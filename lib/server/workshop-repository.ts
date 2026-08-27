@@ -518,7 +518,7 @@ export class WorkshopRepository {
     })
     if (error) throw error
     const rows = (data ?? []) as Array<{
-      system: string; label: string; trim: string | null; occurrences: number; shop_count: number
+      system: string; label: string; vehicle_trim: string | null; occurrences: number; shop_count: number
       symptoms: string[] | null; repairs: string[] | null
     }>
     if (!rows.length) return []
@@ -534,7 +534,7 @@ export class WorkshopRepository {
       // network_pattern_summaries keys on trim too (0039) -- two different
       // trims can share the same system+label, and without trim in the key
       // they'd overwrite each other's cached summary.
-      const trimKey = row.trim ?? ''
+      const trimKey = row.vehicle_trim ?? ''
 
       const { data: cached } = await this.supabase
         .from('network_pattern_summaries')
@@ -559,7 +559,7 @@ export class WorkshopRepository {
       return {
         system: row.system,
         label: row.label,
-        trim: row.trim,
+        trim: row.vehicle_trim,
         occurrences: row.occurrences,
         shopCount: row.shop_count,
         mostCommonIssue: summary.mostCommonIssue,
