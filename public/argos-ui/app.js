@@ -934,6 +934,29 @@ function checkForUpdate() {
     .finally(() => { updateCheckInFlight = false; });
 }
 
+// A bare location.reload() is near-instant and easy to miss entirely --
+// this makes the update feel deliberate: a full-screen overlay with a
+// progress bar that fills, switches to a completion message, then reloads.
+function showUpdateOverlay() {
+  const overlay = document.createElement("div");
+  overlay.className = "update-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = `<div class="update-overlay-content">
+    <div class="update-overlay-bar"><div class="update-overlay-bar-fill"></div></div>
+    <p class="update-overlay-message">Updating Argos One&hellip;</p>
+  </div>`;
+  document.body.appendChild(overlay);
+  const fill = overlay.querySelector(".update-overlay-bar-fill");
+  const message = overlay.querySelector(".update-overlay-message");
+  requestAnimationFrame(() => {
+    overlay.classList.add("is-visible");
+    requestAnimationFrame(() => { fill.style.width = "100%"; });
+  });
+  setTimeout(() => { message.textContent = "Update complete"; }, 1200);
+  setTimeout(() => { window.location.reload(); }, 1700);
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("is-visible");
@@ -3324,7 +3347,7 @@ document.addEventListener("click", (event) => {
       return;
     }
     if (action === "scroll-next") return scrollToNextView();
-    if (action === "reload-app") { window.location.reload(); return; }
+    if (action === "reload-app") { showUpdateOverlay(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "toggle-network-sharing") {
       const next = !state.shop?.sharesRepairData;
