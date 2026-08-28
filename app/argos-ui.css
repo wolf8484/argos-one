@@ -4388,7 +4388,7 @@ button.settings-toggle-row {
 .settings-update-banner-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .settings-update-banner-text strong {
@@ -4397,8 +4397,8 @@ button.settings-toggle-row {
 
 .settings-update-banner-text small {
   color: #111111;
-  opacity: 0.75;
-  font-size: clamp(24px, 4.5vw, 30px);
+  line-height: 1.4;
+  font-size: var(--caps-size);
 }
 
 .top-progress-bar {
