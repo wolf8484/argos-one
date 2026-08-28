@@ -59,6 +59,7 @@ const state = {
   catalog: { makes: [], models: [], variants: [] },
   profile: null,
   shop: null,
+  settingsPage: null,
   selectedRepair: "primary",
   vehicle: {
     vin: "",
@@ -347,6 +348,10 @@ const icons = {
   cloud: '<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7-1.8A4.2 4.2 0 0 1 17 18Z"/><path d="M8 21v-1M12 21.5v-1.5M16 21v-1"/>',
   engineWarning: '<path d="M4 15V9h2l2-2h2v2h4V7h2l2 2v6"/><rect x="4" y="15" width="14" height="4" rx="0"/><path d="M20 12v3"/>',
   brakeDisc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6"/>',
+  type: '<path d="M4 6h16M12 6v14M9 20h6"/>',
+  contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
+  building: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-5h4v5M9 8h.01M9 12h.01M13 8h.01M13 12h.01"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
 };
 
 const REPAIR_SYSTEM_ICONS = {
@@ -897,6 +902,9 @@ function setRoute(route) {
   state.route = route;
   if (route === "new") {
     resetJobDraft();
+  }
+  if (route === "settings") {
+    state.settingsPage = null;
   }
   animateNextScreen = true;
   updateNavigation();
@@ -2108,8 +2116,56 @@ async function saveEditedNotes(form) {
   }
 }
 
-function renderSettings() {
+// ---- Settings ------------------------------------------------------------
+// A small router of its own: state.settingsPage is null for the grouped
+// overview, or a key into SETTINGS_PAGES for a detail page. Pages that
+// aren't backed by real app behaviour yet say so plainly via unwiredBanner()
+// instead of shipping a toggle that looks real but does nothing.
+
+const SETTINGS_PAGE_PARENT = {
+  "voice-dictation": "workshop-tools",
+  "camera-photos": "workshop-tools",
+  "workshop-profile": "workshop-tools",
+};
+
+function settingsPageHeader(title, eyebrow) {
+  const parent = SETTINGS_PAGE_PARENT[state.settingsPage] || "";
+  return `<header class="task-header has-back">
+    <button class="task-back" type="button" data-action="open-settings-page" data-settings-page="${parent}" aria-label="Back to ${escapeHTML(eyebrow || "Settings")}">${icon("back")}</button>
+    <div class="task-header-copy"><h1>${escapeHTML(title)}</h1>${eyebrow ? `<span class="task-context">${escapeHTML(eyebrow)}</span>` : ""}</div>
+  </header>`;
+}
+
+function settingsRow({ iconName, title, description, value = "", page = "", disabled = false }) {
+  const inner = `<span class="settings-row-icon" aria-hidden="true">${icon(iconName)}</span>
+    <span class="settings-row-text"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
+    ${value ? `<span class="settings-row-value">${escapeHTML(value)}</span>` : ""}
+    ${page && !disabled ? `<span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>` : ""}`;
+  if (!page || disabled) return `<div class="settings-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
+  return `<button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="${page}">${inner}</button>`;
+}
+
+function settingsGroup(label, rowsHtml) {
+  return `<section class="settings-group">
+    <span class="settings-group-label">${escapeHTML(label)}</span>
+    <div class="settings-list">${rowsHtml}</div>
+  </section>`;
+}
+
+function unwiredBanner(text) {
+  return `<div class="settings-unwired-banner">${icon("info")}<span>${escapeHTML(text)}</span></div>`;
+}
+
+function settingsSwitchRow({ title, description = "", checked, action = "", disabled = false }) {
+  const switchHtml = `<span class="switch${checked ? " is-on" : ""}${disabled ? " is-disabled" : ""}" role="switch" aria-checked="${checked ? "true" : "false"}"><span class="switch-thumb"></span></span>`;
+  const inner = `<span class="settings-row-text"><strong>${escapeHTML(title)}</strong>${description ? `<small>${escapeHTML(description)}</small>` : ""}</span>${switchHtml}`;
+  if (disabled || !action) return `<div class="settings-row settings-toggle-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
+  return `<button class="settings-row settings-toggle-row" type="button" data-action="${action}" aria-pressed="${checked ? "true" : "false"}">${inner}</button>`;
+}
+
+function renderSettingsHome() {
   const theme = document.documentElement.dataset.theme || "dark";
+  const sharing = Boolean(state.shop?.sharesRepairData);
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
@@ -2119,50 +2175,240 @@ function renderSettings() {
       <span class="settings-update-banner-arrow" aria-hidden="true">${icon("arrow")}</span>
     </button>` : ""}
 
-    <section class="settings-group" aria-labelledby="display-settings">
-      <div class="settings-section-head"><span class="field-label">Display</span><h2 id="display-settings">Theme</h2></div>
-      <div class="theme-options" role="group" aria-label="Choose interface theme">
-        <button class="setting-choice ${theme === "dark" ? "is-selected" : ""}" type="button" data-theme-choice="dark" aria-pressed="${theme === "dark"}">
-          <span class="theme-swatch dark-swatch" aria-hidden="true"><i></i></span>
-          <span><strong>Dark</strong><small>Reduced glare in the workshop</small></span>
-          <span class="choice-state">${theme === "dark" ? "Selected" : "Choose"}</span>
-        </button>
-        <button class="setting-choice ${theme === "light" ? "is-selected" : ""}" type="button" data-theme-choice="light" aria-pressed="${theme === "light"}">
-          <span class="theme-swatch light-swatch" aria-hidden="true"><i></i></span>
-          <span><strong>Light</strong><small>Maximum clarity in daylight</small></span>
-          <span class="choice-state">${theme === "light" ? "Selected" : "Choose"}</span>
-        </button>
-      </div>
-    </section>
+    ${settingsGroup("Appearance", [
+      settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Reduced glare in the workshop" : "Maximum clarity in daylight", value: theme === "dark" ? "Dark" : "Light", page: "theme" }),
+      settingsRow({ iconName: "type", title: "Readable interface", description: "Minimum text size across the app", value: "Standard", page: "readable-interface" }),
+      settingsRow({ iconName: "contrast", title: "High-contrast text", description: "Keep important text readable in both themes", value: "On", page: "high-contrast" }),
+    ].join(""))}
 
-    <section class="settings-group" aria-labelledby="accessibility-settings">
-      <div class="settings-section-head"><span class="field-label">Readability</span><h2 id="accessibility-settings">Workshop accessibility</h2></div>
-      <div class="setting-row"><span><strong>Readable interface</strong><small>Body and control text never drops below 16px</small></span><span class="setting-value">On</span></div>
-      <div class="setting-row"><span><strong>High-contrast primary text</strong><small>Important instructions stay bright in both themes</small></span><span class="setting-value">On</span></div>
-    </section>
+    ${settingsGroup("Network", [
+      settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharing ? "On" : "Off", page: "network-sharing" }),
+    ].join(""))}
 
-    <section class="settings-group" aria-labelledby="network-settings">
-      <div class="settings-section-head"><span class="field-label">Network</span><h2 id="network-settings">Cross-shop repair patterns</h2></div>
-      <button class="setting-row is-action" type="button" data-action="toggle-network-sharing" aria-pressed="${state.shop?.sharesRepairData ? "true" : "false"}">
-        <span><strong>Share anonymised repair patterns</strong><small>Your verified repairs (never customer, VIN or job details) are pooled with other opted-in shops. Reciprocal: sharing is what unlocks seeing "Also seen at other shops" on a car profile.</small></span>
-        <span class="setting-value">${state.shop?.sharesRepairData ? "On" : "Off"}</span>
-      </button>
-    </section>
+    ${settingsGroup("Tools", [
+      settingsRow({ iconName: "wrench", title: "Workshop tools", description: "Voice, camera and workshop profile", page: "workshop-tools" }),
+    ].join(""))}
 
-    <section class="settings-group" aria-labelledby="input-settings">
-      <div class="settings-section-head"><span class="field-label">Input</span><h2 id="input-settings">Workshop tools</h2></div>
-      <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Voice and dictation</strong><small>Microphone, language and transcription review</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
-      <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Camera and photos</strong><small>Permissions, image quality and storage</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
-      <button class="setting-row is-action" type="button" data-action="settings-info"><span><strong>Workshop profile</strong><small>Bays, technicians and supplier region</small></span><span class="setting-row-action">${icon("arrow")}</span></button>
-    </section>
+    ${settingsGroup("Preferences", [
+      settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", page: "units" }),
+      settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" }),
+      settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" }),
+      settingsRow({ iconName: "cloud", title: "Data & storage", description: "Cache, backups and offline data", page: "storage" }),
+      settingsRow({ iconName: "lock", title: "Privacy", description: "What Argos One collects and shares", page: "privacy" }),
+    ].join(""))}
 
-    <section class="settings-group" aria-labelledby="about-settings">
-      <div class="settings-section-head"><span class="field-label">About</span><h2 id="about-settings">App version</h2></div>
-      ${updateAvailable
-        ? ""
-        : `<div class="setting-row"><span><strong>You're up to date</strong><small>Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}</small></span><span class="setting-value">Up to date</span></div>`}
-    </section>
+    ${settingsGroup("Support", [
+      settingsRow({ iconName: "info", title: "Help & feedback", description: "Guides and contact support", page: "help" }),
+      settingsRow({ iconName: "sparkles", title: "What's new", description: "See recent updates", page: "whats-new" }),
+    ].join(""))}
+
+    ${updateAvailable ? "" : settingsGroup("About", settingsRow({ iconName: "check", title: "You're up to date", description: `Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}`, value: "Up to date" }))}
   </section>`;
+}
+
+function renderThemePage() {
+  const theme = document.documentElement.dataset.theme || "dark";
+  return `${settingsPageHeader("Theme", "Appearance")}
+    <p class="settings-detail-intro">Choose how Argos One looks in the workshop.</p>
+    <div class="theme-options" role="group" aria-label="Choose interface theme">
+      <button class="setting-choice ${theme === "dark" ? "is-selected" : ""}" type="button" data-theme-choice="dark" aria-pressed="${theme === "dark"}">
+        <span class="theme-swatch dark-swatch" aria-hidden="true"><i></i></span>
+        <span><strong>Dark</strong><small>Reduced glare in the workshop</small></span>
+        <span class="choice-state">${theme === "dark" ? "Selected" : "Choose"}</span>
+      </button>
+      <button class="setting-choice ${theme === "light" ? "is-selected" : ""}" type="button" data-theme-choice="light" aria-pressed="${theme === "light"}">
+        <span class="theme-swatch light-swatch" aria-hidden="true"><i></i></span>
+        <span><strong>Light</strong><small>Maximum clarity in daylight</small></span>
+        <span class="choice-state">${theme === "light" ? "Selected" : "Choose"}</span>
+      </button>
+    </div>`;
+}
+
+function renderReadableInterfacePage() {
+  return `${settingsPageHeader("Readable interface", "Appearance")}
+    <p class="settings-detail-intro">Body and control text never drops below 16px anywhere in Argos One.</p>
+    ${unwiredBanner("This is a fixed platform default today, not a setting you can change. A text-size picker (Default / Large / Extra large) isn't built yet.")}`;
+}
+
+function renderHighContrastPage() {
+  return `${settingsPageHeader("High-contrast text", "Appearance")}
+    <p class="settings-detail-intro">Important instructions stay bright in both the dark and light themes.</p>
+    ${unwiredBanner("This is a fixed platform default today, not a setting you can turn off.")}`;
+}
+
+function renderNetworkSharingPage() {
+  const sharing = Boolean(state.shop?.sharesRepairData);
+  return `${settingsPageHeader("Cross-shop repair patterns", "Network")}
+    <p class="settings-detail-intro">Share anonymised repair patterns and see what other workshops are fixing.</p>
+    <div class="settings-list">
+      ${settingsSwitchRow({ title: "Share repair patterns", description: "Allow sharing of your verified repairs", checked: sharing, action: "toggle-network-sharing" })}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">What's shared</span>
+    <ul class="settings-check-list">
+      <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
+      <li>${icon("check")}<span>Vehicle (make, model, year, engine)</span></li>
+      <li>${icon("check")}<span>Symptoms and causes</span></li>
+      <li>${icon("check")}<span>Parts and repairs performed</span></li>
+      <li>${icon("check")}<span>Success outcome</span></li>
+    </ul>
+    <span class="settings-group-label settings-group-label-spaced">What's not shared</span>
+    <ul class="settings-check-list is-muted">
+      <li>${icon("close")}<span>Customer, VIN or technician details</span></li>
+    </ul>`;
+}
+
+function renderWorkshopToolsPage() {
+  return `${settingsPageHeader("Workshop tools", "Tools")}
+    <div class="settings-list">
+      ${settingsRow({ iconName: "mic", title: "Voice & dictation", description: "Microphone and transcription review", page: "voice-dictation" })}
+      ${settingsRow({ iconName: "camera", title: "Camera & photos", description: "Permissions, quality and storage", page: "camera-photos" })}
+      ${settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and region", page: "workshop-profile" })}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Other settings you might use</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", page: "units" })}
+      ${settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" })}
+      ${settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" })}
+    </div>`;
+}
+
+function renderVoiceDictationPage() {
+  return `${settingsPageHeader("Voice & dictation", "Workshop tools")}
+    <span class="settings-group-label">Microphone</span>
+    <div class="settings-list">
+      <div class="settings-row"><span class="settings-row-icon" aria-hidden="true">${icon("mic")}</span><span class="settings-row-text"><strong>Microphone access</strong><small>Checked from your browser's permission state</small></span><span class="settings-row-value" id="mic-permission-value">Checking…</span></div>
+      <button class="settings-row" type="button" data-action="test-microphone"><span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span><span class="settings-row-text"><strong>Test microphone</strong><small>Confirm dictation can record audio</small></span><span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span></button>
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Dictation</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "globe", title: "Language", description: "Used when transcribing dictation", value: "Not configurable", disabled: true })}
+      ${settingsSwitchRow({ title: "Auto punctuation", description: "Add punctuation automatically", checked: false, disabled: true })}
+      ${settingsSwitchRow({ title: "Transcription review", description: "Review and edit before saving", checked: false, disabled: true })}
+    </div>
+    ${unwiredBanner("Language, auto punctuation and review-before-saving aren't built yet -- dictation always transcribes automatically in one pass.")}`;
+}
+
+function renderCameraPhotosPage() {
+  return `${settingsPageHeader("Camera & photos", "Workshop tools")}
+    <span class="settings-group-label">Permissions</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "camera", title: "Camera access", description: "Used for photo capture during jobs", value: "Requested on first use" })}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Image settings</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "image", title: "Photo quality", description: "Compression applied on upload", value: "Not configurable", disabled: true })}
+      ${settingsSwitchRow({ title: "Save location data", description: "Include location in photo metadata", checked: false, disabled: true })}
+    </div>
+    ${unwiredBanner("Photo quality tiers and location metadata aren't built yet -- photos upload at their original quality with no location tag.")}`;
+}
+
+function renderWorkshopProfilePage() {
+  return `${settingsPageHeader("Workshop profile", "Workshop tools")}
+    <div class="settings-list">
+      ${settingsRow({ iconName: "building", title: "Workshop", description: "Shop name on file", value: state.shop?.name || "Not loaded yet" })}
+      ${settingsRow({ iconName: "globe", title: "Timezone", description: "Used for job timestamps", value: state.shop?.timezone || "Not set" })}
+      ${settingsRow({ iconName: "wrench", title: "Signed in as", description: "Your technician account", value: state.profile?.full_name || "Not loaded yet" })}
+    </div>
+    ${unwiredBanner("Bay and technician roster management isn't built yet -- bays are just a label typed per job today.")}`;
+}
+
+function renderUnitsPage() {
+  return `${settingsPageHeader("Units & measurements", "Preferences")}
+    <div class="settings-list">
+      ${settingsRow({ iconName: "gauge", title: "System of measurement", description: "Used across jobs and repairs", value: "Metric" })}
+    </div>
+    ${unwiredBanner("Argos One always uses metric (km, kg, kPa, Nm) today -- an imperial option isn't built.")}`;
+}
+
+function renderJobDefaultsPage() {
+  return `${settingsPageHeader("Default settings", "Preferences")}
+    ${unwiredBanner("Job defaults (priority, status, labour rate, parts markup) aren't built yet -- every new job starts blank today.")}`;
+}
+
+function renderNotificationsPage() {
+  return `${settingsPageHeader("Notifications", "Preferences")}
+    <div class="settings-list">
+      ${settingsSwitchRow({ title: "New software updates", description: "Get notified about updates", checked: false, disabled: true })}
+      ${settingsSwitchRow({ title: "Job reminders", description: "Reminders for active jobs", checked: false, disabled: true })}
+      ${settingsSwitchRow({ title: "System alerts", description: "Important system messages", checked: false, disabled: true })}
+    </div>
+    ${unwiredBanner("There's no notification system yet -- the update banner on the main Settings page is the only alert Argos One sends today.")}`;
+}
+
+function renderStoragePage() {
+  return `${settingsPageHeader("Data & storage", "Preferences")}
+    ${unwiredBanner("Offline cache and storage tracking aren't built yet -- Argos One always reads live from the server.")}`;
+}
+
+function renderPrivacyPage() {
+  return `${settingsPageHeader("Privacy", "Preferences")}
+    <p class="settings-detail-intro">What Argos One stores and shares.</p>
+    <ul class="settings-check-list">
+      <li>${icon("check")}<span>Customer, vehicle and job details stay in your workshop's own account.</span></li>
+      <li>${icon("check")}<span>Cross-shop repair patterns are opt-in and anonymised -- see <button class="settings-inline-link" type="button" data-action="open-settings-page" data-settings-page="network-sharing">Cross-shop repair patterns</button>.</span></li>
+      <li>${icon("check")}<span>Dictation audio is sent off for transcription and isn't stored afterwards.</span></li>
+    </ul>`;
+}
+
+function renderHelpPage() {
+  return `${settingsPageHeader("Help & feedback", "Support")}
+    ${unwiredBanner("In-app support and feedback channels aren't set up yet -- reach out however your workshop normally gets in touch with your Argos One admin.")}`;
+}
+
+const SETTINGS_CHANGELOG = [
+  ["28 Aug 2026", "Shop notes redesigned: Add note and Edit note now open focused modals instead of one long always-open box, with the date shown above each note."],
+  ["28 Aug 2026", "Updating now shows a full-screen progress overlay so the update is impossible to miss."],
+  ["28 Aug 2026", "Fixed a bug where an already-open tab could sit on an old build for minutes after an update went live -- it now checks every 30 seconds."],
+  ["27 Aug 2026", "Repair library is now trim-specific end to end: pick a brand, then a model + trim, and repairs, notes and network cases all narrow to that exact trim."],
+];
+
+function renderWhatsNewPage() {
+  return `${settingsPageHeader("What's new", "Support")}
+    <div class="settings-list settings-changelog">
+      ${SETTINGS_CHANGELOG.map(([date, text]) => `<div class="settings-row settings-changelog-row"><span class="settings-row-icon" aria-hidden="true">${icon("sparkles")}</span><span class="settings-row-text"><small>${escapeHTML(date)}</small><span>${escapeHTML(text)}</span></span></div>`).join("")}
+    </div>`;
+}
+
+const SETTINGS_PAGES = {
+  theme: renderThemePage,
+  "readable-interface": renderReadableInterfacePage,
+  "high-contrast": renderHighContrastPage,
+  "network-sharing": renderNetworkSharingPage,
+  "workshop-tools": renderWorkshopToolsPage,
+  "voice-dictation": renderVoiceDictationPage,
+  "camera-photos": renderCameraPhotosPage,
+  "workshop-profile": renderWorkshopProfilePage,
+  units: renderUnitsPage,
+  "job-defaults": renderJobDefaultsPage,
+  notifications: renderNotificationsPage,
+  storage: renderStoragePage,
+  privacy: renderPrivacyPage,
+  help: renderHelpPage,
+  "whats-new": renderWhatsNewPage,
+};
+
+function updateMicPermissionLabel() {
+  const label = document.querySelector("#mic-permission-value");
+  if (!label) return;
+  if (!navigator.permissions?.query) { label.textContent = "Unknown"; return; }
+  navigator.permissions.query({ name: "microphone" })
+    .then((status) => {
+      const current = document.querySelector("#mic-permission-value");
+      if (!current) return;
+      current.textContent = status.state === "granted" ? "Allowed" : status.state === "denied" ? "Blocked" : "Not requested yet";
+    })
+    .catch(() => { const current = document.querySelector("#mic-permission-value"); if (current) current.textContent = "Unknown"; });
+}
+
+function renderSettings() {
+  if (!state.settingsPage) return renderSettingsHome();
+  const pageRenderer = SETTINGS_PAGES[state.settingsPage];
+  if (!pageRenderer) {
+    state.settingsPage = null;
+    return renderSettingsHome();
+  }
+  app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
+  if (state.settingsPage === "voice-dictation") updateMicPermissionLabel();
 }
 
 function renderVehicle() {
@@ -3457,6 +3703,21 @@ document.addEventListener("click", (event) => {
     if (action === "scroll-next") return scrollToNextView();
     if (action === "reload-app") { showUpdateOverlay(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    if (action === "open-settings-page") {
+      state.settingsPage = actionButton.dataset.settingsPage || null;
+      return render();
+    }
+    if (action === "test-microphone") {
+      if (!navigator.mediaDevices?.getUserMedia) return showToast("This browser can't access the microphone.");
+      showToast("Testing microphone…");
+      return navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach((track) => track.stop());
+          updateMicPermissionLabel();
+          showToast("Microphone is working.");
+        })
+        .catch((error) => showToast(`Could not access microphone: ${error.message || "permission denied"}`));
+    }
     if (action === "toggle-network-sharing") {
       const next = !state.shop?.sharesRepairData;
       return apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify({ sharesRepairData: next }) })
@@ -3657,7 +3918,6 @@ document.addEventListener("click", (event) => {
       queueRepairAutosave();
       return showToast("Supplier offer and part saved to the repair record.");
     }
-    if (action === "settings-info") return showToast("This preference will connect to the workshop profile.");
     if (action === "send-dictation") return finishDictation();
     if (action === "cancel-dictation") return cancelDictation();
     if (action === "open-job") {
