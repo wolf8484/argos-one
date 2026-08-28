@@ -3254,7 +3254,7 @@ button.setting-row:focus-visible .setting-row-action {
 }
 
 .confirmation-content h2 {
-  margin-top: 8px;
+  margin-bottom: 16px;
 }
 
 .confirmation-content p {
@@ -5096,15 +5096,12 @@ body.dictation-active .toast {
 
 .profile-note-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
-.profile-note-actions .dictate-button {
-  flex: 0 0 auto;
-}
-
+.profile-note-actions .dictate-button,
 .profile-note-actions .primary-button {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 52px;
 }
 
