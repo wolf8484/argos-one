@@ -5091,14 +5091,7 @@ body.dictation-active .toast {
 .profile-note-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 32px;
-  padding: 16px;
-  background: var(--surface-2);
-}
-
-.profile-note-form .form-field {
-  margin: 0;
+  gap: 12px;
 }
 
 .profile-note-actions {
@@ -5118,17 +5111,27 @@ body.dictation-active .toast {
 .profile-note-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: 40px;
-  background: var(--line);
+  margin-bottom: 16px;
+  border-top: 1px solid #707070;
 }
 
 .profile-note {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 16px;
-  background: var(--surface-2);
+  padding: 20px 0;
+  border-bottom: 1px solid #707070;
+}
+
+.profile-note-list > *:last-child {
+  border-bottom: none;
+}
+
+.profile-note-meta {
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 14px;
 }
 
 .profile-note-body {
@@ -5138,10 +5141,87 @@ body.dictation-active .toast {
   line-height: 1.45;
 }
 
-.profile-note-specifics,
-.profile-note-byline {
+.profile-note-specifics {
   color: var(--muted);
   font-size: var(--caps-size);
+}
+
+.profile-note-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.profile-note-buttons .secondary-button {
+  flex: 1 1 auto;
+}
+
+.profile-note-modified {
+  margin: 0 0 32px;
+  color: var(--muted);
+  font-size: var(--caps-size);
+}
+
+.edit-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.profile-note-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-note-edit-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.profile-note-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-note-edit-meta {
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.profile-note-edit-row.is-deleted .profile-note-edit-meta {
+  text-decoration: line-through;
+}
+
+.profile-note-edit-row[data-note-id] .icon-button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: auto;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.profile-note-edit-row[data-note-id] .icon-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-note-edit-deleted-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  font-style: italic;
 }
 
 .profile-repair-list {

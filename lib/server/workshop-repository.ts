@@ -394,7 +394,7 @@ export class WorkshopRepository {
   async listProfileNotes(profileId: string) {
     const { data, error } = await this.supabase
       .from('vehicle_profile_notes')
-      .select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,author:profiles(id,full_name)')
+      .select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,updated_at,author:profiles(id,full_name)')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: false })
       .limit(200)
@@ -449,7 +449,19 @@ export class WorkshopRepository {
       vehicle_mileage: input.vehicleMileage ?? null,
       source_job_id: input.sourceJobId || null,
       created_by: this.profile.id,
-    }).select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,author:profiles(id,full_name)').single()
+    }).select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,updated_at,author:profiles(id,full_name)').single()
+    if (error) throw error
+    return data
+  }
+
+  async updateProfileNote(profileId: string, noteId: string, body: string) {
+    const { data, error } = await this.supabase
+      .from('vehicle_profile_notes')
+      .update({ body, updated_at: new Date().toISOString() })
+      .eq('id', noteId)
+      .eq('profile_id', profileId)
+      .select('id,body,vehicle_year,vehicle_trim,vehicle_transmission,vehicle_mileage,source_job_id,created_at,updated_at,author:profiles(id,full_name)')
+      .single()
     if (error) throw error
     return data
   }

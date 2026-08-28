@@ -50,6 +50,8 @@ const state = {
   profileTab: "notes",
   profileStatus: "idle",
   profileNoteDraft: "",
+  profileNoteEditDrafts: {},
+  profileNoteEditDeleted: new Set(),
   profileVariantFilter: "",
   resolvedReturn: { route: "jobs" },
   currentJobId: null,
@@ -327,6 +329,7 @@ const icons = {
   check: '<path d="m5 12 4 4L19 6"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
   save: '<path d="M5 3h12l2 2v16H5Z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="1"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5L7 20"/>',
@@ -1479,19 +1482,30 @@ function renderKnowledge() {
   </section>`;
 }
 
+function noteTimestamp(note) {
+  return note.updated_at || note.created_at;
+}
+
+function lastNoteModified(notes) {
+  if (!notes.length) return null;
+  return notes.reduce((latest, note) => {
+    const stamp = noteTimestamp(note);
+    return !latest || stamp > latest ? stamp : latest;
+  }, null);
+}
+
 function profileNoteCard(note) {
   const specifics = [
     note.vehicle_year ? String(note.vehicle_year) : "",
-    note.vehicle_trim || "",
     note.vehicle_transmission || "",
     note.vehicle_mileage ? formatKilometres(note.vehicle_mileage) : "",
   ].filter(Boolean).join(" · ");
   const author = relatedRecord(note.author)?.full_name || "";
-  const byline = [author, formatShortDate(note.created_at)].filter(Boolean).join(" · ");
+  const meta = [formatShortDate(noteTimestamp(note)), author].filter(Boolean).join(" · ");
   return `<article class="profile-note">
+    <span class="profile-note-meta">${escapeHTML(meta)}</span>
     <p class="profile-note-body">${escapeHTML(note.body)}</p>
     ${specifics ? `<span class="profile-note-specifics">${escapeHTML(specifics)}</span>` : ""}
-    <span class="profile-note-byline">${escapeHTML(byline)}</span>
   </article>`;
 }
 
@@ -1749,16 +1763,6 @@ function renderCarProfile() {
     ${scopeNote}
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
-      <form class="profile-note-form" id="profile-note-form" autocomplete="off">
-        <label class="form-field" for="profile-note-input">
-          <div class="field-header"><span class="field-label">Add a note</span></div>
-          <textarea class="textarea" id="profile-note-input" name="body" rows="2" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
-        </label>
-        <div class="profile-note-actions">
-          <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
-          <button class="primary-button" type="submit">${icon("save")} Save note</button>
-        </div>
-      </form>
       <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
       ${visibleGroups.length
         ? profileRepairsSection(visibleGroups)
@@ -1766,7 +1770,12 @@ function renderCarProfile() {
       <div class="field-header"><span class="field-label">Shop notes</span></div>
       ${visibleNotes.length
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
-        : `<p class="profile-empty">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one above."}</p>`}
+        : `<p class="profile-empty">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one below."}</p>`}
+      <div class="profile-note-buttons">
+        <button class="secondary-button" type="button" data-action="open-add-note">${icon("plus")} Add note</button>
+        ${visibleNotes.length ? `<button class="secondary-button" type="button" data-action="open-edit-notes">${icon("edit")} Edit note</button>` : ""}
+      </div>
+      ${visibleNotes.length ? `<p class="profile-note-modified">Last modified ${escapeHTML(formatShortDate(lastNoteModified(visibleNotes)))}</p>` : ""}
       ${profileNetworkSection(visibleNetwork)}
       <div class="field-header"><span class="field-label">Known issues <span class="optional-label">(all trims)</span></span></div>
       <div class="known-issues-list">
@@ -1979,6 +1988,19 @@ async function openCarProfile(profileId, { tab = "notes", trim } = {}) {
   render();
 }
 
+function openAddNoteModal() {
+  openSheet(`<div class="confirmation-content">
+    <h2>Add a note</h2>
+    <form class="profile-note-form" id="profile-note-form" autocomplete="off">
+      <textarea class="textarea" id="profile-note-input" name="body" rows="5" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
+      <div class="profile-note-actions">
+        <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
+        <button class="primary-button" type="submit">${icon("save")} Save note</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet add-note-sheet", ariaLabel: "Add a note" });
+}
+
 async function saveProfileNote(form) {
   const body = String(new FormData(form).get("body") || "").trim();
   if (!body) return showToast("Write a note first");
@@ -1986,17 +2008,103 @@ async function saveProfileNote(form) {
   try {
     const { note } = await apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}/notes`, {
       method: "POST",
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, vehicleTrim: state.profileVariantFilter || null }),
     });
     if (state.activeProfileId !== profileId || !state.activeProfile) return;
     state.activeProfile.notes = [note, ...state.activeProfile.notes];
     state.profileNoteDraft = "";
     const listed = state.libraryProfiles.find((profile) => profile.id === profileId);
     if (listed) listed.note_count = Number(listed.note_count || 0) + 1;
+    closeSheet();
     render();
     showToast("Note saved");
   } catch (error) {
     showToast(error.message || "Could not save that note");
+  }
+}
+
+// Every note visible for the active trim is editable in one pass -- a
+// trash icon marks a row for deletion (re-render keeps it visible but
+// struck through, with an Undo) rather than removing it immediately, so
+// Cancel can still back out before anything is sent to the server.
+function editNoteRow(note) {
+  const deleted = state.profileNoteEditDeleted.has(note.id);
+  const draft = state.profileNoteEditDrafts[note.id] ?? note.body;
+  const author = relatedRecord(note.author)?.full_name || "";
+  const meta = [formatShortDate(noteTimestamp(note)), author].filter(Boolean).join(" · ");
+  return `<div class="profile-note-edit-row${deleted ? " is-deleted" : ""}" data-note-id="${escapeHTML(note.id)}">
+    <div class="profile-note-edit-head">
+      <span class="profile-note-edit-meta">${escapeHTML(meta)}</span>
+      <button class="icon-button" type="button" data-action="toggle-delete-note" data-note-id="${escapeHTML(note.id)}" aria-label="${deleted ? "Undo delete" : "Delete note"}">${deleted ? "Undo" : icon("trash")}</button>
+    </div>
+    ${deleted
+      ? `<p class="profile-note-edit-deleted-label">Note will be removed</p>`
+      : `<textarea class="textarea" name="note-${escapeHTML(note.id)}" rows="2">${escapeHTML(draft)}</textarea>`}
+  </div>`;
+}
+
+function captureEditNoteDrafts() {
+  sheetLayer.querySelectorAll(".profile-note-edit-row textarea").forEach((textarea) => {
+    const row = textarea.closest(".profile-note-edit-row");
+    if (row) state.profileNoteEditDrafts[row.dataset.noteId] = textarea.value;
+  });
+}
+
+function openEditNotesModal({ reset = true } = {}) {
+  const detail = state.activeProfile;
+  if (!detail) return;
+  if (reset) {
+    state.profileNoteEditDrafts = {};
+    state.profileNoteEditDeleted = new Set();
+  }
+  const visibleNotes = filterNotesByVariant(detail.notes, state.profileVariantFilter || "");
+  openSheet(`<div class="confirmation-content edit-notes-content">
+    <h2>Edit shop notes</h2>
+    <form class="edit-notes-form" id="edit-notes-form">
+      <div class="edit-notes-list">${visibleNotes.map(editNoteRow).join("")}</div>
+      <div class="confirmation-actions">
+        <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button full" type="submit">${icon("save")} Save note</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet edit-notes-sheet", ariaLabel: "Edit shop notes" });
+}
+
+async function saveEditedNotes(form) {
+  const profileId = state.activeProfileId;
+  const detail = state.activeProfile;
+  if (!detail) return closeSheet();
+  const deletions = Array.from(state.profileNoteEditDeleted);
+  const edits = [];
+  new FormData(form).forEach((value, key) => {
+    const match = key.match(/^note-(.+)$/);
+    if (!match || deletions.includes(match[1])) return;
+    const original = detail.notes.find((note) => note.id === match[1]);
+    const body = String(value).trim();
+    if (original && body && body !== original.body) edits.push({ noteId: match[1], body });
+  });
+  if (!edits.length && !deletions.length) return closeSheet();
+  try {
+    await Promise.all([
+      ...edits.map(({ noteId, body }) => apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}/notes/${encodeURIComponent(noteId)}`, { method: "PATCH", body: JSON.stringify({ body }) })),
+      ...deletions.map((noteId) => apiRequest(`/api/library/profiles/${encodeURIComponent(profileId)}/notes/${encodeURIComponent(noteId)}`, { method: "DELETE" })),
+    ]);
+    if (state.activeProfileId === profileId && state.activeProfile) {
+      const editedMap = new Map(edits.map(({ noteId, body }) => [noteId, body]));
+      const now = new Date().toISOString();
+      state.activeProfile.notes = state.activeProfile.notes
+        .filter((note) => !deletions.includes(note.id))
+        .map((note) => editedMap.has(note.id) ? { ...note, body: editedMap.get(note.id), updated_at: now } : note);
+      const listed = state.libraryProfiles.find((profile) => profile.id === profileId);
+      if (listed && deletions.length) listed.note_count = Math.max(0, Number(listed.note_count || 0) - deletions.length);
+    }
+    state.profileNoteEditDrafts = {};
+    state.profileNoteEditDeleted = new Set();
+    closeSheet();
+    render();
+    showToast("Notes updated");
+  } catch (error) {
+    showToast(error.message || "Could not save note changes");
   }
 }
 
@@ -3607,6 +3715,15 @@ document.addEventListener("click", (event) => {
       if (draft) state.profileNoteDraft = draft.value;
       return render();
     }
+    if (action === "open-add-note") return openAddNoteModal();
+    if (action === "open-edit-notes") return openEditNotesModal();
+    if (action === "toggle-delete-note") {
+      const noteId = actionButton.dataset.noteId;
+      captureEditNoteDrafts();
+      if (state.profileNoteEditDeleted.has(noteId)) state.profileNoteEditDeleted.delete(noteId);
+      else state.profileNoteEditDeleted.add(noteId);
+      return openEditNotesModal({ reset: false });
+    }
   }
 
   const dictate = event.target.closest("[data-dictate]");
@@ -3783,6 +3900,7 @@ document.addEventListener("change", (event) => {
 document.addEventListener("submit", (event) => {
   event.preventDefault();
   if (event.target.id === "profile-note-form") return saveProfileNote(event.target);
+  if (event.target.id === "edit-notes-form") return saveEditedNotes(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');

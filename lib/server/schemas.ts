@@ -109,6 +109,10 @@ export const profileNoteSchema = z.object({
   sourceJobId: z.string().uuid().nullable().optional(),
 })
 
+export const updateProfileNoteSchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+})
+
 export const resolveProfileSchema = z.object({
   make: z.string().trim().min(1).max(100),
   model: z.string().trim().min(1).max(100),
