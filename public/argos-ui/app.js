@@ -1294,7 +1294,7 @@ function formatShortDate(value) {
 function profileCard(profile, { hidden = false } = {}) {
   const repairs = Number(profile.repair_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
-    <span class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</span>
+    <h2 class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</h2>
     <span class="library-result-counts">
       <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
     </span>
@@ -1324,7 +1324,7 @@ function profileTrimCard(profile, entry) {
   const label = trimKey ? `${profile.model || ""} ${trimKey}`.trim() : (profile.model || profileName(profile));
   const repairs = Number(entry.repair_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-trim="${escapeHTML(trimKey)}" aria-label="Open the ${escapeHTML(label)} car profile">
-    <span class="library-result-name">${escapeHTML(label)}</span>
+    <h2 class="library-result-name">${escapeHTML(label)}</h2>
     <span class="library-result-counts">
       <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
     </span>
@@ -2028,7 +2028,7 @@ function renderSettings() {
     <section class="settings-group" aria-labelledby="about-settings">
       <div class="settings-section-head"><span class="field-label">About</span><h2 id="about-settings">App version</h2></div>
       ${updateAvailable
-        ? `<button class="setting-row is-action" type="button" data-action="reload-app"><span><strong>Update available</strong><small>A newer version of Argos One is ready.</small></span><span class="setting-value">Update</span></button>`
+        ? ""
         : `<div class="setting-row"><span><strong>You're up to date</strong><small>Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}</small></span><span class="setting-value">Up to date</span></div>`}
     </section>
   </section>`;
