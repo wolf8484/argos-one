@@ -2132,7 +2132,7 @@ function settingsPageHeader(title, eyebrow) {
   const parent = SETTINGS_PAGE_PARENT[state.settingsPage] || "";
   return `<header class="task-header has-back">
     <button class="task-back" type="button" data-action="open-settings-page" data-settings-page="${parent}" aria-label="Back to ${escapeHTML(eyebrow || "Settings")}">${icon("back")}</button>
-    <div class="task-header-copy"><h1>${escapeHTML(title)}</h1>${eyebrow ? `<span class="task-context">${escapeHTML(eyebrow)}</span>` : ""}</div>
+    <div class="task-header-copy"><h2>${escapeHTML(title)}</h2>${eyebrow ? `<span class="task-context">${escapeHTML(eyebrow)}</span>` : ""}</div>
   </header>`;
 }
 
@@ -2202,7 +2202,7 @@ function renderSettingsHome() {
       settingsRow({ iconName: "sparkles", title: "What's new", description: "See recent updates", page: "whats-new" }),
     ].join(""))}
 
-    ${updateAvailable ? "" : settingsGroup("About", settingsRow({ iconName: "check", title: "You're up to date", description: `Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}`, value: "Up to date" }))}
+    ${updateAvailable ? "" : settingsGroup("About", settingsRow({ iconName: "check", title: "You're up to date", description: `Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}` }))}
   </section>`;
 }
 
