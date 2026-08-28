@@ -4368,7 +4368,7 @@ button.settings-toggle-row {
 
 .settings-update-banner {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   width: 100%;
@@ -4381,7 +4381,6 @@ button.settings-toggle-row {
   cursor: pointer;
 }
 
-.settings-update-banner-icon svg,
 .settings-update-banner-arrow svg {
   color: #111111;
 }
@@ -4399,6 +4398,7 @@ button.settings-toggle-row {
 .settings-update-banner-text small {
   color: #111111;
   opacity: 0.75;
+  font-size: clamp(24px, 4.5vw, 30px);
 }
 
 .top-progress-bar {

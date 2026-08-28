@@ -2170,7 +2170,6 @@ function renderSettingsHome() {
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
     ${updateAvailable ? `<button class="settings-update-banner" type="button" data-action="reload-app">
-      <span class="settings-update-banner-icon" aria-hidden="true">${icon("sparkles")}</span>
       <span class="settings-update-banner-text"><strong>A new version of Argos One is available</strong><small>Tap to update now.</small></span>
       <span class="settings-update-banner-arrow" aria-hidden="true">${icon("arrow")}</span>
     </button>` : ""}
