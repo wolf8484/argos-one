@@ -661,8 +661,8 @@ function currentTechnician() {
 // Says so plainly when nothing is assigned rather than implying a bay.
 function assignedBayLabel() {
   const bayId = currentTechnician()?.default_bay_id;
-  if (!bayId) return "Not assigned";
-  return state.bays.find((bay) => bay.id === bayId)?.name || "Not assigned";
+  if (!bayId) return "No bay assigned";
+  return state.bays.find((bay) => bay.id === bayId)?.name || "No bay assigned";
 }
 
 function defaultBayName() {
@@ -2437,14 +2437,14 @@ function renderTechniciansPage() {
   const rows = state.technicians.length
     ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}">
         <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
-        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(technician.role)}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
+        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(technician.role.charAt(0).toUpperCase() + technician.role.slice(1))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
         <span class="settings-row-value">${technician.active ? "Active" : "Inactive"}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
   return `${settingsPageHeader("Technicians", "Workshop profile")}
     <div class="settings-list">${rows}</div>
-    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add technician</button></div>`;
+    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>`;
 }
 
 function renderUnitsPage() {
@@ -2579,14 +2579,14 @@ function openBayModal(bay) {
 
 function openTechnicianModal(technician) {
   const isNew = !technician;
-  const bayOptions = [`<option value=""${technician?.default_bay_id ? "" : " selected"}>No default bay</option>`]
+  const bayOptions = [`<option value=""${technician?.default_bay_id ? "" : " selected"}>No bay assigned</option>`]
     .concat(state.bays.map((bay) => `<option value="${bay.id}"${technician?.default_bay_id === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
     .join("");
   const roleOptions = ["technician", "manager", "owner"]
     .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${role.charAt(0).toUpperCase()}${role.slice(1)}</option>`)
     .join("");
   openSheet(`<div class="confirmation-content">
-    <h2>${isNew ? "Add technician" : "Edit technician"}</h2>
+    <h2>${isNew ? "Add staff" : "Edit staff"}</h2>
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
       <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
       <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
@@ -2601,7 +2601,7 @@ function openTechnicianModal(technician) {
       </div>
       ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete technician</button>`}
     </form>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add technician" : "Edit technician" });
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add staff" : "Edit staff" });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
