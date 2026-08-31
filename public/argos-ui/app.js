@@ -1367,16 +1367,6 @@ function filterNetworkByTrim(networkGroups, trimKey) {
   }, []);
 }
 
-// Recalls and complaint trends are keyed make+model at the source (no trim
-// column), so they can't be narrowed the way repairs, notes and network
-// cases now are. Stated once, up front, rather than as a caption on each
-// affected section: repeated mid-page captions read as though they belong to
-// whichever heading sits above them. They are never hidden -- a mechanic
-// missing a relevant recall is a worse failure than showing a broader one.
-function variantScopeNote(modelLabel) {
-  return `<p class="profile-scope-note">Recalls and commonly reported aren't trim-specific &mdash; they stay shown for all ${escapeHTML(modelLabel)} variants.</p>`;
-}
-
 // Vehicle mileage is stored/entered as a raw km number everywhere in the
 // data model; this only converts it for on-screen display when the shop has
 // switched to imperial. Takes either a number or an already comma-formatted
@@ -1835,7 +1825,6 @@ function renderCarProfile() {
   const visibleNetwork = filterNetworkByTrim(networkPatterns, activeVariant);
   const modelLabel = profile.model || profileName(profile);
   const trimTitle = activeVariant ? `${modelLabel} ${activeVariant}`.trim() : modelLabel;
-  const scopeNote = variantScopeNote(modelLabel);
   const isNotesTab = state.profileTab !== "history";
   app.innerHTML = `<section class="screen workflow-shell car-profile-shell">
     ${taskHeader({ context: profile.make || "Car profile", title: trimTitle, backAction: "back-to-library", backLabel: "Back to the repair library" })}
@@ -1844,7 +1833,6 @@ function renderCarProfile() {
       <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
       <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
-    ${scopeNote}
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
       <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
@@ -1854,7 +1842,7 @@ function renderCarProfile() {
       <div class="field-header"><span class="field-label">Shop notes</span></div>
       ${visibleNotes.length
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
-        : `<p class="profile-empty">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one below."}</p>`}
+        : `<p class="profile-empty profile-empty-tight">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one below."}</p>`}
       <div class="profile-note-buttons">
         <button class="secondary-button" type="button" data-action="open-add-note">${icon("plus")} Add note</button>
         ${visibleNotes.length ? `<button class="secondary-button" type="button" data-action="open-edit-notes">${icon("edit")} Edit note</button>` : ""}
