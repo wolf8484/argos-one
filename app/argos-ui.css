@@ -986,6 +986,10 @@ main:focus {
   margin-bottom: 40px;
 }
 
+.jobs-search-field-tight {
+  margin-bottom: 16px;
+}
+
 .jobs-search-control {
   position: relative;
   display: block;

@@ -2438,7 +2438,7 @@ function renderTechniciansPage() {
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
   return `${settingsPageHeader("Manage staff", "Profile & management")}
-    <label class="form-field jobs-search-field" for="staff-search">
+    <label class="form-field jobs-search-field jobs-search-field-tight" for="staff-search">
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search by name or role" autocomplete="off" /></span>
     </label>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>
