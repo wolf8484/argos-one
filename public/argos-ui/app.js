@@ -2439,10 +2439,10 @@ function renderTechniciansPage() {
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
   return `${settingsPageHeader("Manage staff", "Profile & management")}
     <label class="form-field jobs-search-field" for="staff-search">
-      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search staff" autocomplete="off" /></span>
+      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search by name or role" autocomplete="off" /></span>
     </label>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>
-    <div class="field-header"><span class="field-label">Staff</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
+    <div class="field-header"><span class="field-label">Crew</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
     <div class="settings-list">${rows}</div>
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
 }

@@ -3152,14 +3152,14 @@ button.settings-row:focus-visible {
 
 .role-star {
   display: inline-flex;
-  vertical-align: -3px;
+  vertical-align: -5px;
   margin-right: 4px;
   color: var(--accent);
 }
 
 .role-star svg {
-  width: 14px;
-  height: 14px;
+  width: 20px;
+  height: 20px;
 }
 
 .settings-row-value {
@@ -3195,8 +3195,7 @@ button.settings-toggle-row {
 }
 
 .settings-page-action {
-  margin-top: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
 .settings-edit-form {
