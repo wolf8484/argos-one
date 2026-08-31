@@ -998,7 +998,13 @@ function updateNavUpdateBadge() {
 function checkForUpdate() {
   if (updateCheckInFlight) return;
   updateCheckInFlight = true;
-  fetch("/api/version", { cache: "no-store" })
+  // A hung request (flaky workshop wifi) must not wedge this flag forever --
+  // that would silently kill every future check (interval, focus, tab
+  // switch) until the next full reload. Bound it so a stalled fetch always
+  // releases the flag within a few seconds.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  fetch("/api/version", { cache: "no-store", signal: controller.signal })
     .then((response) => (response.ok ? response.json() : null))
     .then((data) => {
       const wasAvailable = updateAvailable;
@@ -1007,7 +1013,7 @@ function checkForUpdate() {
       if (updateAvailable !== wasAvailable && state.route === "settings") renderSettings();
     })
     .catch(() => {})
-    .finally(() => { updateCheckInFlight = false; });
+    .finally(() => { clearTimeout(timeout); updateCheckInFlight = false; });
 }
 
 // A bare location.reload() is near-instant and easy to miss entirely --
