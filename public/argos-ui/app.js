@@ -393,11 +393,19 @@ function icon(name, label = "") {
 }
 
 const materialIcons = {
+  technicians: '<path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q440-607 440-640t-23.5-56.5Q393-720 360-720t-56.5 23.5Q280-673 280-640t23.5 56.5Q327-560 360-560t56.5-23.5ZM360-240Zm0-400Z"/>',
+  workshopTools: '<path d="M757.15-140 536.62-360.54l63.22-63.23 220.54 220.54L757.15-140Zm-553.92 0L140-203.23l277.16-277.15-93.39-93.01-24.92 24.93-44.46-44.85v77l-24.93 24.92-112.92-112.92 24.92-24.92h77l-44.23-43.85 114.31-114.3q16.92-16.93 36.65-24.77 19.73-7.85 41.04-7.85t41.04 7.85q19.73 7.84 36.65 24.77L365-708.46l46.92 46.92L387-636.62l93.38 93.01 96.16-96.16q-6.69-12.15-9.77-25.11-3.08-12.97-3.08-27.27 0-54 37.23-91.23 37.23-37.23 91.23-37.23 12.7 0 24.27 2.23 11.58 2.23 23.27 7.46L648.77-720 720-648.77l90.92-90.92q5.85 11.69 7.77 23.27 1.92 11.57 1.92 24.27 0 54-37.23 91.23-37.23 37.23-91.23 37.23-14.3 0-27.27-2.77-12.96-2.77-25.11-10.08L203.23-140Z"/>',
   resumeJob: '<path d="M358.5-373.23q-93.81 0-159.48-65.67-65.67-65.67-65.67-159.48 0-16.3 2.27-32.34 2.27-16.05 7.96-31.05 3.37-8.23 9.6-12.83 6.24-4.6 14.11-6.67 7.86-2.08 15.71.14 7.84 2.21 14.27 8.75l106.04 105.46 87.46-86.66-105.38-105.77q-6.41-6.35-8.53-14.38-2.13-8.03-.2-15.76t6.37-13.91q4.43-6.18 12.66-9.71 14.81-6.08 30.8-8.66t31.99-2.58q93.93 0 159.96 66.03 66.02 66.03 66.02 159.94 0 25.26-4.77 47.07t-14.31 42.16l217.08 215.81q24.16 24.27 24.16 59.42 0 35.15-24.33 59.3-24.51 24.35-59.21 23.95-34.69-.41-59.04-24.87L447.88-392.31q-21.15 9.16-43 14.12-21.86 4.96-46.38 4.96Zm-.08-55.96q26.09 0 52.07-8.06 25.97-8.06 47.74-24.17l246.46 246.77q7.43 7.61 18.62 7.71 11.19.1 19.11-7.92 7.93-8.02 7.93-19.12 0-11.1-7.93-19.21L495.65-499.35q16.54-21.07 24.7-46.51 8.15-25.45 8.15-52.52 0-66.54-48.75-118.74-48.75-52.19-123.94-49.77l90.42 90.43q10.35 10.34 10.1 24.09t-10.6 24.17L326.69-511.96q-10.5 10.04-24.17 9.79-13.67-.25-23.71-10.29L191-600.27q-1.46 78.92 50.86 125 52.33 46.08 116.56 46.08Zm110.23-60.62Z"/>',
 };
 
 function materialIcon(name, label = "") {
   return `<svg viewBox="0 -960 960 960" fill="currentColor" ${label ? `aria-label="${label}" role="img"` : 'aria-hidden="true"'}>${materialIcons[name] || ""}</svg>`;
+}
+
+// The two icon sets draw differently (stroked 24x24 vs filled Material), so
+// callers that just name an icon get whichever set defines it.
+function anyIcon(name, label = "") {
+  return materialIcons[name] ? materialIcon(name, label) : icon(name, label);
 }
 
 function escapeHTML(value) {
@@ -639,6 +647,22 @@ async function loadWorkshopRoster() {
     state.bays = [];
     state.technicians = [];
   }
+}
+
+// The signed-in login's roster record, when it has one. profiles are logins
+// and shop_technicians is the crew roster, so a login only resolves to a
+// technician once someone has linked or added them on the roster.
+function currentTechnician() {
+  if (!state.profile) return null;
+  return state.technicians.find((technician) => technician.profile_id === state.profile.id) || null;
+}
+
+// Shown wherever the app states which bay the signed-in technician works from.
+// Says so plainly when nothing is assigned rather than implying a bay.
+function assignedBayLabel() {
+  const bayId = currentTechnician()?.default_bay_id;
+  if (!bayId) return "Not assigned";
+  return state.bays.find((bay) => bay.id === bayId)?.name || "Not assigned";
 }
 
 function defaultBayName() {
@@ -1169,7 +1193,7 @@ function renderHome() {
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
     <div class="home-status-block">
-      <div class="home-kicker"><span>Bay 03</span></div>
+      <div class="home-kicker"><span>${escapeHTML(assignedBayLabel())}</span></div>
       <div class="home-metrics" aria-label="Today's workshop status">
         <div class="home-metric"><strong>${String(openJobs.length).padStart(2, "0")}</strong><span>Open jobs</span></div>
         <div class="home-metric"><strong>${String(resolvedJobs.length).padStart(2, "0")}</strong><span>Resolved today</span></div>
@@ -2196,7 +2220,7 @@ function settingsPageHeader(title, eyebrow) {
 }
 
 function settingsRow({ iconName, title, description, value = "", page = "", disabled = false }) {
-  const inner = `<span class="settings-row-icon" aria-hidden="true">${icon(iconName)}</span>
+  const inner = `<span class="settings-row-icon" aria-hidden="true">${anyIcon(iconName)}</span>
     <span class="settings-row-text"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
     ${value ? `<span class="settings-row-value">${escapeHTML(value)}</span>` : ""}
     ${page && !disabled ? `<span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>` : ""}`;
@@ -2247,7 +2271,7 @@ function renderSettingsHome() {
 
     ${settingsGroup("Tools", [
       settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and job defaults", page: "workshop-profile" }),
-      settingsRow({ iconName: "wrench", title: "Workshop tools", description: "Voice and camera", page: "workshop-tools" }),
+      settingsRow({ iconName: "workshopTools", title: "Workshop tools", description: "Voice and camera", page: "workshop-tools" }),
     ].join(""))}
 
     ${settingsGroup("Preferences", [
@@ -2370,7 +2394,7 @@ function renderWorkshopProfilePage() {
     <span class="settings-group-label settings-group-label-spaced">Crew &amp; bays</span>
     <div class="settings-list">
       ${settingsRow({ iconName: "building", title: "Manage bays", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" })}
-      ${settingsRow({ iconName: "wrench", title: "Manage technicians", description: "Add, edit or remove technicians", value: String(activeTechnicians), page: "technicians" })}
+      ${settingsRow({ iconName: "technicians", title: "Manage technicians", description: "Add, edit or remove technicians", value: String(activeTechnicians), page: "technicians" })}
     </div>
     <span class="settings-group-label settings-group-label-spaced">Workshop defaults</span>
     <div class="settings-list">
@@ -3666,7 +3690,7 @@ function technicianProfileSheet() {
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(state.shop?.name || "Workshop technician")}</p><span class="technician-status">Available</span></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
-        <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>Bay 03</strong></div>
+        <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>${escapeHTML(assignedBayLabel())}</strong></div>
         <div class="profile-fact"><span class="field-label">Shift</span><strong>07:00–16:00</strong></div>
         <div class="profile-fact"><span class="field-label">Employee ID</span><strong>ARG-024</strong></div>
       </div>
