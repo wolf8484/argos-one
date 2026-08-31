@@ -2363,6 +2363,13 @@ function technicianName(technician) {
   return [technician.first_name, technician.last_name].filter(Boolean).join(" ");
 }
 
+// "owner" is the stored role value (tied to auth/signup and RLS), but reads
+// clearer to staff as "Admin" -- a display-only relabel, not a schema change.
+function roleLabel(role) {
+  if (role === "owner") return "Admin";
+  return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 function renderWorkshopProfilePage() {
   const shop = state.shop || {};
   return `${settingsPageHeader("Workshop profile", "Profile & management")}
@@ -2410,7 +2417,7 @@ function renderTechniciansPage() {
   const rows = state.technicians.length
     ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}">
         <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
-        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(technician.role.charAt(0).toUpperCase() + technician.role.slice(1))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
+        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
         <span class="settings-row-value">${technician.active ? "Active" : "Inactive"}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
@@ -2556,7 +2563,7 @@ function openTechnicianModal(technician) {
     .concat(state.bays.map((bay) => `<option value="${bay.id}"${technician?.default_bay_id === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
     .join("");
   const roleOptions = ["technician", "manager", "owner"]
-    .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${role.charAt(0).toUpperCase()}${role.slice(1)}</option>`)
+    .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${roleLabel(role)}</option>`)
     .join("");
   openSheet(`<div class="confirmation-content">
     <h2>${isNew ? "Add staff" : "Edit staff"}</h2>
@@ -3656,13 +3663,12 @@ function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
   const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   const role = currentTechnician()?.role || "technician";
-  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
   const employeeId = currentTechnician()?.employee_id;
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
-        <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel)}</p></div>
+        <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
         <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>${escapeHTML(assignedBayLabel())}</strong></div>
