@@ -2176,8 +2176,8 @@ function renderSettingsHome() {
 
     ${settingsGroup("Appearance", [
       settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Reduced glare in the workshop" : "Maximum clarity in daylight", value: theme === "dark" ? "Dark" : "Light", page: "theme" }),
-      settingsRow({ iconName: "type", title: "Readable interface", description: "Minimum text size across the app", value: "Standard", page: "readable-interface" }),
-      settingsRow({ iconName: "contrast", title: "High-contrast text", description: "Keep important text readable in both themes", value: "On", page: "high-contrast" }),
+      settingsRow({ iconName: "type", title: "Readable interface", description: "Minimum text size across the app (16px minimum everywhere)" }),
+      settingsRow({ iconName: "contrast", title: "High-contrast text", description: "Important instructions stay bright in both themes" }),
     ].join(""))}
 
     ${settingsGroup("Network", [
