@@ -2272,7 +2272,7 @@ function renderSettingsHome() {
     ].join(""))}
 
     ${settingsGroup("Profile and management", [
-      settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and job defaults", page: "workshop-profile" }),
+      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details, job defaults and suppliers", page: "workshop-profile" }),
       settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }),
       settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians" }),
     ].join(""))}
@@ -3681,7 +3681,6 @@ function technicianProfileSheet() {
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         <button class="profile-menu-button" type="button" data-action="profile-jobs">${icon("clipboard")}<span>My active jobs</span>${icon("arrow")}</button>
-        <button class="profile-menu-button" type="button" data-action="profile-settings">${icon("settings")}<span>Account & workshop settings</span>${icon("arrow")}</button>
         ${state.backendStatus === "connected" ? `<button class="profile-menu-button" type="button" data-action="sign-out">${icon("logout")}<span>Sign out</span>${icon("arrow")}</button>` : `<button class="profile-menu-button" type="button" data-action="sign-in">${icon("lock")}<span>Sign in for cloud storage</span>${icon("arrow")}</button>`}
       </nav>
     </div>`);
@@ -4122,7 +4121,6 @@ document.addEventListener("click", (event) => {
       return apiRequest("/api/auth/signout", { method: "POST" }).finally(() => { window.location.href = "/login"; });
     }
     if (action === "profile-jobs") { closeSheet(); return setRoute("jobs"); }
-    if (action === "profile-settings") { closeSheet(); return setRoute("settings"); }
     if (action === "calendar-previous" || action === "calendar-next") {
       const direction = action === "calendar-next" ? 1 : -1;
       const next = new Date(state.calendar.year, state.calendar.month + direction, 1);

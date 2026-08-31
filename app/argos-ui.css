@@ -289,17 +289,17 @@ h3 {
   color: var(--text);
 }
 
+.icon-button svg {
+  width: 20px;
+  height: 20px;
+}
+
 .icon-button:hover {
   border-color: var(--muted);
 }
 
 .icon-button[data-action="close-sheet"] {
   color: var(--accent);
-}
-
-.icon-button[data-action="close-sheet"] svg {
-  width: 20px;
-  height: 20px;
 }
 
 .profile-button {
@@ -2162,8 +2162,8 @@ button.journey-item:active {
 
 .dictate-button svg,
 .enhance-button svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   color: var(--accent);
 }
 
@@ -2256,8 +2256,8 @@ button.journey-item:active {
 }
 
 .add-dtc-button svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   color: var(--accent);
 }
 
@@ -2456,6 +2456,8 @@ button.journey-item:active {
 }
 
 .primary-button svg {
+  width: 20px;
+  height: 20px;
   color: var(--on-accent);
 }
 
@@ -2490,6 +2492,8 @@ button.journey-item:active {
 .secondary-button svg,
 .web-button svg,
 .part-button svg {
+  width: 20px;
+  height: 20px;
   color: var(--accent);
 }
 
@@ -3977,9 +3981,6 @@ button.settings-toggle-row {
 .profile-menu-button > svg:first-child,
 .profile-menu-button > svg:last-child {
   color: var(--accent);
-}
-
-.profile-menu-button > svg:last-child {
   width: 20px;
   height: 20px;
 }
