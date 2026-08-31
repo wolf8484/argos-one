@@ -1184,12 +1184,12 @@ function renderHome() {
   const resumeTitle = "Resume job";
   const resumeTile = activeJob
     ? `<button type="button" class="control-tile" data-action="open-job" data-job-id="${activeJob.id}" aria-label="${resumeTitle} for ${jobVehicleName(activeJob)}">
-        <span class="tile-icon">${materialIcon("resumeJob")}</span>
         <span class="tile-copy"><strong>${resumeTitle}</strong><small>${jobVehicleName(activeJob)}</small></span>
+        <span class="tile-icon">${materialIcon("resumeJob")}</span>
       </button>`
     : `<button type="button" class="control-tile" data-route="new" aria-label="Start a new job">
-        <span class="tile-icon">${materialIcon("resumeJob")}</span>
         <span class="tile-copy"><strong>No active job</strong><small>Ready for the next vehicle</small></span>
+        <span class="tile-icon">${materialIcon("resumeJob")}</span>
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
     <div class="home-status-block">
@@ -1203,17 +1203,17 @@ function renderHome() {
 
     <div class="control-grid" aria-label="Workshop controls">
       <button type="button" class="control-tile is-primary" data-route="new">
-        <span class="tile-icon">${icon("plus")}</span>
         <span class="tile-copy"><strong>New job</strong><small>Start inspection</small></span>
+        <span class="tile-icon">${icon("plus")}</span>
       </button>
       ${resumeTile}
       <button type="button" class="control-tile" data-route="jobs">
-        <span class="tile-icon">${icon("clipboard")}</span>
         <span class="tile-copy"><strong>All jobs</strong><small>${allJobsCount} ${allJobsCount === 1 ? "item" : "items"}</small></span>
+        <span class="tile-icon">${icon("clipboard")}</span>
       </button>
       <button type="button" class="control-tile" data-route="knowledge">
-        <span class="tile-icon">${icon("database")}</span>
         <span class="tile-copy"><strong>Repair library</strong><small>${repairLibraryCount} ${repairLibraryCount === 1 ? "car profile" : "car profiles"}</small></span>
+        <span class="tile-icon">${icon("database")}</span>
       </button>
     </div>
 
