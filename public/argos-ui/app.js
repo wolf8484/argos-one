@@ -39,6 +39,7 @@ const state = {
   selectedJobId: null,
   jobFilter: "all",
   jobSearch: "",
+  staffSearch: "",
   librarySearch: "",
   libraryBrand: null,
   libraryProfiles: [],
@@ -353,6 +354,7 @@ const icons = {
   brakeDisc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6"/>',
   building: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-5h4v5M9 8h.01M9 12h.01M13 8h.01M13 12h.01"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
+  star: '<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7Z"/>',
   logout: '<path d="M15 21h4a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-4"/><path d="m8 17-5-5 5-5"/><path d="M3 12h12"/>',
 };
 
@@ -2413,17 +2415,24 @@ function renderBaysPage() {
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
 }
 
+function technicianSearchText(technician) {
+  return [technicianName(technician), roleLabel(technician.role), technician.employee_id].filter(Boolean).join(" ").toLowerCase();
+}
+
 function renderTechniciansPage() {
   const rows = state.technicians.length
-    ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}">
-        <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
-        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
+    ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
+        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
         <span class="settings-row-value">${technician.active ? "Active" : "Inactive"}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
   return `${settingsPageHeader("Manage staff", "Profile & management")}
+    <label class="form-field jobs-search-field" for="staff-search">
+      <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search staff" autocomplete="off" /></span>
+    </label>
     <div class="settings-list">${rows}</div>
+    <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>`;
 }
 
@@ -4453,6 +4462,25 @@ document.addEventListener("input", (event) => {
   }
   const isJobSearch = event.target.matches("#job-search");
   const isLibrarySearch = event.target.matches("#library-search");
+  const isStaffSearch = event.target.matches("#staff-search");
+  if (isStaffSearch) {
+    state.staffSearch = event.target.value;
+    const query = event.target.value.trim().toLowerCase();
+    const rows = [...document.querySelectorAll(".settings-row[data-staff-search]")];
+    let visibleCount = 0;
+    rows.forEach((row) => {
+      const matches = !query || row.dataset.staffSearch.includes(query);
+      row.hidden = !matches;
+      if (matches) visibleCount += 1;
+    });
+    const emptyState = document.querySelector(".staff-empty");
+    if (emptyState) {
+      emptyState.hidden = !query || visibleCount > 0;
+      const queryLabel = emptyState.querySelector(".staff-empty-query");
+      if (queryLabel) queryLabel.textContent = event.target.value.trim();
+    }
+    return;
+  }
   if (!isJobSearch && !isLibrarySearch) return;
   if (isJobSearch) state.jobSearch = event.target.value;
   if (isLibrarySearch) {

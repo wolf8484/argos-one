@@ -3150,6 +3150,18 @@ button.settings-row:focus-visible {
   line-height: 20px;
 }
 
+.role-star {
+  display: inline-flex;
+  vertical-align: -3px;
+  margin-right: 4px;
+  color: var(--accent);
+}
+
+.role-star svg {
+  width: 14px;
+  height: 14px;
+}
+
 .settings-row-value {
   flex: none;
   color: var(--muted);
