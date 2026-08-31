@@ -627,7 +627,7 @@ function vehiclePayload() {
       transmission: state.vehicle.transmission || null,
     },
     // A new job lands in the shop's default bay when one is configured under
-    // Settings -> Workshop profile -> Job defaults.
+    // Settings -> Profile & management -> Job defaults.
     bay: defaultBayName(),
   };
 }
@@ -2200,8 +2200,7 @@ async function saveEditedNotes(form) {
 
 // Back navigation follows the trail actually taken rather than a fixed parent
 // per page, because several pages are reachable from more than one place --
-// Job defaults sits under both Preferences and Workshop profile, and going
-// "back" should return to whichever list the technician came in through.
+// going "back" should return to whichever list the technician came in through.
 function settingsGoBack() {
   state.settingsPage = state.settingsTrail.pop() || null;
 }
@@ -2271,15 +2270,15 @@ function renderSettingsHome() {
       settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharingLabel, page: "network-sharing" }),
     ].join(""))}
 
-    ${settingsGroup("Profile and management", [
-      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details, job defaults and suppliers", page: "workshop-profile" }),
+    ${settingsGroup("Profile & management", [
+      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details and suppliers", page: "workshop-profile" }),
       settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }),
       settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians" }),
+      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }),
     ].join(""))}
 
     ${settingsGroup("Preferences", [
       settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
-      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }),
       settingsRow({ iconName: "mic", title: "Voice & dictation", description: "Microphone and transcription review", page: "voice-dictation" }),
       settingsRow({ iconName: "camera", title: "Camera & photos", description: "Permissions, quality and storage", page: "camera-photos" }),
       settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" }),
@@ -2372,17 +2371,13 @@ function technicianName(technician) {
 
 function renderWorkshopProfilePage() {
   const shop = state.shop || {};
-  return `${settingsPageHeader("Workshop profile", "Profile and management")}
+  return `${settingsPageHeader("Workshop profile", "Profile & management")}
     <span class="settings-group-label">Workshop details</span>
     <div class="settings-list">
       ${settingsEditRow({ title: "Workshop name", value: shop.name || "Not set", field: "name" })}
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
-    </div>
-    <span class="settings-group-label settings-group-label-spaced">Workshop defaults</span>
-    <div class="settings-list">
-      ${settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" })}
     </div>
     <span class="settings-group-label settings-group-label-spaced">Parts &amp; suppliers</span>
     <div class="settings-list">
@@ -2412,7 +2407,7 @@ function renderBaysPage() {
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No bays yet</strong><small>Add the bays this workshop runs.</small></span></div>`;
-  return `${settingsPageHeader("Manage bays", "Profile and management")}
+  return `${settingsPageHeader("Manage bays", "Profile & management")}
     <div class="settings-list">${rows}</div>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
 }
@@ -2426,7 +2421,7 @@ function renderTechniciansPage() {
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
-  return `${settingsPageHeader("Manage staff", "Profile and management")}
+  return `${settingsPageHeader("Manage staff", "Profile & management")}
     <div class="settings-list">${rows}</div>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>`;
 }
@@ -2461,7 +2456,7 @@ function renderJobDefaultsPage() {
   const shop = state.shop || {};
   const defaultBay = state.bays.find((bay) => bay.id === shop.default_bay_id);
   const defaultTechnician = state.technicians.find((technician) => technician.id === shop.default_technician_id);
-  return `${settingsPageHeader("Job defaults", "Workshop profile")}
+  return `${settingsPageHeader("Job defaults", "Profile & management")}
     <p class="settings-detail-intro">These defaults are applied when a new job is created.</p>
     <div class="settings-list">
       <button class="settings-row" type="button" data-action="pick-default-bay">
