@@ -2419,6 +2419,16 @@ function technicianSearchText(technician) {
   return [technicianName(technician), roleLabel(technician.role), technician.employee_id].filter(Boolean).join(" ").toLowerCase();
 }
 
+function staffBreakdown(technicians) {
+  const counts = { technician: 0, manager: 0, owner: 0 };
+  technicians.forEach((technician) => { counts[technician.role] = (counts[technician.role] || 0) + 1; });
+  const labels = { technician: ["Technician", "Technicians"], manager: ["Manager", "Managers"], owner: ["Admin", "Admins"] };
+  return ["technician", "manager", "owner"]
+    .filter((role) => counts[role])
+    .map((role) => `${counts[role]} ${counts[role] === 1 ? labels[role][0] : labels[role][1]}`)
+    .join(" &middot; ");
+}
+
 function renderTechniciansPage() {
   const rows = state.technicians.length
     ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
@@ -2431,9 +2441,10 @@ function renderTechniciansPage() {
     <label class="form-field jobs-search-field" for="staff-search">
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search staff" autocomplete="off" /></span>
     </label>
+    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>
+    <div class="field-header"><span class="field-label">Staff</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
     <div class="settings-list">${rows}</div>
-    <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>
-    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>`;
+    <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
 }
 
 function renderUnitsPage() {
