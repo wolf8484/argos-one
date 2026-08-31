@@ -117,3 +117,35 @@ export const resolveProfileSchema = z.object({
   make: z.string().trim().min(1).max(100),
   model: z.string().trim().min(1).max(100),
 })
+
+export const shopSettingsSchema = z.object({
+  sharesRepairData: z.boolean().optional(),
+  name: z.string().trim().min(1).max(160).optional(),
+  branchId: z.string().trim().max(60).nullable().optional(),
+  region: z.string().trim().min(1).max(80).optional(),
+  timezone: z.string().trim().min(1).max(80).optional(),
+  preferredSupplier: z.string().trim().max(160).nullable().optional(),
+  defaultBayId: z.string().uuid().nullable().optional(),
+  defaultTechnicianId: z.string().uuid().nullable().optional(),
+  autoAssignJobs: z.boolean().optional(),
+})
+
+export const baySchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  description: z.string().trim().max(200).nullable().optional(),
+  active: z.boolean().default(true),
+})
+
+export const updateBaySchema = baySchema.partial()
+
+export const technicianSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().max(80).nullable().optional(),
+  initials: z.string().trim().max(4).nullable().optional(),
+  employeeId: z.string().trim().max(60).nullable().optional(),
+  role: z.enum(['owner', 'manager', 'technician']).default('technician'),
+  active: z.boolean().default(true),
+  defaultBayId: z.string().uuid().nullable().optional(),
+})
+
+export const updateTechnicianSchema = technicianSchema.partial()

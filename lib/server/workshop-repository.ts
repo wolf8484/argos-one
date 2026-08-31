@@ -24,8 +24,12 @@ export class WorkshopRepository {
   async getJob(id: string) {
     const { data, error } = await this.supabase
       .from('jobs')
+      // The two repair_records embeds are disambiguated by foreign-key column
+      // rather than by constraint name: the self-reference resolves to an
+      // auto-generated constraint name that PostgREST's schema cache drops
+      // after unrelated DDL, which turned this read into a PGRST200 500.
       .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
-        repair:repair_records!repair_records_job_id_fkey(*,items:repair_items(*),reference:repair_records!repair_records_reference_repair_id_fkey(job_id)),photos:job_photos(*)`)
+        repair:repair_records!job_id(*,items:repair_items(*),reference:repair_records!reference_repair_id(job_id)),photos:job_photos(*)`)
       .eq('id', id)
       .single()
     if (error) throw error
@@ -473,6 +477,189 @@ export class WorkshopRepository {
       .eq('id', noteId)
       .eq('profile_id', profileId)
     if (error) throw error
+  }
+
+  private static readonly SHOP_COLUMNS =
+    'id,name,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs'
+
+  async getShop() {
+    const { data, error } = await this.supabase
+      .from('shops')
+      .select(WorkshopRepository.SHOP_COLUMNS)
+      .eq('id', this.profile.shop_id)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async updateShop(input: {
+    sharesRepairData?: boolean
+    name?: string
+    branchId?: string | null
+    region?: string
+    timezone?: string
+    preferredSupplier?: string | null
+    defaultBayId?: string | null
+    defaultTechnicianId?: string | null
+    autoAssignJobs?: boolean
+  }) {
+    const patch: Record<string, unknown> = {}
+    if (input.sharesRepairData !== undefined) patch.shares_repair_data = input.sharesRepairData
+    if (input.name !== undefined) patch.name = input.name
+    if (input.branchId !== undefined) patch.branch_id = input.branchId
+    if (input.region !== undefined) patch.region = input.region
+    if (input.timezone !== undefined) patch.timezone = input.timezone
+    if (input.preferredSupplier !== undefined) patch.preferred_supplier = input.preferredSupplier
+    if (input.defaultBayId !== undefined) patch.default_bay_id = input.defaultBayId
+    if (input.defaultTechnicianId !== undefined) patch.default_technician_id = input.defaultTechnicianId
+    if (input.autoAssignJobs !== undefined) patch.auto_assign_jobs = input.autoAssignJobs
+    if (!Object.keys(patch).length) return this.getShop()
+
+    const { data, error } = await this.supabase
+      .from('shops')
+      .update(patch)
+      .eq('id', this.profile.shop_id)
+      .select(WorkshopRepository.SHOP_COLUMNS)
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async listBays() {
+    const { data, error } = await this.supabase
+      .from('shop_bays')
+      .select('id,name,description,position,active,created_at,updated_at')
+      .order('position')
+      .order('name')
+    if (error) throw error
+    return data ?? []
+  }
+
+  async addBay(input: { name: string; description?: string | null; active?: boolean }) {
+    // New bays land at the end of the list rather than jumping to the top.
+    const { data: last } = await this.supabase
+      .from('shop_bays')
+      .select('position')
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { data, error } = await this.supabase
+      .from('shop_bays')
+      .insert({
+        shop_id: this.profile.shop_id,
+        name: input.name,
+        description: input.description ?? null,
+        active: input.active ?? true,
+        position: (last?.position ?? 0) + 1,
+      })
+      .select('id,name,description,position,active,created_at,updated_at')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async updateBay(bayId: string, input: { name?: string; description?: string | null; active?: boolean }) {
+    const patch: Record<string, unknown> = {}
+    if (input.name !== undefined) patch.name = input.name
+    if (input.description !== undefined) patch.description = input.description
+    if (input.active !== undefined) patch.active = input.active
+
+    const { data, error } = await this.supabase
+      .from('shop_bays')
+      .update(patch)
+      .eq('id', bayId)
+      .select('id,name,description,position,active,created_at,updated_at')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async deleteBay(bayId: string) {
+    const { error } = await this.supabase.from('shop_bays').delete().eq('id', bayId)
+    if (error) throw error
+  }
+
+  async listTechnicians() {
+    const { data, error } = await this.supabase
+      .from('shop_technicians')
+      .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
+      .order('position')
+      .order('first_name')
+    if (error) throw error
+    return data ?? []
+  }
+
+  async addTechnician(input: {
+    firstName: string
+    lastName?: string | null
+    initials?: string | null
+    employeeId?: string | null
+    role?: string
+    active?: boolean
+    defaultBayId?: string | null
+  }) {
+    const { data: last } = await this.supabase
+      .from('shop_technicians')
+      .select('position')
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const { data, error } = await this.supabase
+      .from('shop_technicians')
+      .insert({
+        shop_id: this.profile.shop_id,
+        first_name: input.firstName,
+        last_name: input.lastName ?? null,
+        initials: input.initials || WorkshopRepository.deriveInitials(input.firstName, input.lastName),
+        employee_id: input.employeeId ?? null,
+        role: input.role ?? 'technician',
+        active: input.active ?? true,
+        default_bay_id: input.defaultBayId ?? null,
+        position: (last?.position ?? 0) + 1,
+      })
+      .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async updateTechnician(technicianId: string, input: {
+    firstName?: string
+    lastName?: string | null
+    initials?: string | null
+    employeeId?: string | null
+    role?: string
+    active?: boolean
+    defaultBayId?: string | null
+  }) {
+    const patch: Record<string, unknown> = {}
+    if (input.firstName !== undefined) patch.first_name = input.firstName
+    if (input.lastName !== undefined) patch.last_name = input.lastName
+    if (input.initials !== undefined) patch.initials = input.initials
+    if (input.employeeId !== undefined) patch.employee_id = input.employeeId
+    if (input.role !== undefined) patch.role = input.role
+    if (input.active !== undefined) patch.active = input.active
+    if (input.defaultBayId !== undefined) patch.default_bay_id = input.defaultBayId
+
+    const { data, error } = await this.supabase
+      .from('shop_technicians')
+      .update(patch)
+      .eq('id', technicianId)
+      .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async deleteTechnician(technicianId: string) {
+    const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
+    if (error) throw error
+  }
+
+  private static deriveInitials(firstName: string, lastName?: string | null) {
+    return `${firstName.trim().charAt(0)}${(lastName ?? '').trim().charAt(0)}`.toUpperCase() || null
   }
 
   // Resolves the profile bucket for an ad-hoc vehicle identity so a note can be

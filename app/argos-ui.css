@@ -3170,6 +3170,26 @@ button.settings-toggle-row {
   cursor: pointer;
 }
 
+.settings-page-action {
+  margin-top: 16px;
+}
+
+.settings-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* The toggle row inside an editor modal sits on the modal surface rather than
+   inside a settings list, so it needs its own keyline. */
+.settings-edit-form .settings-toggle-row {
+  padding: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding-block: 16px;
+  background: transparent;
+}
+
 .settings-unwired-banner {
   display: flex;
   align-items: flex-start;

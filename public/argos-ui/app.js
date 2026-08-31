@@ -59,7 +59,10 @@ const state = {
   catalog: { makes: [], models: [], variants: [] },
   profile: null,
   shop: null,
+  bays: [],
+  technicians: [],
   settingsPage: null,
+  settingsTrail: [],
   selectedRepair: "primary",
   vehicle: {
     vin: "",
@@ -594,6 +597,7 @@ async function loadBackendData() {
     state.activeJobId = rememberedJob?.id || null;
     state.currentJobId = rememberedJob?.id || null;
     state.backendStatus = "connected";
+    await loadWorkshopRoster();
     await loadLibraryProfiles();
   } catch (error) {
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
@@ -617,8 +621,33 @@ function vehiclePayload() {
       drivetrain: state.vehicle.drivetrain || null,
       transmission: state.vehicle.transmission || null,
     },
-    bay: null,
+    // A new job lands in the shop's default bay when one is configured under
+    // Settings -> Workshop profile -> Job defaults.
+    bay: defaultBayName(),
   };
+}
+
+// The roster backs both the Workshop profile screens and the default bay a new
+// job is filed into, so it loads with the rest of the account rather than only
+// when Settings is opened.
+async function loadWorkshopRoster() {
+  try {
+    const [{ bays }, { technicians }] = await Promise.all([
+      apiRequest("/api/shop/bays"),
+      apiRequest("/api/shop/technicians"),
+    ]);
+    state.bays = bays || [];
+    state.technicians = technicians || [];
+  } catch (_) {
+    state.bays = [];
+    state.technicians = [];
+  }
+}
+
+function defaultBayName() {
+  const bayId = state.shop?.default_bay_id;
+  if (!bayId) return null;
+  return state.bays.find((bay) => bay.id === bayId)?.name || null;
 }
 
 async function persistVehicleDetails() {
@@ -919,6 +948,7 @@ function setRoute(route) {
   }
   if (route === "settings") {
     state.settingsPage = null;
+    state.settingsTrail = [];
   }
   animateNextScreen = true;
   updateNavigation();
@@ -2147,16 +2177,23 @@ async function saveEditedNotes(form) {
 // aren't backed by real app behaviour yet say so plainly via unwiredBanner()
 // instead of shipping a toggle that looks real but does nothing.
 
-const SETTINGS_PAGE_PARENT = {
-  "voice-dictation": "workshop-tools",
-  "camera-photos": "workshop-tools",
-  "workshop-profile": "workshop-tools",
-};
+// Back navigation follows the trail actually taken rather than a fixed parent
+// per page, because several pages are reachable from more than one place --
+// Job defaults sits under both Preferences and Workshop profile, and going
+// "back" should return to whichever list the technician came in through.
+function settingsGoBack() {
+  state.settingsPage = state.settingsTrail.pop() || null;
+}
+
+function settingsOpenPage(page) {
+  if (page) state.settingsTrail.push(state.settingsPage);
+  else state.settingsTrail = [];
+  state.settingsPage = page || null;
+}
 
 function settingsPageHeader(title, eyebrow) {
-  const parent = SETTINGS_PAGE_PARENT[state.settingsPage] || "";
   return `<header class="task-header has-back">
-    <button class="task-back" type="button" data-action="open-settings-page" data-settings-page="${parent}" aria-label="Back to ${escapeHTML(eyebrow || "Settings")}">${icon("back")}</button>
+    <button class="task-back" type="button" data-action="settings-back" aria-label="Back">${icon("back")}</button>
     <div class="task-header-copy"><h2>${escapeHTML(title)}</h2>${eyebrow ? `<span class="task-context">${escapeHTML(eyebrow)}</span>` : ""}</div>
   </header>`;
 }
@@ -2216,7 +2253,7 @@ function renderSettingsHome() {
 
     ${settingsGroup("Preferences", [
       settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
-      settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" }),
+      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }),
       settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" }),
       settingsRow({ iconName: "cloud", title: "Data & storage", description: "Cache, backups and offline data", page: "storage" }),
       settingsRow({ iconName: "lock", title: "Privacy", description: "What Argos One collects and shares", page: "privacy" }),
@@ -2292,7 +2329,7 @@ function renderWorkshopToolsPage() {
     <span class="settings-group-label settings-group-label-spaced">Other settings you might use</span>
     <div class="settings-list">
       ${settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitSystem() === "metric" ? "Metric" : "Imperial", page: "units" })}
-      ${settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" })}
+      ${settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" })}
       ${settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" })}
     </div>`;
 }
@@ -2327,14 +2364,76 @@ function renderCameraPhotosPage() {
     ${unwiredBanner("Photo quality tiers and location metadata aren't built yet -- photos upload at their original quality with no location tag.")}`;
 }
 
+function technicianName(technician) {
+  return [technician.first_name, technician.last_name].filter(Boolean).join(" ");
+}
+
 function renderWorkshopProfilePage() {
+  const shop = state.shop || {};
+  const activeBays = state.bays.filter((bay) => bay.active).length;
+  const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
   return `${settingsPageHeader("Workshop profile", "Workshop tools")}
+    <span class="settings-group-label">Workshop details</span>
     <div class="settings-list">
-      ${settingsRow({ iconName: "building", title: "Workshop", description: "Shop name on file", value: state.shop?.name || "Not loaded yet" })}
-      ${settingsRow({ iconName: "globe", title: "Timezone", description: "Used for job timestamps", value: state.shop?.timezone || "Not set" })}
-      ${settingsRow({ iconName: "wrench", title: "Signed in as", description: "Your technician account", value: state.profile?.full_name || "Not loaded yet" })}
+      ${settingsEditRow({ title: "Workshop name", value: shop.name || "Not set", field: "name" })}
+      ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
+      ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
+      ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
     </div>
-    ${unwiredBanner("Bay and technician roster management isn't built yet -- bays are just a label typed per job today.")}`;
+    <span class="settings-group-label settings-group-label-spaced">Crew &amp; bays</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "building", title: "Manage bays", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" })}
+      ${settingsRow({ iconName: "wrench", title: "Manage technicians", description: "Add, edit or remove technicians", value: String(activeTechnicians), page: "technicians" })}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Workshop defaults</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" })}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Parts &amp; suppliers</span>
+    <div class="settings-list">
+      ${settingsEditRow({ title: "Supplier region", value: shop.region || "Not set", field: "region" })}
+      ${settingsEditRow({ title: "Preferred supplier", value: shop.preferred_supplier || "Not set", field: "preferredSupplier", optional: true })}
+    </div>
+    <p class="settings-detail-intro">Supplier region helps show relevant parts, pricing and availability.</p>`;
+}
+
+// One row that opens a prompt-style editor for a single shop field. Kept as a
+// row rather than an always-open input so the page reads as a summary of what
+// the shop is set to, matching every other settings list.
+function settingsEditRow({ title, value, field, optional = false }) {
+  return `<button class="settings-row" type="button" data-action="edit-shop-field" data-field="${field}" data-title="${escapeHTML(title)}" data-optional="${optional}">
+    <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
+    <span class="settings-row-value">${escapeHTML(value)}</span>
+    <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+  </button>`;
+}
+
+function renderBaysPage() {
+  const rows = state.bays.length
+    ? state.bays.map((bay) => `<button class="settings-row" type="button" data-action="edit-bay" data-bay-id="${bay.id}">
+        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong>${bay.description ? `<small>${escapeHTML(bay.description)}</small>` : ""}</span>
+        <span class="settings-row-value">${bay.active ? "Active" : "Inactive"}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>`).join("")
+    : `<div class="settings-row"><span class="settings-row-text"><strong>No bays yet</strong><small>Add the bays this workshop runs.</small></span></div>`;
+  return `${settingsPageHeader("Bays", "Workshop profile")}
+    <div class="settings-list">${rows}</div>
+    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
+}
+
+function renderTechniciansPage() {
+  const rows = state.technicians.length
+    ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}">
+        <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
+        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${escapeHTML(technician.role)}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
+        <span class="settings-row-value">${technician.active ? "Active" : "Inactive"}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>`).join("")
+    : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
+  return `${settingsPageHeader("Technicians", "Workshop profile")}
+    <div class="settings-list">${rows}</div>
+    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add technician</button></div>`;
 }
 
 function renderUnitsPage() {
@@ -2364,8 +2463,26 @@ function renderUnitsPage() {
 }
 
 function renderJobDefaultsPage() {
-  return `${settingsPageHeader("Default settings", "Preferences")}
-    ${unwiredBanner("Job defaults (priority, status, labour rate, parts markup) aren't built yet -- every new job starts blank today.")}`;
+  const shop = state.shop || {};
+  const defaultBay = state.bays.find((bay) => bay.id === shop.default_bay_id);
+  const defaultTechnician = state.technicians.find((technician) => technician.id === shop.default_technician_id);
+  return `${settingsPageHeader("Job defaults", "Workshop profile")}
+    <p class="settings-detail-intro">These defaults are applied when a new job is created.</p>
+    <div class="settings-list">
+      <button class="settings-row" type="button" data-action="pick-default-bay">
+        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-text"><strong>Default bay</strong><small>New jobs start in this bay</small></span>
+        <span class="settings-row-value">${escapeHTML(defaultBay?.name || "Not set")}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>
+      <button class="settings-row" type="button" data-action="pick-default-technician">
+        <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
+        <span class="settings-row-text"><strong>Default technician</strong><small>Suggested owner for new jobs</small></span>
+        <span class="settings-row-value">${escapeHTML(defaultTechnician ? technicianName(defaultTechnician) : "Not set")}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>
+    </div>
+    ${defaultTechnician ? unwiredBanner("The default bay is applied to every new job. The default technician is recorded here but isn't assigned automatically yet -- jobs are still picked up manually.") : ""}`;
 }
 
 function renderNotificationsPage() {
@@ -2412,6 +2529,161 @@ function renderWhatsNewPage() {
     </div>`;
 }
 
+function openShopFieldModal({ field, title, optional }) {
+  const current = {
+    name: state.shop?.name,
+    branchId: state.shop?.branch_id,
+    region: state.shop?.region,
+    timezone: state.shop?.timezone,
+    preferredSupplier: state.shop?.preferred_supplier,
+  }[field] || "";
+  openSheet(`<div class="confirmation-content">
+    <h2>${escapeHTML(title)}</h2>
+    <form class="settings-edit-form" id="shop-field-form" autocomplete="off" data-field="${field}">
+      <input class="input" name="value" value="${escapeHTML(current)}" placeholder="${escapeHTML(title)}"${optional ? "" : " required"} />
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("save")} Save</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+function openBayModal(bay) {
+  const isNew = !bay;
+  openSheet(`<div class="confirmation-content">
+    <h2>${isNew ? "Add bay" : "Edit bay"}</h2>
+    <form class="settings-edit-form" id="bay-form" autocomplete="off" data-bay-id="${bay?.id || ""}">
+      <label class="form-field"><div class="field-header"><span class="field-label">Bay name / number</span></div><input class="input" name="name" value="${escapeHTML(bay?.name || "")}" placeholder="e.g. Bay 05" required /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Description <span class="muted">(optional)</span></span></div><input class="input" name="description" value="${escapeHTML(bay?.description || "")}" placeholder="e.g. Diagnostics" /></label>
+      ${settingsSwitchRow({ title: "Active", description: "Available for new jobs", checked: bay ? bay.active : true, action: "toggle-form-active" })}
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("save")} Save</button>
+      </div>
+      ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add bay" : "Edit bay" });
+}
+
+function openTechnicianModal(technician) {
+  const isNew = !technician;
+  const bayOptions = [`<option value=""${technician?.default_bay_id ? "" : " selected"}>No default bay</option>`]
+    .concat(state.bays.map((bay) => `<option value="${bay.id}"${technician?.default_bay_id === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
+    .join("");
+  const roleOptions = ["technician", "manager", "owner"]
+    .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${role.charAt(0).toUpperCase()}${role.slice(1)}</option>`)
+    .join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>${isNew ? "Add technician" : "Edit technician"}</h2>
+    <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
+      <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role">${roleOptions}</select>${icon("down")}</span></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
+      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician ? technician.active : true, action: "toggle-form-active" })}
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("save")} Save</button>
+      </div>
+      ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete technician</button>`}
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add technician" : "Edit technician" });
+}
+
+// Default bay / default technician are a pick-one-from-the-roster choice, so
+// they share a single chooser rather than each getting a bespoke screen.
+function openDefaultPickerModal({ title, options, selectedId, action }) {
+  const rows = options.map((option) => `<button class="settings-row" type="button" data-action="${action}" data-choice-id="${option.id}">
+      <span class="settings-row-text"><strong>${escapeHTML(option.label)}</strong></span>
+      ${selectedId === option.id ? `<span class="settings-row-value">Selected</span>` : ""}
+    </button>`).join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>${escapeHTML(title)}</h2>
+    <div class="settings-list">
+      <button class="settings-row" type="button" data-action="${action}" data-choice-id="">
+        <span class="settings-row-text"><strong>Not set</strong></span>
+        ${selectedId ? "" : `<span class="settings-row-value">Selected</span>`}
+      </button>
+      ${rows}
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+async function saveShopField(form) {
+  const value = String(new FormData(form).get("value") || "").trim();
+  const field = form.dataset.field;
+  try {
+    await saveShopFields({ [field]: value || null });
+    closeSheet();
+    showToast("Workshop profile updated");
+    render();
+  } catch (error) {
+    showToast(error.message || "Could not save that change");
+  }
+}
+
+function formActiveState(form) {
+  return form.querySelector(".switch")?.classList.contains("is-on") ?? true;
+}
+
+async function saveBay(form) {
+  const data = new FormData(form);
+  const payload = {
+    name: String(data.get("name") || "").trim(),
+    description: String(data.get("description") || "").trim() || null,
+    active: formActiveState(form),
+  };
+  if (!payload.name) return showToast("Give the bay a name");
+  const bayId = form.dataset.bayId;
+  try {
+    await apiRequest(bayId ? `/api/shop/bays/${bayId}` : "/api/shop/bays", {
+      method: bayId ? "PATCH" : "POST",
+      body: JSON.stringify(payload),
+    });
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast(bayId ? "Bay updated" : "Bay added");
+    render();
+  } catch (error) {
+    showToast(error.message || "Could not save that bay");
+  }
+}
+
+async function saveTechnician(form) {
+  const data = new FormData(form);
+  const payload = {
+    firstName: String(data.get("firstName") || "").trim(),
+    lastName: String(data.get("lastName") || "").trim() || null,
+    initials: String(data.get("initials") || "").trim() || null,
+    employeeId: String(data.get("employeeId") || "").trim() || null,
+    role: String(data.get("role") || "technician"),
+    defaultBayId: String(data.get("defaultBayId") || "") || null,
+    active: formActiveState(form),
+  };
+  if (!payload.firstName) return showToast("Give the technician a first name");
+  const technicianId = form.dataset.technicianId;
+  try {
+    await apiRequest(technicianId ? `/api/shop/technicians/${technicianId}` : "/api/shop/technicians", {
+      method: technicianId ? "PATCH" : "POST",
+      body: JSON.stringify(payload),
+    });
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast(technicianId ? "Technician updated" : "Technician added");
+    render();
+  } catch (error) {
+    showToast(error.message || "Could not save that technician");
+  }
+}
+
+async function saveShopFields(patch) {
+  const { shop } = await apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify(patch) });
+  state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data), networkReadExempt: Boolean(shop.network_read_exempt) };
+}
+
 const SETTINGS_PAGES = {
   theme: renderThemePage,
   "readable-interface": renderReadableInterfacePage,
@@ -2421,6 +2693,8 @@ const SETTINGS_PAGES = {
   "voice-dictation": renderVoiceDictationPage,
   "camera-photos": renderCameraPhotosPage,
   "workshop-profile": renderWorkshopProfilePage,
+  bays: renderBaysPage,
+  technicians: renderTechniciansPage,
   units: renderUnitsPage,
   "job-defaults": renderJobDefaultsPage,
   notifications: renderNotificationsPage,
@@ -3754,8 +4028,75 @@ document.addEventListener("click", (event) => {
     if (action === "reload-app") { showUpdateOverlay(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "open-settings-page") {
-      state.settingsPage = actionButton.dataset.settingsPage || null;
+      settingsOpenPage(actionButton.dataset.settingsPage || null);
       return render();
+    }
+    if (action === "settings-back") {
+      settingsGoBack();
+      return render();
+    }
+    if (action === "edit-shop-field") {
+      return openShopFieldModal({
+        field: actionButton.dataset.field,
+        title: actionButton.dataset.title,
+        optional: actionButton.dataset.optional === "true",
+      });
+    }
+    if (action === "add-bay") return openBayModal(null);
+    if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
+    if (action === "add-technician") return openTechnicianModal(null);
+    if (action === "edit-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
+    // The switch inside a bay/technician form is local state only -- it is read
+    // off the DOM when the form is submitted, not saved on its own.
+    if (action === "toggle-form-active") {
+      const control = actionButton.querySelector(".switch");
+      const next = !control.classList.contains("is-on");
+      control.classList.toggle("is-on", next);
+      control.setAttribute("aria-checked", String(next));
+      actionButton.setAttribute("aria-pressed", String(next));
+      return;
+    }
+    if (action === "delete-bay") {
+      return apiRequest(`/api/shop/bays/${actionButton.dataset.bayId}`, { method: "DELETE" })
+        .then(async () => {
+          closeSheet();
+          await loadWorkshopRoster();
+          showToast("Bay deleted");
+          render();
+        })
+        .catch((error) => showToast(error.message || "Could not delete that bay"));
+    }
+    if (action === "delete-technician") {
+      return apiRequest(`/api/shop/technicians/${actionButton.dataset.technicianId}`, { method: "DELETE" })
+        .then(async () => {
+          closeSheet();
+          await loadWorkshopRoster();
+          showToast("Technician deleted");
+          render();
+        })
+        .catch((error) => showToast(error.message || "Could not delete that technician"));
+    }
+    if (action === "pick-default-bay") {
+      return openDefaultPickerModal({
+        title: "Default bay",
+        options: state.bays.map((bay) => ({ id: bay.id, label: bay.name })),
+        selectedId: state.shop?.default_bay_id || "",
+        action: "set-default-bay",
+      });
+    }
+    if (action === "pick-default-technician") {
+      return openDefaultPickerModal({
+        title: "Default technician",
+        options: state.technicians.map((technician) => ({ id: technician.id, label: technicianName(technician) })),
+        selectedId: state.shop?.default_technician_id || "",
+        action: "set-default-technician",
+      });
+    }
+    if (action === "set-default-bay" || action === "set-default-technician") {
+      const key = action === "set-default-bay" ? "defaultBayId" : "defaultTechnicianId";
+      return saveShopFields({ [key]: actionButton.dataset.choiceId || null })
+        .then(() => { closeSheet(); render(); })
+        .catch((error) => showToast(error.message || "Could not save that default"));
     }
     if (action === "test-microphone") {
       if (!navigator.mediaDevices?.getUserMedia) return showToast("This browser can't access the microphone.");
@@ -4211,6 +4552,9 @@ document.addEventListener("submit", (event) => {
   event.preventDefault();
   if (event.target.id === "profile-note-form") return saveProfileNote(event.target);
   if (event.target.id === "edit-notes-form") return saveEditedNotes(event.target);
+  if (event.target.id === "shop-field-form") return saveShopField(event.target);
+  if (event.target.id === "bay-form") return saveBay(event.target);
+  if (event.target.id === "technician-form") return saveTechnician(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
