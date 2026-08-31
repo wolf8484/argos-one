@@ -504,7 +504,7 @@ function databaseMatchToUi(row, index) {
     drivetrain: row.vehicle_drivetrain || "",
     engine: row.vehicle_engine || "",
     transmission: row.vehicle_transmission || "",
-    mileageLabel: row.vehicle_mileage ? `${Number(row.vehicle_mileage).toLocaleString()} km` : "",
+    mileageLabel: row.vehicle_mileage ? formatKilometres(row.vehicle_mileage) : "",
     repairedDateLabel: row.repaired_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)) : "",
     repairSummary: row.cause || "",
     complaint: row.complaint || "",
@@ -873,6 +873,20 @@ function setTheme(theme, persist = true) {
   }
 }
 
+const KM_PER_MILE = 1.609344;
+
+function unitSystem() {
+  try {
+    const saved = localStorage.getItem("argos-units");
+    if (saved === "imperial" || saved === "metric") return saved;
+  } catch (_) {}
+  return "metric";
+}
+
+function setUnitSystem(system) {
+  try { localStorage.setItem("argos-units", system); } catch (_) {}
+}
+
 function resetJobDraft() {
   [...state.photos, ...state.repair.photos].forEach((photo) => {
     if (typeof photo === "string" || photo?.local) URL.revokeObjectURL(photoUrl(photo));
@@ -1092,7 +1106,7 @@ function vehicleName() {
 }
 
 function vehicleMoustache() {
-  const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · ");
+  const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, formatMileageDisplay(state.vehicle.mileage)].filter(Boolean).join(" · ");
   return specs ? `${icon("car")}<span>${specs}</span>` : "";
 }
 
@@ -1181,7 +1195,7 @@ function jobCard(job, { hidden = false } = {}) {
         <span class="job-bay">${job.bay.toUpperCase()}</span>
       </span>
       <span class="job-vehicle">${jobVehicleName(job)}</span>
-      <span class="job-card-context"><span>${escapeHTML(job.vehicle.mileage)} km</span><span>${escapeHTML(job.vehicle.customerName)}</span></span>
+      <span class="job-card-context"><span>${escapeHTML(formatMileageDisplay(job.vehicle.mileage))}</span><span>${escapeHTML(job.vehicle.customerName)}</span></span>
       <span class="job-issue">${jobSummary(job)}</span>
     </span>
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
@@ -1312,9 +1326,20 @@ function variantScopeNote(modelLabel) {
   return `<p class="profile-scope-note">Recalls and commonly reported aren't trim-specific &mdash; they stay shown for all ${escapeHTML(modelLabel)} variants.</p>`;
 }
 
+// Vehicle mileage is stored/entered as a raw km number everywhere in the
+// data model; this only converts it for on-screen display when the shop has
+// switched to imperial. Takes either a number or an already comma-formatted
+// digit string (e.g. state.vehicle.mileage while a form is being filled in).
+function formatMileageDisplay(rawMileage) {
+  const digits = String(rawMileage ?? "").replace(/[^0-9]/g, "");
+  if (!digits) return "";
+  return formatKilometres(Number(digits));
+}
+
 function formatKilometres(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return "";
+  if (unitSystem() === "imperial") return `${Math.round(number / KM_PER_MILE).toLocaleString("en-AU")} mi`;
   return `${Math.round(number).toLocaleString("en-AU")} km`;
 }
 
@@ -2166,6 +2191,7 @@ function settingsSwitchRow({ title, description = "", checked, action = "", disa
 function renderSettingsHome() {
   const theme = document.documentElement.dataset.theme || "dark";
   const sharing = Boolean(state.shop?.sharesRepairData);
+  const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
@@ -2189,7 +2215,7 @@ function renderSettingsHome() {
     ].join(""))}
 
     ${settingsGroup("Preferences", [
-      settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", page: "units" }),
+      settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
       settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" }),
       settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" }),
       settingsRow({ iconName: "cloud", title: "Data & storage", description: "Cache, backups and offline data", page: "storage" }),
@@ -2265,7 +2291,7 @@ function renderWorkshopToolsPage() {
     </div>
     <span class="settings-group-label settings-group-label-spaced">Other settings you might use</span>
     <div class="settings-list">
-      ${settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", page: "units" })}
+      ${settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitSystem() === "metric" ? "Metric" : "Imperial", page: "units" })}
       ${settingsRow({ iconName: "settings", title: "Default settings", description: "Job defaults and templates", page: "job-defaults" })}
       ${settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" })}
     </div>`;
@@ -2312,11 +2338,29 @@ function renderWorkshopProfilePage() {
 }
 
 function renderUnitsPage() {
+  const isMetric = unitSystem() === "metric";
   return `${settingsPageHeader("Units & measurements", "Preferences")}
-    <div class="settings-list">
-      ${settingsRow({ iconName: "gauge", title: "System of measurement", description: "Used across jobs and repairs", value: "Metric" })}
+    <p class="settings-detail-intro">Choose your preferred units for measurements.</p>
+    <span class="settings-group-label">System of measurement</span>
+    <div class="theme-options" role="group" aria-label="Choose system of measurement">
+      <button class="setting-choice ${isMetric ? "is-selected" : ""}" type="button" data-units-choice="metric" aria-pressed="${isMetric}">
+        <span class="settings-row-icon" aria-hidden="true">${icon("gauge")}</span>
+        <span><strong>Metric</strong><small>mm, kg, &deg;C, kPa, Nm</small><span class="choice-state">${isMetric ? "Selected" : "Choose"}</span></span>
+      </button>
+      <button class="setting-choice ${!isMetric ? "is-selected" : ""}" type="button" data-units-choice="imperial" aria-pressed="${!isMetric}">
+        <span class="settings-row-icon" aria-hidden="true">${icon("gauge")}</span>
+        <span><strong>Imperial</strong><small>in, lb, &deg;F, psi, ft-lb</small><span class="choice-state">${!isMetric ? "Selected" : "Choose"}</span></span>
+      </button>
     </div>
-    ${unwiredBanner("Argos One always uses metric (km, kg, kPa, Nm) today -- an imperial option isn't built.")}`;
+    <span class="settings-group-label settings-group-label-spaced">Units preview</span>
+    <div class="settings-list">
+      ${settingsRow({ iconName: "gauge", title: "Length", description: "Vehicle dimensions", value: isMetric ? "mm" : "in" })}
+      ${settingsRow({ iconName: "gauge", title: "Temperature", description: "Fluid and ambient readings", value: isMetric ? "°C" : "°F" })}
+      ${settingsRow({ iconName: "gauge", title: "Pressure", description: "Tyre and system pressure", value: isMetric ? "kPa" : "psi" })}
+      ${settingsRow({ iconName: "gauge", title: "Torque", description: "Fastener specifications", value: isMetric ? "Nm" : "ft-lb" })}
+      ${settingsRow({ iconName: "gauge", title: "Weight", description: "Parts and vehicle weight", value: isMetric ? "kg" : "lb" })}
+    </div>
+    ${unwiredBanner("Job odometer readings switch units immediately -- that's the only numeric measurement Argos One tracks today. The rest of this preview shows which unit each category would use; length, temperature, pressure, torque and weight aren't recorded as fields anywhere yet.")}`;
 }
 
 function renderJobDefaultsPage() {
@@ -2459,7 +2503,7 @@ function renderVehicle() {
 }
 
 function vehicleContext(score = "") {
-  const specifications = [state.vehicle.mileage && `${state.vehicle.mileage} KM`, state.vehicle.trim, state.vehicle.engine, state.vehicle.drivetrain, state.vehicle.transmission].filter(Boolean);
+  const specifications = [formatMileageDisplay(state.vehicle.mileage), state.vehicle.trim, state.vehicle.engine, state.vehicle.drivetrain, state.vehicle.transmission].filter(Boolean);
   return `<section class="vehicle-context" aria-label="Locked vehicle details">
     <div class="vehicle-context-main"><div class="vehicle-name">${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</div><div class="vehicle-data">${specifications.map(escapeHTML).join(" · ")}</div></div>
     ${score ? `<div class="vehicle-score" aria-label="${score} percent vehicle data confidence">${score}<span class="percent-symbol">%</span></div>` : ""}
@@ -2585,7 +2629,7 @@ function renderRepairRecord() {
   const jobSpecRows = [
     state.vehicle.trim,
     [state.vehicle.drivetrain, state.vehicle.engine].filter(Boolean).join(" · "),
-    [state.vehicle.transmission, state.vehicle.mileage ? `${state.vehicle.mileage} KM` : ""].filter(Boolean).join(" · "),
+    [state.vehicle.transmission, formatMileageDisplay(state.vehicle.mileage)].filter(Boolean).join(" · "),
   ].filter(Boolean);
   const activeJobRecord = jobRecords.find((record) => String(record.id) === String(state.currentJobId));
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
@@ -2720,7 +2764,7 @@ function renderResolvedJob() {
     [job.vehicle.trim, job.vehicle.drivetrain].filter(Boolean).join(" · "),
     [job.vehicle.engine, job.vehicle.transmission].filter(Boolean).join(" · "),
   ].filter(Boolean).join(" · ");
-  const odometerLine = job.vehicle.mileage ? `Odometer: ${job.vehicle.mileage} km` : "";
+  const odometerLine = job.vehicle.mileage ? `Odometer: ${formatMileageDisplay(job.vehicle.mileage)}` : "";
   // Date only -- no time -- matching the similar-repair card.
   const dateSource = isDeleted ? job.raw.updated_at : job.raw.resolved_at;
   const dateLabel = dateSource ? `${isDeleted ? "Deleted" : "Repaired"} ${mediumDate(dateSource)}` : "";
@@ -3640,6 +3684,13 @@ document.addEventListener("click", (event) => {
   const themeChoice = event.target.closest("[data-theme-choice]");
   if (themeChoice) {
     setTheme(themeChoice.dataset.themeChoice);
+    render();
+    return;
+  }
+
+  const unitsChoice = event.target.closest("[data-units-choice]");
+  if (unitsChoice) {
+    setUnitSystem(unitsChoice.dataset.unitsChoice);
     render();
     return;
   }
