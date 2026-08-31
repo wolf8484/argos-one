@@ -1180,8 +1180,8 @@ main:focus {
 }
 
 .library-result-action svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .task-status.is-resolved {
@@ -3150,12 +3150,12 @@ button.settings-row:focus-visible {
   display: flex;
   flex: none;
   align-items: center;
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .settings-row-chevron svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .settings-row.is-disabled {
@@ -3896,8 +3896,8 @@ button.settings-toggle-row {
 /* Technician profile */
 .technician-profile {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  align-items: stretch;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
   gap: 16px;
   padding: 18px;
   background: var(--surface-2);
@@ -3906,11 +3906,11 @@ button.settings-toggle-row {
 .technician-avatar {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: auto;
+  width: 50px;
+  height: 50px;
   background: var(--accent-fill);
   color: var(--on-accent);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 500;
 }
 
