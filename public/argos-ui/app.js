@@ -351,8 +351,6 @@ const icons = {
   cloud: '<path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.7-1.8A4.2 4.2 0 0 1 17 18Z"/><path d="M8 21v-1M12 21.5v-1.5M16 21v-1"/>',
   engineWarning: '<path d="M4 15V9h2l2-2h2v2h4V7h2l2 2v6"/><rect x="4" y="15" width="14" height="4" rx="0"/><path d="M20 12v3"/>',
   brakeDisc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6"/>',
-  type: '<path d="M4 6h16M12 6v14M9 20h6"/>',
-  contrast: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/>',
   building: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-5h4v5M9 8h.01M9 12h.01M13 8h.01M13 12h.01"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
 };
@@ -597,8 +595,7 @@ async function loadBackendData() {
     state.activeJobId = rememberedJob?.id || null;
     state.currentJobId = rememberedJob?.id || null;
     state.backendStatus = "connected";
-    await loadWorkshopRoster();
-    await loadLibraryProfiles();
+    await Promise.all([loadWorkshopRoster(), loadLibraryProfiles()]);
   } catch (error) {
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
   }
@@ -2227,7 +2224,10 @@ function settingsSwitchRow({ title, description = "", checked, action = "", disa
 
 function renderSettingsHome() {
   const theme = document.documentElement.dataset.theme || "dark";
-  const sharing = Boolean(state.shop?.sharesRepairData);
+  // Until the shop has loaded, show no value rather than defaulting to "Off":
+  // this row reports whether repair data leaves the workshop, and stating
+  // "Off" while it is actually on misrepresents a privacy setting.
+  const sharingLabel = state.shop ? (state.shop.sharesRepairData ? "On" : "Off") : "";
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
@@ -2239,16 +2239,15 @@ function renderSettingsHome() {
 
     ${settingsGroup("Appearance", [
       settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Reduced glare in the workshop" : "Maximum clarity in daylight", value: theme === "dark" ? "Dark" : "Light", page: "theme" }),
-      settingsRow({ iconName: "type", title: "Readable interface", description: "Minimum text size across the app (16px minimum everywhere)" }),
-      settingsRow({ iconName: "contrast", title: "High-contrast text", description: "Important instructions stay bright in both themes" }),
     ].join(""))}
 
     ${settingsGroup("Network", [
-      settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharing ? "On" : "Off", page: "network-sharing" }),
+      settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharingLabel, page: "network-sharing" }),
     ].join(""))}
 
     ${settingsGroup("Tools", [
-      settingsRow({ iconName: "wrench", title: "Workshop tools", description: "Voice, camera and workshop profile", page: "workshop-tools" }),
+      settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and job defaults", page: "workshop-profile" }),
+      settingsRow({ iconName: "wrench", title: "Workshop tools", description: "Voice and camera", page: "workshop-tools" }),
     ].join(""))}
 
     ${settingsGroup("Preferences", [
@@ -2286,24 +2285,13 @@ function renderThemePage() {
     </div>`;
 }
 
-function renderReadableInterfacePage() {
-  return `${settingsPageHeader("Readable interface", "Appearance")}
-    <p class="settings-detail-intro">Body and control text never drops below 16px anywhere in Argos One.</p>
-    ${unwiredBanner("This is a fixed platform default today, not a setting you can change. A text-size picker (Default / Large / Extra large) isn't built yet.")}`;
-}
-
-function renderHighContrastPage() {
-  return `${settingsPageHeader("High-contrast text", "Appearance")}
-    <p class="settings-detail-intro">Important instructions stay bright in both the dark and light themes.</p>
-    ${unwiredBanner("This is a fixed platform default today, not a setting you can turn off.")}`;
-}
-
 function renderNetworkSharingPage() {
+  const loaded = Boolean(state.shop);
   const sharing = Boolean(state.shop?.sharesRepairData);
   return `${settingsPageHeader("Cross-shop repair patterns", "Network")}
     <p class="settings-detail-intro">Share anonymised repair patterns and see what other workshops are fixing.</p>
     <div class="settings-list">
-      ${settingsSwitchRow({ title: "Share repair patterns", description: "Allow sharing of your verified repairs", checked: sharing, action: "toggle-network-sharing" })}
+      ${settingsSwitchRow({ title: "Share repair patterns", description: loaded ? "Allow sharing of your verified repairs" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
     </div>
     <span class="settings-group-label settings-group-label-spaced">What's shared</span>
     <ul class="settings-check-list">
@@ -2324,7 +2312,6 @@ function renderWorkshopToolsPage() {
     <div class="settings-list">
       ${settingsRow({ iconName: "mic", title: "Voice & dictation", description: "Microphone and transcription review", page: "voice-dictation" })}
       ${settingsRow({ iconName: "camera", title: "Camera & photos", description: "Permissions, quality and storage", page: "camera-photos" })}
-      ${settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and region", page: "workshop-profile" })}
     </div>
     <span class="settings-group-label settings-group-label-spaced">Other settings you might use</span>
     <div class="settings-list">
@@ -2372,7 +2359,7 @@ function renderWorkshopProfilePage() {
   const shop = state.shop || {};
   const activeBays = state.bays.filter((bay) => bay.active).length;
   const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
-  return `${settingsPageHeader("Workshop profile", "Workshop tools")}
+  return `${settingsPageHeader("Workshop profile", "Tools")}
     <span class="settings-group-label">Workshop details</span>
     <div class="settings-list">
       ${settingsEditRow({ title: "Workshop name", value: shop.name || "Not set", field: "name" })}
@@ -2686,8 +2673,6 @@ async function saveShopFields(patch) {
 
 const SETTINGS_PAGES = {
   theme: renderThemePage,
-  "readable-interface": renderReadableInterfacePage,
-  "high-contrast": renderHighContrastPage,
   "network-sharing": renderNetworkSharingPage,
   "workshop-tools": renderWorkshopToolsPage,
   "voice-dictation": renderVoiceDictationPage,
