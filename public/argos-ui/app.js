@@ -2214,18 +2214,18 @@ function settingsPageHeader(title, eyebrow) {
   </header>`;
 }
 
-function settingsRow({ iconName, title, description, value = "", page = "", disabled = false }) {
+function settingsRow({ iconName, title, description, value = "", page = "", disabled = false, locked = false }) {
   const inner = `<span class="settings-row-icon" aria-hidden="true">${anyIcon(iconName)}</span>
     <span class="settings-row-text"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
     ${value ? `<span class="settings-row-value">${escapeHTML(value)}</span>` : ""}
     ${page && !disabled ? `<span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>` : ""}`;
   if (!page || disabled) return `<div class="settings-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
-  return `<button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="${page}">${inner}</button>`;
+  return `<button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="${page}"${locked ? ' data-locked="true"' : ""}>${inner}</button>`;
 }
 
-function settingsGroup(label, rowsHtml) {
+function settingsGroup(label, rowsHtml, { locked = false } = {}) {
   return `<section class="settings-group">
-    <span class="settings-group-label">${escapeHTML(label)}</span>
+    <span class="settings-group-label">${escapeHTML(label)}${locked ? `<span class="settings-group-lock" aria-hidden="true">${icon("lock")}</span>` : ""}</span>
     <div class="settings-list">${rowsHtml}</div>
   </section>`;
 }
@@ -2250,6 +2250,7 @@ function renderSettingsHome() {
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   const activeBays = state.bays.filter((bay) => bay.active).length;
   const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
+  const isTechnicianRole = (currentTechnician()?.role || "technician") === "technician";
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
@@ -2267,11 +2268,11 @@ function renderSettingsHome() {
     ].join(""))}
 
     ${settingsGroup("Profile & management", [
-      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details and suppliers", page: "workshop-profile" }),
-      settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }),
-      settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians" }),
-      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }),
-    ].join(""))}
+      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details and suppliers", page: "workshop-profile", locked: isTechnicianRole }),
+      settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays", locked: isTechnicianRole }),
+      settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians", locked: isTechnicianRole }),
+      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults", locked: isTechnicianRole }),
+    ].join(""), { locked: isTechnicianRole })}
 
     ${settingsGroup("Preferences", [
       settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
@@ -2725,11 +2726,16 @@ function updateMicPermissionLabel() {
     .catch(() => { const current = document.querySelector("#mic-permission-value"); if (current) current.textContent = "Unknown"; });
 }
 
+const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "bays", "technicians", "job-defaults"]);
+
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
   const pageRenderer = SETTINGS_PAGES[state.settingsPage];
-  if (!pageRenderer) {
+  const isTechnicianRole = (currentTechnician()?.role || "technician") === "technician";
+  if (!pageRenderer || (isTechnicianRole && LOCKED_SETTINGS_PAGES.has(state.settingsPage))) {
     state.settingsPage = null;
+    state.settingsTrail = [];
+    if (isTechnicianRole && pageRenderer) showToast("You don't have access to this section.");
     return renderSettingsHome();
   }
   app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
@@ -4036,6 +4042,7 @@ document.addEventListener("click", (event) => {
     if (action === "reload-app") { showUpdateOverlay(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "open-settings-page") {
+      if (actionButton.dataset.locked === "true") return showToast("You don't have access to this section.");
       settingsOpenPage(actionButton.dataset.settingsPage || null);
       return render();
     }
