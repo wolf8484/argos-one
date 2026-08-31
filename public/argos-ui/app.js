@@ -395,7 +395,6 @@ function icon(name, label = "") {
 
 const materialIcons = {
   technicians: '<path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q440-607 440-640t-23.5-56.5Q393-720 360-720t-56.5 23.5Q280-673 280-640t23.5 56.5Q327-560 360-560t56.5-23.5ZM360-240Zm0-400Z"/>',
-  workshopTools: '<path d="M757.15-140 536.62-360.54l63.22-63.23 220.54 220.54L757.15-140Zm-553.92 0L140-203.23l277.16-277.15-93.39-93.01-24.92 24.93-44.46-44.85v77l-24.93 24.92-112.92-112.92 24.92-24.92h77l-44.23-43.85 114.31-114.3q16.92-16.93 36.65-24.77 19.73-7.85 41.04-7.85t41.04 7.85q19.73 7.84 36.65 24.77L365-708.46l46.92 46.92L387-636.62l93.38 93.01 96.16-96.16q-6.69-12.15-9.77-25.11-3.08-12.97-3.08-27.27 0-54 37.23-91.23 37.23-37.23 91.23-37.23 12.7 0 24.27 2.23 11.58 2.23 23.27 7.46L648.77-720 720-648.77l90.92-90.92q5.85 11.69 7.77 23.27 1.92 11.57 1.92 24.27 0 54-37.23 91.23-37.23 37.23-91.23 37.23-14.3 0-27.27-2.77-12.96-2.77-25.11-10.08L203.23-140Z"/>',
   resumeJob: '<path d="M358.5-373.23q-93.81 0-159.48-65.67-65.67-65.67-65.67-159.48 0-16.3 2.27-32.34 2.27-16.05 7.96-31.05 3.37-8.23 9.6-12.83 6.24-4.6 14.11-6.67 7.86-2.08 15.71.14 7.84 2.21 14.27 8.75l106.04 105.46 87.46-86.66-105.38-105.77q-6.41-6.35-8.53-14.38-2.13-8.03-.2-15.76t6.37-13.91q4.43-6.18 12.66-9.71 14.81-6.08 30.8-8.66t31.99-2.58q93.93 0 159.96 66.03 66.02 66.03 66.02 159.94 0 25.26-4.77 47.07t-14.31 42.16l217.08 215.81q24.16 24.27 24.16 59.42 0 35.15-24.33 59.3-24.51 24.35-59.21 23.95-34.69-.41-59.04-24.87L447.88-392.31q-21.15 9.16-43 14.12-21.86 4.96-46.38 4.96Zm-.08-55.96q26.09 0 52.07-8.06 25.97-8.06 47.74-24.17l246.46 246.77q7.43 7.61 18.62 7.71 11.19.1 19.11-7.92 7.93-8.02 7.93-19.12 0-11.1-7.93-19.21L495.65-499.35q16.54-21.07 24.7-46.51 8.15-25.45 8.15-52.52 0-66.54-48.75-118.74-48.75-52.19-123.94-49.77l90.42 90.43q10.35 10.34 10.1 24.09t-10.6 24.17L326.69-511.96q-10.5 10.04-24.17 9.79-13.67-.25-23.71-10.29L191-600.27q-1.46 78.92 50.86 125 52.33 46.08 116.56 46.08Zm110.23-60.62Z"/>',
 };
 
@@ -2254,6 +2253,8 @@ function renderSettingsHome() {
   // "Off" while it is actually on misrepresents a privacy setting.
   const sharingLabel = state.shop ? (state.shop.sharesRepairData ? "On" : "Off") : "";
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
+  const activeBays = state.bays.filter((bay) => bay.active).length;
+  const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
@@ -2270,14 +2271,17 @@ function renderSettingsHome() {
       settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharingLabel, page: "network-sharing" }),
     ].join(""))}
 
-    ${settingsGroup("Tools", [
+    ${settingsGroup("Profile and management", [
       settingsRow({ iconName: "building", title: "Workshop profile", description: "Bays, technicians and job defaults", page: "workshop-profile" }),
-      settingsRow({ iconName: "workshopTools", title: "Workshop tools", description: "Voice and camera", page: "workshop-tools" }),
+      settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }),
+      settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians" }),
     ].join(""))}
 
     ${settingsGroup("Preferences", [
       settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
       settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }),
+      settingsRow({ iconName: "mic", title: "Voice & dictation", description: "Microphone and transcription review", page: "voice-dictation" }),
+      settingsRow({ iconName: "camera", title: "Camera & photos", description: "Permissions, quality and storage", page: "camera-photos" }),
       settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" }),
       settingsRow({ iconName: "cloud", title: "Data & storage", description: "Cache, backups and offline data", page: "storage" }),
       settingsRow({ iconName: "lock", title: "Privacy", description: "What Argos One collects and shares", page: "privacy" }),
@@ -2332,22 +2336,8 @@ function renderNetworkSharingPage() {
     </ul>`;
 }
 
-function renderWorkshopToolsPage() {
-  return `${settingsPageHeader("Workshop tools", "Tools")}
-    <div class="settings-list">
-      ${settingsRow({ iconName: "mic", title: "Voice & dictation", description: "Microphone and transcription review", page: "voice-dictation" })}
-      ${settingsRow({ iconName: "camera", title: "Camera & photos", description: "Permissions, quality and storage", page: "camera-photos" })}
-    </div>
-    <span class="settings-group-label settings-group-label-spaced">Other settings you might use</span>
-    <div class="settings-list">
-      ${settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitSystem() === "metric" ? "Metric" : "Imperial", page: "units" })}
-      ${settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" })}
-      ${settingsRow({ iconName: "bell", title: "Notifications", description: "Alerts and reminders", page: "notifications" })}
-    </div>`;
-}
-
 function renderVoiceDictationPage() {
-  return `${settingsPageHeader("Voice & dictation", "Workshop tools")}
+  return `${settingsPageHeader("Voice & dictation", "Preferences")}
     <span class="settings-group-label">Microphone</span>
     <div class="settings-list">
       <div class="settings-row"><span class="settings-row-icon" aria-hidden="true">${icon("mic")}</span><span class="settings-row-text"><strong>Microphone access</strong><small>Checked from your browser's permission state</small></span><span class="settings-row-value" id="mic-permission-value">Checking…</span></div>
@@ -2363,7 +2353,7 @@ function renderVoiceDictationPage() {
 }
 
 function renderCameraPhotosPage() {
-  return `${settingsPageHeader("Camera & photos", "Workshop tools")}
+  return `${settingsPageHeader("Camera & photos", "Preferences")}
     <span class="settings-group-label">Permissions</span>
     <div class="settings-list">
       ${settingsRow({ iconName: "camera", title: "Camera access", description: "Used for photo capture during jobs", value: "Requested on first use" })}
@@ -2382,20 +2372,13 @@ function technicianName(technician) {
 
 function renderWorkshopProfilePage() {
   const shop = state.shop || {};
-  const activeBays = state.bays.filter((bay) => bay.active).length;
-  const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
-  return `${settingsPageHeader("Workshop profile", "Tools")}
+  return `${settingsPageHeader("Workshop profile", "Profile and management")}
     <span class="settings-group-label">Workshop details</span>
     <div class="settings-list">
       ${settingsEditRow({ title: "Workshop name", value: shop.name || "Not set", field: "name" })}
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
-    </div>
-    <span class="settings-group-label settings-group-label-spaced">Crew &amp; bays</span>
-    <div class="settings-list">
-      ${settingsRow({ iconName: "building", title: "Manage bays", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" })}
-      ${settingsRow({ iconName: "technicians", title: "Manage technicians", description: "Add, edit or remove technicians", value: String(activeTechnicians), page: "technicians" })}
     </div>
     <span class="settings-group-label settings-group-label-spaced">Workshop defaults</span>
     <div class="settings-list">
@@ -2429,7 +2412,7 @@ function renderBaysPage() {
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No bays yet</strong><small>Add the bays this workshop runs.</small></span></div>`;
-  return `${settingsPageHeader("Bays", "Workshop profile")}
+  return `${settingsPageHeader("Manage bays", "Profile and management")}
     <div class="settings-list">${rows}</div>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
 }
@@ -2443,7 +2426,7 @@ function renderTechniciansPage() {
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
-  return `${settingsPageHeader("Technicians", "Workshop profile")}
+  return `${settingsPageHeader("Manage staff", "Profile and management")}
     <div class="settings-list">${rows}</div>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add staff</button></div>`;
 }
@@ -2699,7 +2682,6 @@ async function saveShopFields(patch) {
 const SETTINGS_PAGES = {
   theme: renderThemePage,
   "network-sharing": renderNetworkSharingPage,
-  "workshop-tools": renderWorkshopToolsPage,
   "voice-dictation": renderVoiceDictationPage,
   "camera-photos": renderCameraPhotosPage,
   "workshop-profile": renderWorkshopProfilePage,
@@ -3687,7 +3669,7 @@ function technicianProfileSheet() {
   const role = currentTechnician()?.role || "technician";
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
   const employeeId = currentTechnician()?.employee_id;
-  openSheet(`<div class="sheet-head"><div><span class="field-label">Technician account</span><h2>Profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
