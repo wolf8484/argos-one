@@ -184,7 +184,7 @@ strong {
 }
 
 h1 {
-  font-size: clamp(24px, 4.5vw, 30px);
+  font-size: clamp(22px, 4vw, 28px);
   line-height: 1.05;
   letter-spacing: 0;
 }
@@ -1070,7 +1070,7 @@ main:focus {
 
 .library-brand-name {
   color: var(--heading);
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -3897,7 +3897,7 @@ button.settings-toggle-row {
 .technician-profile {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr);
-  align-items: center;
+  align-items: stretch;
   gap: 16px;
   padding: 18px;
   background: var(--surface-2);
@@ -3907,7 +3907,7 @@ button.settings-toggle-row {
   display: grid;
   place-items: center;
   width: 72px;
-  height: 72px;
+  height: auto;
   background: var(--accent-fill);
   color: var(--on-accent);
   font-size: 22px;
@@ -3915,34 +3915,18 @@ button.settings-toggle-row {
 }
 
 .technician-profile h3 {
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .technician-profile p {
-  margin-top: 5px;
   color: var(--muted);
   font-size: var(--copy-size);
-}
-
-.technician-status {
-  display: inline-flex;
-  align-items: center;
-  margin-top: 10px;
-  gap: 8px;
-  color: var(--muted-strong);
-  font-size: var(--copy-size);
-}
-
-.technician-status::before {
-  width: 7px;
-  height: 7px;
-  content: "";
-  background: var(--accent-fill);
+  margin-top: 4px;
 }
 
 .profile-facts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   margin-top: 2px;
   background: var(--line);
@@ -3961,10 +3945,10 @@ button.settings-toggle-row {
 }
 
 .profile-menu {
-  display: grid;
-  gap: 8px;
-  margin-top: 24px;
   background: var(--line);
+  gap: 1px;
+  margin-top: 24px;
+  display: grid;
 }
 
 .profile-menu-button {

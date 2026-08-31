@@ -353,6 +353,7 @@ const icons = {
   brakeDisc: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="1.6"/><path d="M12 3v3M12 18v3M21 12h-3M6 12H3M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1M18.4 18.4l-2.1-2.1M7.7 7.7 5.6 5.6"/>',
   building: '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-5h4v5M9 8h.01M9 12h.01M13 8h.01M13 12h.01"/>',
   bell: '<path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
+  logout: '<path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
 };
 
 const REPAIR_SYSTEM_ICONS = {
@@ -3683,21 +3684,23 @@ function calendarSheet() {
 function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
   const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const role = currentTechnician()?.role || "technician";
+  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+  const employeeId = currentTechnician()?.employee_id;
   openSheet(`<div class="sheet-head"><div><span class="field-label">Technician account</span><h2>Profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
-        <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(state.shop?.name || "Workshop technician")}</p><span class="technician-status">Available</span></div>
+        <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel)}</p></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
         <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>${escapeHTML(assignedBayLabel())}</strong></div>
-        <div class="profile-fact"><span class="field-label">Shift</span><strong>07:00–16:00</strong></div>
-        <div class="profile-fact"><span class="field-label">Employee ID</span><strong>ARG-024</strong></div>
+        <div class="profile-fact"><span class="field-label">Employee ID</span><strong>${escapeHTML(employeeId || "Not registered")}</strong></div>
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         <button class="profile-menu-button" type="button" data-action="profile-jobs">${icon("clipboard")}<span>My active jobs</span>${icon("arrow")}</button>
         <button class="profile-menu-button" type="button" data-action="profile-settings">${icon("settings")}<span>Account & workshop settings</span>${icon("arrow")}</button>
-        ${state.backendStatus === "connected" ? `<button class="profile-menu-button" type="button" data-action="sign-out">${icon("back")}<span>Sign out</span>${icon("arrow")}</button>` : `<button class="profile-menu-button" type="button" data-action="sign-in">${icon("lock")}<span>Sign in for cloud storage</span>${icon("arrow")}</button>`}
+        ${state.backendStatus === "connected" ? `<button class="profile-menu-button" type="button" data-action="sign-out">${icon("logout")}<span>Sign out</span>${icon("arrow")}</button>` : `<button class="profile-menu-button" type="button" data-action="sign-in">${icon("lock")}<span>Sign in for cloud storage</span>${icon("arrow")}</button>`}
       </nav>
     </div>`);
 }
