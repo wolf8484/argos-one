@@ -3119,14 +3119,14 @@ button.settings-row:focus-visible {
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   color: var(--accent);
 }
 
 .settings-row-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .settings-row-text {
@@ -4518,7 +4518,7 @@ button.settings-toggle-row {
   width: 0%;
   height: 100%;
   background: var(--accent-fill);
-  transition: width 1100ms ease;
+  transition: width 2200ms ease;
 }
 
 .update-overlay-message {

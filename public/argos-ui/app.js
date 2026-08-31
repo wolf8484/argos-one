@@ -1029,8 +1029,8 @@ function showUpdateOverlay() {
     overlay.classList.add("is-visible");
     requestAnimationFrame(() => { fill.style.width = "100%"; });
   });
-  setTimeout(() => { message.textContent = "Update complete"; }, 1200);
-  setTimeout(() => { window.location.reload(); }, 1700);
+  setTimeout(() => { message.textContent = "Update complete"; }, 2400);
+  setTimeout(() => { window.location.reload(); }, 3400);
 }
 
 function showToast(message) {
