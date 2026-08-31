@@ -734,7 +734,7 @@ main:focus {
   color: var(--heading);
   font-size: var(--caps-size);
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 18px;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -1374,7 +1374,7 @@ main:focus {
   margin-top: 8px;
   color: var(--muted);
   font-size: var(--caps-size);
-  line-height: 1.25;
+  line-height: 18px;
   text-transform: uppercase;
 }
 
@@ -1391,6 +1391,10 @@ main:focus {
 
 .task-header-copy h1 {
   font-size: clamp(22px, 4vw, 28px);
+}
+
+.task-header-copy h2 {
+  line-height: 28px;
 }
 
 .task-status {
@@ -3063,6 +3067,7 @@ button.journey-item:active {
   color: var(--muted);
   font-size: var(--caps-size);
   font-weight: 600;
+  line-height: 18px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -3131,18 +3136,20 @@ button.settings-row:focus-visible {
 .settings-row-text strong {
   color: var(--text);
   font-weight: 600;
+  line-height: 22px;
 }
 
 .settings-row-text small {
   color: var(--muted-strong);
   font-size: var(--caps-size);
-  line-height: 1.4;
+  line-height: 20px;
 }
 
 .settings-row-value {
   flex: none;
   color: var(--muted);
   font-size: var(--caps-size);
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -3916,11 +3923,13 @@ button.settings-toggle-row {
 
 .technician-profile h3 {
   font-size: 18px;
+  line-height: 24px;
 }
 
 .technician-profile p {
   color: var(--muted);
   font-size: var(--copy-size);
+  line-height: 20px;
   margin-top: 4px;
 }
 
@@ -3942,6 +3951,7 @@ button.settings-toggle-row {
   display: block;
   margin-top: 6px;
   font-size: var(--copy-size);
+  line-height: 20px;
 }
 
 .profile-menu {
@@ -3967,6 +3977,11 @@ button.settings-toggle-row {
 .profile-menu-button > svg:first-child,
 .profile-menu-button > svg:last-child {
   color: var(--accent);
+}
+
+.profile-menu-button > svg:last-child {
+  width: 20px;
+  height: 20px;
 }
 
 .profile-menu-button:active {
