@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { ApiError } from '@/lib/server/http'
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
 import { hashPatternSource, summarizeNetworkPattern } from '@/lib/server/network-summary'
 import { generateRepairSummary } from '@/lib/server/repair-summary'
@@ -625,6 +626,28 @@ export class WorkshopRepository {
     return data
   }
 
+  // A shop with zero active owners has nobody who can reach Profile &
+  // management to fix that -- which is exactly the lockout that motivated
+  // this guard, so demoting/deactivating/deleting the *last* owner is
+  // rejected rather than merely discouraged in the UI.
+  private async isLastActiveOwner(technicianId: string) {
+    const { data: current, error: currentError } = await this.supabase
+      .from('shop_technicians')
+      .select('role,active')
+      .eq('id', technicianId)
+      .single()
+    if (currentError) throw currentError
+    if (current.role !== 'owner' || !current.active) return false
+
+    const { count, error: countError } = await this.supabase
+      .from('shop_technicians')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'owner')
+      .eq('active', true)
+    if (countError) throw countError
+    return (count ?? 0) <= 1
+  }
+
   async updateTechnician(technicianId: string, input: {
     firstName?: string
     lastName?: string | null
@@ -634,6 +657,11 @@ export class WorkshopRepository {
     active?: boolean
     defaultBayId?: string | null
   }) {
+    const demotesOrDeactivatesOwner = (input.role !== undefined && input.role !== 'owner') || input.active === false
+    if (demotesOrDeactivatesOwner && (await this.isLastActiveOwner(technicianId))) {
+      throw new ApiError("This is the workshop's only Admin -- assign another Admin before changing this role.", 409)
+    }
+
     const patch: Record<string, unknown> = {}
     if (input.firstName !== undefined) patch.first_name = input.firstName
     if (input.lastName !== undefined) patch.last_name = input.lastName
@@ -654,6 +682,9 @@ export class WorkshopRepository {
   }
 
   async deleteTechnician(technicianId: string) {
+    if (await this.isLastActiveOwner(technicianId)) {
+      throw new ApiError("This is the workshop's only Admin -- assign another Admin before deleting this staff member.", 409)
+    }
     const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
     if (error) throw error
   }

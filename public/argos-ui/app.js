@@ -2250,7 +2250,7 @@ function renderSettingsHome() {
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   const activeBays = state.bays.filter((bay) => bay.active).length;
   const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
-  const isTechnicianRole = (currentTechnician()?.role || "technician") === "technician";
+  const isTechnicianRole = (currentTechnician()?.role || state.profile?.role || "technician") === "technician";
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
@@ -2586,6 +2586,11 @@ function openTechnicianModal(technician) {
   const roleOptions = ["technician", "manager", "owner"]
     .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${roleLabel(role)}</option>`)
     .join("");
+  // A shop with zero active Admins has nobody left who can reach this very
+  // screen to fix that, so editing the last one locks the controls that
+  // could strand the shop rather than only rejecting the save afterwards.
+  const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
+  const isLastOwner = Boolean(technician && technician.role === "owner" && technician.active && activeOwnerCount <= 1);
   openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add staff" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
@@ -2593,13 +2598,13 @@ function openTechnicianModal(technician) {
       <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
       <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
       <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role">${roleOptions}</select>${icon("down")}</span></label>
+      <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span>${isLastOwner ? `<small class="field-hint">This is the only Admin -- assign another Admin first to change this.</small>` : ""}</label>
       <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
-      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician ? technician.active : true, action: "toggle-form-active" })}
+      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician ? technician.active : true, action: "toggle-form-active", disabled: isLastOwner })}
       <div class="profile-note-actions">
         ${isNew
           ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
-          : `<button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete staff</button>`}
+          : `<button class="secondary-button danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>`}
         <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
     </form>
@@ -2732,7 +2737,7 @@ const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "bays", "technicians"
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
   const pageRenderer = SETTINGS_PAGES[state.settingsPage];
-  const isTechnicianRole = (currentTechnician()?.role || "technician") === "technician";
+  const isTechnicianRole = (currentTechnician()?.role || state.profile?.role || "technician") === "technician";
   if (!pageRenderer || (isTechnicianRole && LOCKED_SETTINGS_PAGES.has(state.settingsPage))) {
     state.settingsPage = null;
     state.settingsTrail = [];
@@ -3689,7 +3694,7 @@ function calendarSheet() {
 function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
   const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-  const role = currentTechnician()?.role || "technician";
+  const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">

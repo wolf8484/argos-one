@@ -1977,6 +1977,14 @@ button.journey-item:active {
   text-transform: none;
 }
 
+.field-hint {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 20px;
+}
+
 .input,
 .select,
 .textarea {
@@ -2506,6 +2514,19 @@ button.journey-item:active {
   border: 1px solid var(--secondary-border);
   background: transparent;
   color: var(--text);
+}
+
+.secondary-button.danger-outline-button {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.secondary-button.danger-outline-button svg {
+  color: var(--danger);
+}
+
+.secondary-button.danger-outline-button:active {
+  background: rgba(185, 28, 28, 0.08);
 }
 
 .secondary-button:active,
@@ -5316,8 +5337,7 @@ body.dictation-active .toast {
 
 .profile-note-actions .dictate-button,
 .profile-note-actions .secondary-button,
-.profile-note-actions .primary-button,
-.profile-note-actions .danger-button {
+.profile-note-actions .primary-button {
   flex: 1 1 0;
   min-height: 52px;
 }
