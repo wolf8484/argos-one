@@ -2591,16 +2591,18 @@ function openTechnicianModal(technician) {
   // could strand the shop rather than only rejecting the save afterwards.
   const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
   const isLastOwner = Boolean(technician && technician.role === "owner" && technician.active && activeOwnerCount <= 1);
-  openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add staff" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add user" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
-      <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span>${isLastOwner ? `<small class="field-hint">This is the only Admin -- assign another Admin first to change this.</small>` : ""}</label>
-      <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
-      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician ? technician.active : true, action: "toggle-form-active", disabled: isLastOwner })}
+      <div class="vehicle-details-grid">
+        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span>${isLastOwner ? `<small class="field-hint">Only Admin -- assign another first.</small>` : ""}</label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
+      </div>
+      ${isNew ? "" : settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
       <div class="profile-note-actions">
         ${isNew
           ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
@@ -2608,7 +2610,7 @@ function openTechnicianModal(technician) {
         <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
     </form>
-    </div>`, { ariaLabel: isNew ? "Add staff" : "Edit staff" });
+    </div>`, { ariaLabel: isNew ? "Add user" : "Edit staff" });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
