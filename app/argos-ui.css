@@ -2517,16 +2517,17 @@ button.journey-item:active {
 }
 
 .secondary-button.danger-outline-button {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: #c56a6a;
+  background-color: #ff7d7d;
+  color: #111111;
 }
 
 .secondary-button.danger-outline-button svg {
-  color: var(--danger);
+  color: #111111;
 }
 
 .secondary-button.danger-outline-button:active {
-  background: rgba(185, 28, 28, 0.08);
+  background: #f06868;
 }
 
 .secondary-button:active,

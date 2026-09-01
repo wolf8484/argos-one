@@ -140,7 +140,7 @@ export const updateBaySchema = baySchema.partial()
 
 export const technicianSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
-  lastName: z.string().trim().max(80).nullable().optional(),
+  lastName: z.string().trim().min(1).max(80),
   initials: z.string().trim().max(4).nullable().optional(),
   employeeId: z.string().trim().max(60).nullable().optional(),
   role: z.enum(['owner', 'manager', 'technician']).default('technician'),

@@ -2594,9 +2594,9 @@ function openTechnicianModal(technician) {
   openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add user" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
-      <div class="vehicle-details-grid">
+      <div class="customer-details-grid">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span>${isLastOwner ? `<small class="field-hint">Only Admin -- assign another first.</small>` : ""}</label>
@@ -2676,7 +2676,7 @@ async function saveTechnician(form) {
   const data = new FormData(form);
   const payload = {
     firstName: String(data.get("firstName") || "").trim(),
-    lastName: String(data.get("lastName") || "").trim() || null,
+    lastName: String(data.get("lastName") || "").trim(),
     initials: String(data.get("initials") || "").trim() || null,
     employeeId: String(data.get("employeeId") || "").trim() || null,
     role: String(data.get("role") || "technician"),
@@ -2684,6 +2684,7 @@ async function saveTechnician(form) {
     active: formActiveState(form),
   };
   if (!payload.firstName) return showToast("Give the technician a first name");
+  if (!payload.lastName) return showToast("Give the technician a last name");
   const technicianId = form.dataset.technicianId;
   try {
     await apiRequest(technicianId ? `/api/shop/technicians/${technicianId}` : "/api/shop/technicians", {
