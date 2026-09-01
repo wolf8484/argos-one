@@ -5315,9 +5315,17 @@ body.dictation-active .toast {
 }
 
 .profile-note-actions .dictate-button,
-.profile-note-actions .primary-button {
+.profile-note-actions .secondary-button,
+.profile-note-actions .primary-button,
+.profile-note-actions .danger-button {
   flex: 1 1 0;
   min-height: 52px;
+}
+
+@media (max-width: 500px) {
+  .profile-note-actions {
+    flex-direction: column;
+  }
 }
 
 .profile-note-list {

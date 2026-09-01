@@ -2597,10 +2597,11 @@ function openTechnicianModal(technician) {
       <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
       ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician ? technician.active : true, action: "toggle-form-active" })}
       <div class="profile-note-actions">
-        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
-        <button class="primary-button" type="submit">${icon("save")} Save</button>
+        ${isNew
+          ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
+          : `<button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete staff</button>`}
+        <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
-      ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete technician</button>`}
     </form>
     </div>`, { ariaLabel: isNew ? "Add staff" : "Edit staff" });
 }
