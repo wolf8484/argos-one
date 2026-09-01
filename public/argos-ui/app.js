@@ -2979,7 +2979,6 @@ function renderRepairRecord() {
       </div>
 
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
-      <div class="repair-danger-row"><button class="text-button danger-text-button" type="button" data-action="delete-repair">${icon("trash")} Delete repair</button></div>
     </form>
   </section>`;
 }

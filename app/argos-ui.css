@@ -3633,12 +3633,6 @@ button.settings-toggle-row {
 
 /* Destroying a job is deliberate but rare, so it sits below the action dock
    as a quiet danger-coloured control rather than competing with Save. */
-.repair-danger-row {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-}
-
 .danger-text-button {
   display: inline-flex;
   align-items: center;
