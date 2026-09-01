@@ -1977,13 +1977,6 @@ button.journey-item:active {
   text-transform: none;
 }
 
-.field-hint {
-  display: block;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: var(--copy-size);
-  line-height: 20px;
-}
 
 .input,
 .select,
@@ -2528,6 +2521,20 @@ button.journey-item:active {
 
 .secondary-button.danger-outline-button:active {
   background: #f06868;
+}
+
+/* iOS Safari's UA stylesheet dims disabled buttons via opacity regardless of
+   custom colors, which muddies this fill into near-illegible dark red on the
+   dark theme -- opacity: 1 plus an explicit muted palette keeps it readable. */
+.secondary-button.danger-outline-button:disabled {
+  opacity: 1;
+  border-color: var(--line);
+  background-color: var(--surface-2);
+  color: var(--muted);
+}
+
+.secondary-button.danger-outline-button:disabled svg {
+  color: var(--muted);
 }
 
 .secondary-button:active,
@@ -3453,8 +3460,7 @@ button.settings-toggle-row {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px var(--gutter) 18px;
-  border-bottom: 1px solid var(--line);
+  padding: 16px var(--gutter) 18px;
   background: var(--sheet-surface);
 }
 
@@ -3474,7 +3480,7 @@ button.settings-toggle-row {
 }
 
 .sheet-body {
-  padding: 22px var(--gutter) 32px;
+  padding: 20px var(--gutter) 32px;
 }
 
 .sheet-layer.is-confirmation-modal {
