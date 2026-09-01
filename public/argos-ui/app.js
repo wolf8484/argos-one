@@ -341,6 +341,7 @@ const icons = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/>',
   lock: '<rect x="5" y="10" width="14" height="11" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
+  more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
   sparkles: '<path d="m12 2 1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4Z"/><path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8Z"/><path d="m5 14 .8 1.7 1.7.8-1.7.8L5 19l-.8-1.7-1.7-.8 1.7-.8Z"/>',
   send: '<path d="m3 11 18-8-8 18-2-7Z"/><path d="m11 14 10-11"/>',
   book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5V5.5Z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5V5.5Z"/>',
@@ -1121,11 +1122,12 @@ function scrollToNextView() {
   window.scrollTo({ top: Math.min(window.scrollY + step, maximumScroll), behavior: "smooth" });
 }
 
-function taskHeader({ context, title, backAction = "", backLabel = "Go back", status = "", statusType = "saved" }) {
+function taskHeader({ context, title, backAction = "", backLabel = "Go back", status = "", statusType = "saved", deleteAction = "" }) {
   return `<header class="task-header${backAction ? " has-back" : ""}">
     ${backAction ? `<button class="task-back" type="button" data-action="${backAction}" aria-label="${backLabel}">${icon("back")}</button>` : ""}
     <div class="task-header-copy${context ? "" : " is-title-only"}"><h1>${title}</h1>${context ? `<span class="task-context">${context}</span>` : ""}</div>
     ${status ? `<span class="task-status is-${statusType}">${statusType === "saved" ? '<span class="task-status-dot" aria-hidden="true"></span>' : ""}${status}</span>` : ""}
+    ${deleteAction ? `<button class="icon-button" type="button" data-action="${deleteAction}" aria-label="Delete this job">${icon("trash")}</button>` : ""}
   </header>`;
 }
 
@@ -1150,13 +1152,14 @@ function workflowJourney(currentStep) {
 }
 
 function vehicleTaskHeader() {
-  return taskHeader({ context: "New job", title: "Vehicle details" });
+  return taskHeader({ context: "New job", title: "Vehicle details", deleteAction: "delete-job" });
 }
 
 function problemTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
+    deleteAction: "delete-job",
   });
 }
 
@@ -1173,6 +1176,7 @@ function resultsTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
+    deleteAction: "delete-job",
   });
 }
 
@@ -1180,6 +1184,7 @@ function repairRecordHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
+    deleteAction: "delete-job",
   });
 }
 
@@ -1244,8 +1249,12 @@ function jobCard(job, { hidden = false } = {}) {
     : job.status === "resolved"
       ? job.resolvedAtShort
       : (job.createdAtShort ? `Started ${job.createdAtShort}` : "");
-  return `<button class="job-card" data-status="${job.status}" data-action="open-job" data-job-id="${job.id}" data-job-search="${escapeHTML(jobSearchText(job))}"${hidden ? " hidden" : ""} type="button" aria-label="${job.status === "open" ? "Resume" : `View ${statusLabel.toLowerCase()} job for`} ${jobVehicleName(job)}">
-    <span class="job-card-main">
+  // Deleted jobs already have their own restore/permanent-delete affordances
+  // (see the deleted-jobs detail page), so the list-level delete menu is only
+  // useful for jobs that are still open or resolved.
+  const showMenu = job.status !== "deleted";
+  return `<div class="job-card" data-status="${job.status}"${hidden ? " hidden" : ""} data-job-search="${escapeHTML(jobSearchText(job))}">
+    <button class="job-card-main" data-action="open-job" data-job-id="${job.id}" type="button" aria-label="${job.status === "open" ? "Resume" : `View ${statusLabel.toLowerCase()} job for`} ${jobVehicleName(job)}">
       <span class="job-card-top">
         <span class="job-status-group">
           <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
@@ -1256,9 +1265,10 @@ function jobCard(job, { hidden = false } = {}) {
       <span class="job-vehicle">${jobVehicleName(job)}</span>
       <span class="job-card-context"><span>${escapeHTML(formatMileageDisplay(job.vehicle.mileage))}</span><span>${escapeHTML(job.vehicle.customerName)}</span></span>
       <span class="job-issue">${jobSummary(job)}</span>
-    </span>
+    </button>
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
-  </button>`;
+    ${showMenu ? `<button class="job-card-menu" type="button" data-action="delete-job-from-list" data-job-id="${job.id}" aria-label="Delete job for ${jobVehicleName(job)}">${icon("more")}</button>` : `<span class="job-card-menu-spacer" aria-hidden="true"></span>`}
+  </div>`;
 }
 
 function renderJobs() {
@@ -2794,7 +2804,7 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
-      <div class="action-dock vehicle-actions span-2"><button class="secondary-button full" type="button" data-action="cancel-job">${icon("trash")} Cancel job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
+      <div class="action-dock vehicle-actions span-2"><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
 }
@@ -3518,6 +3528,38 @@ function deleteForever(jobId) {
     .catch((error) => showToast(error.message));
 }
 
+// Deleting from the Jobs list is deliberately lighter than deleting from
+// inside an open job: there's no in-progress draft to flush here, just the
+// job's already-saved server state, so this calls the archive endpoint
+// directly by id rather than routing through cancelJob()/deleteRepairRecord()
+// (both of which assume you're currently inside the job being deleted).
+function deleteJobFromListConfirmation(jobId) {
+  const job = jobRecords.find((entry) => entry.id === jobId);
+  if (!job) return;
+  openSheet(`<div class="confirmation-content">
+    <h2>Delete this job?</h2>
+    <p>This moves the job for ${escapeHTML(jobVehicleName(job))} to Deleted jobs, where the workshop can still review its saved details.</p>
+    <div class="confirmation-actions">
+      <button class="secondary-button full" type="button" data-action="close-sheet">Keep job</button>
+      <button class="danger-button full" type="button" data-action="confirm-delete-job-from-list" data-job-id="${jobId}">${icon("trash")} Delete job</button>
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm job deletion" });
+}
+
+function deleteJobFromList(jobId) {
+  return apiRequest(`/api/jobs/${jobId}`, { method: "DELETE" })
+    .then(({ job }) => {
+      const archivedJob = databaseJobToUi(job);
+      const index = jobRecords.findIndex((entry) => entry.id === archivedJob.id);
+      if (index >= 0) jobRecords[index] = archivedJob;
+      if (state.activeJobId === jobId) state.activeJobId = null;
+      closeSheet();
+      render();
+      showToast("Job moved to Deleted jobs.");
+    })
+    .catch((error) => showToast(error.message));
+}
+
 function photoViewerSheet(scope, requestedIndex = 0) {
   const photos = photoCollection(scope);
   if (!photos.length) return;
@@ -4031,9 +4073,16 @@ document.addEventListener("click", (event) => {
     if (action === "workflow-back") return state.step > 1 ? setStep(state.step - 1) : setRoute("home");
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
+    // The header exposes one delete entry point across every workflow step
+    // (not just the first and last tabs) -- it picks whichever confirmation
+    // actually matches the current step's state: the repair step has a
+    // draft worth flushing before archiving, the earlier steps don't.
+    if (action === "delete-job") return state.route === "repair" ? deleteRepairConfirmation() : cancelJobConfirmation();
     if (action === "restore-job") return restoreJob();
     if (action === "delete-forever") return deleteForeverConfirmation();
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
+    if (action === "delete-job-from-list") return deleteJobFromListConfirmation(actionButton.dataset.jobId);
+    if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");

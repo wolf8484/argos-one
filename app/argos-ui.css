@@ -785,7 +785,7 @@ main:focus {
 
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-columns: minmax(0, 1fr) 24px 44px;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -795,13 +795,11 @@ main:focus {
   border-radius: 0;
   background: var(--surface-2);
   color: var(--text);
-  text-align: left;
   transition: background 160ms ease;
 }
 
 .job-card:hover,
-.job-card:active,
-.job-card:focus-visible {
+.job-card:focus-within {
   background: var(--surface-3);
 }
 
@@ -809,8 +807,40 @@ main:focus {
   display: flex;
   width: 100%;
   min-width: 0;
+  height: 100%;
   flex-direction: column;
   align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.job-card-menu,
+.job-card-menu-spacer {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.job-card-menu {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  transition: color 160ms ease;
+}
+
+.job-card-menu svg {
+  width: 20px;
+  height: 20px;
+}
+
+.job-card-menu:hover,
+.job-card-menu:active,
+.job-card-menu:focus-visible {
+  color: var(--accent);
 }
 
 .job-card-top {
@@ -932,8 +962,7 @@ main:focus {
 }
 
 .job-card:hover .job-card-action,
-.job-card:active .job-card-action,
-.job-card:focus-visible .job-card-action {
+.job-card:focus-within .job-card-action {
   background: transparent;
   color: var(--accent-deep);
 }
@@ -2418,7 +2447,7 @@ button.journey-item:active {
 }
 
 .action-dock.vehicle-actions {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .action-dock.resolved-actions {
@@ -3940,8 +3969,7 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .job-card:hover .job-card-action,
-:root[data-theme="light"] .job-card:active .job-card-action,
-:root[data-theme="light"] .job-card:focus-visible .job-card-action {
+:root[data-theme="light"] .job-card:focus-within .job-card-action {
   color: var(--muted-strong);
 }
 
@@ -5204,7 +5232,7 @@ body.dictation-active .toast {
   }
 
   .job-card {
-    grid-template-columns: minmax(0, 1fr) 24px;
+    grid-template-columns: minmax(0, 1fr) 24px 44px;
     gap: 12px;
     padding: 16px;
   }
@@ -5213,6 +5241,12 @@ body.dictation-active .toast {
     grid-column: 2;
     grid-row: 1;
     width: 24px;
+  }
+
+  .job-card-menu,
+  .job-card-menu-spacer {
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .stat {
