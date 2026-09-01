@@ -1169,7 +1169,7 @@ function vehicleName() {
 
 function vehicleMoustache() {
   const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, formatMileageDisplay(state.vehicle.mileage)].filter(Boolean).join(" · ");
-  return specs ? `${icon("car")}<span>${specs}</span>` : "";
+  return specs ? `<span>${specs}</span>` : "";
 }
 
 function resultsTaskHeader() {
@@ -2583,7 +2583,7 @@ function openBayModal(bay) {
         <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
         <button class="primary-button" type="submit">${icon("save")} Save</button>
       </div>
-      ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
+      ${isNew ? "" : `<button class="danger-button full" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
     </form>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add bay" : "Edit bay" });
 }
@@ -2616,7 +2616,7 @@ function openTechnicianModal(technician) {
       <div class="profile-note-actions">
         ${isNew
           ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
-          : `<button class="secondary-button danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>`}
+          : `<button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>`}
         <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
     </form>

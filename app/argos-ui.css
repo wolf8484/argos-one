@@ -1412,13 +1412,6 @@ main:focus {
   text-transform: uppercase;
 }
 
-.task-context svg {
-  width: 16px;
-  height: 16px;
-  flex: none;
-  margin-top: 2px;
-}
-
 .task-context span {
   min-width: 0;
 }
@@ -1435,11 +1428,9 @@ main:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
-  padding: 0 11px;
+  min-height: 26px;
+  padding: 0 12px;
   gap: 8px;
-  background: var(--surface-2);
-  color: var(--muted-strong);
   font-size: var(--caps-size);
   white-space: nowrap;
 }
@@ -2538,34 +2529,6 @@ button.journey-item:active {
   color: var(--text);
 }
 
-.secondary-button.danger-outline-button {
-  border-color: #c56a6a;
-  background-color: #ff7d7d;
-  color: #111111;
-}
-
-.secondary-button.danger-outline-button svg {
-  color: #111111;
-}
-
-.secondary-button.danger-outline-button:active {
-  background: #f06868;
-}
-
-/* iOS Safari's UA stylesheet dims disabled buttons via opacity regardless of
-   custom colors, which muddies this fill into near-illegible dark red on the
-   dark theme -- opacity: 1 plus an explicit muted palette keeps it readable. */
-.secondary-button.danger-outline-button:disabled {
-  opacity: 1;
-  border-color: var(--line);
-  background-color: var(--surface-2);
-  color: var(--muted);
-}
-
-.secondary-button.danger-outline-button:disabled svg {
-  color: var(--muted);
-}
-
 .secondary-button:active,
 .web-button:active,
 .part-button:active,
@@ -3660,19 +3623,14 @@ button.settings-toggle-row {
   background: #991b1b;
 }
 
-/* Destroying a job is deliberate but rare, so it sits below the action dock
-   as a quiet danger-coloured control rather than competing with Save. */
-.danger-text-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--danger);
-}
-
-.danger-text-button svg {
-  width: 18px;
-  height: 18px;
-  color: var(--danger);
+/* iOS Safari's UA stylesheet dims disabled buttons via opacity regardless of
+   custom colors, which muddies a solid red fill into near-illegible dark red
+   on the dark theme -- opacity: 1 plus an explicit muted palette keeps it
+   readable (see the last-Admin guard on the staff edit sheet). */
+.danger-button:disabled {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .danger-button svg {
@@ -3784,18 +3742,17 @@ button.settings-toggle-row {
   min-height: 52px;
   padding: 0 18px;
   gap: 8px;
-  border: 1px solid var(--secondary-border);
-  background: transparent;
-  color: var(--text);
+  background: var(--danger);
+  color: var(--on-danger);
   font-size: var(--copy-size);
 }
 
 .photo-delete-button svg {
-  color: var(--accent);
+  color: var(--on-danger);
 }
 
 .photo-delete-button:active {
-  background: var(--surface-3);
+  background: #991b1b;
 }
 
 .photo-swipe-hint {
@@ -5372,7 +5329,8 @@ body.dictation-active .toast {
 
 .profile-note-actions .dictate-button,
 .profile-note-actions .secondary-button,
-.profile-note-actions .primary-button {
+.profile-note-actions .primary-button,
+.profile-note-actions .danger-button {
   flex: 1 1 0;
   min-height: 52px;
 }
