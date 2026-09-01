@@ -3832,6 +3832,12 @@ function technicianProfileSheet() {
   const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
+  const bayLabel = assignedBayLabel();
+  const hasBay = bayLabel !== "No bay assigned";
+  // An unset fact reads as a placeholder (same weight/colour as the role
+  // line above), not as data worth bolding -- only a real value earns
+  // <strong>.
+  const factValue = (value, hasValue) => hasValue ? `<strong>${escapeHTML(value)}</strong>` : `<span class="profile-fact-empty">${escapeHTML(value)}</span>`;
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
@@ -3839,8 +3845,8 @@ function technicianProfileSheet() {
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
-        <div class="profile-fact"><span class="field-label">Assigned bay</span><strong>${escapeHTML(assignedBayLabel())}</strong></div>
-        <div class="profile-fact"><span class="field-label">Employee ID</span><strong>${escapeHTML(employeeId || "Not registered")}</strong></div>
+        <div class="profile-fact"><span class="field-label">Assigned bay</span>${factValue(bayLabel, hasBay)}</div>
+        <div class="profile-fact"><span class="field-label">Employee ID</span>${factValue(employeeId || "Not registered", Boolean(employeeId))}</div>
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         <button class="profile-menu-button" type="button" data-action="profile-jobs">${icon("clipboard")}<span>My active jobs</span>${icon("arrow")}</button>
