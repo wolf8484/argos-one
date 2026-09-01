@@ -2858,7 +2858,7 @@ function renderProblem() {
       <div class="form-field repair-dtc-field">
         <div class="field-header"><span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
         <div class="field-actions dtc-actions">
-          <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add scan code</span></button>
+          <button class="add-dtc-button" type="button" data-action="add-dtc">${icon("plus")}<span>Add code</span></button>
           <div class="quick-row" id="dtc-row">${state.dtcs.map((code) => `<span class="dtc-chip caps-text">${code}<button class="dtc-chip-remove" type="button" data-action="remove-dtc" data-code="${code}" aria-label="Remove ${code}">${icon("close")}</button></span>`).join("")}</div>
         </div>
       </div>

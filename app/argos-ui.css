@@ -2185,11 +2185,11 @@ button.journey-item:active {
   align-items: center;
   justify-content: center;
   min-height: 52px;
-  padding: 0 24px;
+  padding: 0 16px;
   gap: 8px;
   border: 1px solid var(--secondary-border);
   border-radius: 0;
-  background: 0 0;
+  background: none;
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
