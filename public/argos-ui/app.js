@@ -483,7 +483,9 @@ function databaseJobToUi(row) {
     updatedAtShort: row.updated_at ? shortDate(row.updated_at) : "",
     resolvedAt: row.resolved_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.resolved_at)) : "",
     updatedAt: row.updated_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.updated_at)) : "",
-    technician: state.profile?.full_name || "Workshop technician",
+    assignedTo: row.assigned_to || null,
+    assigneeName: relatedRecord(row.assignee)?.full_name || null,
+    technician: relatedRecord(row.assignee)?.full_name || "Unassigned",
     complaint: row.complaint || "",
     observations: row.observations || "",
     summary: row.summary || "",
@@ -658,6 +660,57 @@ async function loadWorkshopRoster() {
 function currentTechnician() {
   if (!state.profile) return null;
   return state.technicians.find((technician) => technician.profile_id === state.profile.id) || null;
+}
+
+// Every job on the floor is visible to everyone, but only the technician a
+// job is assigned to (or an owner/manager, who can edit anything) may change
+// it. A job still being drafted (never saved) has no assignment yet, so it's
+// always editable by whoever is creating it.
+function canEditJob(job) {
+  if (!job || !isPersistedJobId(job.id)) return true;
+  if (state.profile?.role !== "technician") return true;
+  return job.assignedTo === state.profile?.id;
+}
+
+function currentJobRecord() {
+  return jobRecords.find((record) => String(record.id) === String(state.currentJobId)) || null;
+}
+
+function canEditCurrentJob() {
+  return canEditJob(currentJobRecord());
+}
+
+// Hides every control that would let a read-only viewer change a job:
+// text inputs (also stops mobile keyboards opening on tap), the workflow's
+// save/continue docks, dictate/enhance, DTC and photo add/remove, and the
+// parts editor. Deliberately narrower than ".field-actions" -- that class
+// also wraps the already-recorded DTC chips, which a read-only viewer should
+// still be able to see. Read-only affordances (photo viewing, journey nav,
+// "show original") are untouched since they don't mutate anything.
+const LOCKED_JOB_HIDE_SELECTORS = [
+  ".action-dock", ".dictate-button", ".enhance-button", ".photo-actions",
+  ".catalog-action-row", ".vin-camera", ".add-dtc-button", ".dtc-chip-remove",
+  ".add-parts-button", ".recorded-part-actions", ".result-actions",
+];
+function lockWorkflowForm() {
+  const scope = app.querySelector(".workflow-shell");
+  if (!scope) return;
+  scope.querySelectorAll("input, select, textarea").forEach((el) => { el.disabled = true; });
+  scope.querySelectorAll(LOCKED_JOB_HIDE_SELECTORS.join(", ")).forEach((el) => { el.hidden = true; });
+}
+
+// Shown under the journey nav on every workflow step so it's clear who owns
+// the job. The reassign action follows the same rule as edit access: the
+// assigned technician (handing off their own job) or an owner/manager.
+function assignmentBar() {
+  const job = currentJobRecord();
+  if (!job || !isPersistedJobId(job.id)) return "";
+  const editable = canEditJob(job);
+  const assigneeName = job.assigneeName || "Unassigned";
+  return `<div class="assignment-bar${editable ? "" : " is-locked"}">
+    <span class="assignment-bar-label">${editable ? "" : icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></span>
+    ${editable ? `<button class="text-button assignment-reassign-button" type="button" data-action="reassign-job">Reassign</button>` : ""}
+  </div>`;
 }
 
 // Shown wherever the app states which bay the signed-in technician works from.
@@ -1152,14 +1205,14 @@ function workflowJourney(currentStep) {
 }
 
 function vehicleTaskHeader() {
-  return taskHeader({ context: "New job", title: "Vehicle details", deleteAction: "delete-job" });
+  return taskHeader({ context: "New job", title: "Vehicle details", deleteAction: canEditCurrentJob() ? "delete-job" : "" });
 }
 
 function problemTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: "delete-job",
+    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -1176,7 +1229,7 @@ function resultsTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: "delete-job",
+    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -1184,7 +1237,7 @@ function repairRecordHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: "delete-job",
+    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -2580,10 +2633,11 @@ function openBayModal(bay) {
       <label class="form-field"><div class="field-header"><span class="field-label">Description <span class="muted">(optional)</span></span></div><input class="input" name="description" value="${escapeHTML(bay?.description || "")}" placeholder="e.g. Diagnostics" /></label>
       ${settingsSwitchRow({ title: "Active", description: "Available for new jobs", checked: bay ? bay.active : true, action: "toggle-form-active" })}
       <div class="profile-note-actions">
-        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
-        <button class="primary-button" type="submit">${icon("save")} Save</button>
+        ${isNew
+          ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
+          : `<button class="danger-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
+        <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
-      ${isNew ? "" : `<button class="danger-button full" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
     </form>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add bay" : "Edit bay" });
 }
@@ -2640,6 +2694,36 @@ function openDefaultPickerModal({ title, options, selectedId, action }) {
       ${rows}
     </div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+// Only staff with a linked login can own a job (assigned_to is a profiles.id),
+// so imported/unlinked roster rows aren't offered here. Unlike the default
+// pickers above, a job always has someone assigned -- there's no "Not set".
+function openReassignJobModal(job) {
+  if (!job) return;
+  const options = state.technicians.filter((technician) => technician.active && technician.profile_id);
+  const rows = options.map((technician) => `<button class="settings-row" type="button" data-action="reassign-job-to" data-technician-id="${technician.id}">
+      <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
+      ${technician.profile_id === job.assignedTo ? `<span class="settings-row-value">Current</span>` : ""}
+    </button>`).join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>Reassign job</h2>
+    <div class="settings-list">${rows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign job" });
+}
+
+function reassignCurrentJob(technicianId) {
+  if (!technicianId || !isPersistedJobId(state.currentJobId)) return closeSheet();
+  return apiRequest(`/api/jobs/${state.currentJobId}/assign`, { method: "PATCH", body: JSON.stringify({ technicianId }) })
+    .then(({ job }) => {
+      const updated = databaseJobToUi(job);
+      const index = jobRecords.findIndex((record) => record.id === updated.id);
+      if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
+      closeSheet();
+      showToast("Job reassigned");
+      render();
+    })
+    .catch((error) => showToast(error.message || "Could not reassign that job"));
 }
 
 async function saveShopField(form) {
@@ -2776,6 +2860,7 @@ function renderVehicle() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${vehicleTaskHeader()}
     ${workflowJourney(1)}
+    ${assignmentBar()}
     <form id="vehicle-form" class="form-grid two-col">
       <div class="form-field span-2 vin-field">
         <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN</label></div>
@@ -2807,6 +2892,7 @@ function renderVehicle() {
       <div class="action-dock vehicle-actions span-2"><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
+  if (!canEditCurrentJob()) lockWorkflowForm();
 }
 
 function vehicleContext(score = "") {
@@ -2844,6 +2930,7 @@ function renderProblem() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${problemTaskHeader()}
     ${workflowJourney(2)}
+    ${assignmentBar()}
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Symptoms</label></div>
@@ -2871,6 +2958,7 @@ function renderProblem() {
       <div class="action-dock intake-actions"><button class="secondary-button full" type="submit">${icon("search")} Show similar repairs</button><button class="primary-button full" type="button" data-action="proceed-to-diagnosis" aria-label="Save assessment and continue directly to repair">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
+  if (!canEditCurrentJob()) lockWorkflowForm();
 }
 
 function renderResults() {
@@ -2887,6 +2975,7 @@ function renderResults() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${resultsTaskHeader()}
     ${workflowJourney(3)}
+    ${assignmentBar()}
 
     <div class="match-selector ${repairCountClass}" role="group" aria-label="Choose a repair record">
       ${repairMatches.map((repair) => matchOption(repair, repair.id === selected.id)).join("")}
@@ -2911,6 +3000,7 @@ function renderResults() {
     </section>
     <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button><button class="web-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
   </section>`;
+  if (!canEditCurrentJob()) lockWorkflowForm();
 }
 
 // Controlled vocabulary for grouping repairs on the car profile. Wider than
@@ -2942,6 +3032,7 @@ function renderRepairRecord() {
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
     ${repairRecordHeader()}
     ${workflowJourney(4)}
+    ${assignmentBar()}
     <div class="repair-job-strip">
       <div class="repair-job-info">
         <strong>${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</strong>
@@ -2991,6 +3082,7 @@ function renderRepairRecord() {
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
     </form>
   </section>`;
+  if (!canEditCurrentJob()) lockWorkflowForm();
 }
 
 function repairPartsTable() {
@@ -4083,6 +4175,8 @@ document.addEventListener("click", (event) => {
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
     if (action === "delete-job-from-list") return deleteJobFromListConfirmation(actionButton.dataset.jobId);
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
+    if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
+    if (action === "reassign-job-to") return reassignCurrentJob(actionButton.dataset.technicianId);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");

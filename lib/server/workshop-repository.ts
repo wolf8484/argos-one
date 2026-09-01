@@ -10,13 +10,24 @@ type Profile = { id: string; shop_id: string; full_name: string; role: string }
 export class WorkshopRepository {
   constructor(private readonly supabase: SupabaseClient, private readonly profile: Profile) {}
 
+  // Technicians may only edit jobs assigned to them; owners/managers can edit
+  // everything. assigned_to holds profiles.id, so it's compared directly
+  // against the caller's own profile rather than the (more fragile)
+  // shop_technicians link.
+  private assertCanEditJob(assignedTo: string | null) {
+    if (this.profile.role === 'technician' && assignedTo !== this.profile.id) {
+      throw new ApiError("You can only edit jobs assigned to you.", 403)
+    }
+  }
+
   async listJobs() {
     const { data, error } = await this.supabase
       .from('jobs')
-      .select(`id,job_number,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,
+      .select(`id,job_number,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,assigned_to,
         customer:customers(id,full_name,phone,email),
         vehicle:vehicles(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type),
-        dtcs:job_dtc_codes(id,code,description)`)
+        dtcs:job_dtc_codes(id,code,description),
+        assignee:profiles!assigned_to(id,full_name)`)
       .order('updated_at', { ascending: false })
     if (error) throw error
     return data ?? []
@@ -30,7 +41,8 @@ export class WorkshopRepository {
       // auto-generated constraint name that PostgREST's schema cache drops
       // after unrelated DDL, which turned this read into a PGRST200 500.
       .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
-        repair:repair_records!job_id(*,items:repair_items(*),reference:repair_records!reference_repair_id(job_id)),photos:job_photos(*)`)
+        repair:repair_records!job_id(*,items:repair_items(*),reference:repair_records!reference_repair_id(job_id)),photos:job_photos(*),
+        assignee:profiles!assigned_to(id,full_name)`)
       .eq('id', id)
       .single()
     if (error) throw error
@@ -91,10 +103,11 @@ export class WorkshopRepository {
   }) {
     const { data: job, error: jobError } = await this.supabase
       .from('jobs')
-      .select('id,customer_id,vehicle_id,stage')
+      .select('id,customer_id,vehicle_id,stage,assigned_to')
       .eq('id', jobId)
       .single()
     if (jobError) throw jobError
+    this.assertCanEditJob(job.assigned_to)
     const vehicleInput = input.vehicle as Record<string, string | number | null | undefined>
 
     // Imported or partially-created jobs can legitimately have no customer yet.
@@ -144,6 +157,37 @@ export class WorkshopRepository {
     return this.getJob(jobId)
   }
 
+  // A technician may only hand off a job that's currently theirs; owners and
+  // managers can reassign anything. The target must be an active staff
+  // member with a linked login (assigned_to is a profiles.id, and staff
+  // created without a profile link -- e.g. imported rows -- can't own a job).
+  async reassignJob(jobId: string, technicianId: string) {
+    const { data: job, error: jobError } = await this.supabase
+      .from('jobs')
+      .select('id,assigned_to')
+      .eq('id', jobId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (jobError) throw jobError
+    if (this.profile.role === 'technician' && job.assigned_to !== this.profile.id) {
+      throw new ApiError('You can only reassign jobs assigned to you.', 403)
+    }
+
+    const { data: technician, error: technicianError } = await this.supabase
+      .from('shop_technicians')
+      .select('profile_id,active')
+      .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (technicianError) throw technicianError
+    if (!technician.active) throw new ApiError('This staff member is inactive.', 400)
+    if (!technician.profile_id) throw new ApiError("This staff member doesn't have a linked login, so a job can't be assigned to them.", 400)
+
+    const { error } = await this.supabase.from('jobs').update({ assigned_to: technician.profile_id }).eq('id', jobId)
+    if (error) throw error
+    return this.getJob(jobId)
+  }
+
   async archiveJob(jobId: string) {
     const { error } = await this.supabase
       .from('jobs')
@@ -184,6 +228,9 @@ export class WorkshopRepository {
   }
 
   async saveAssessment(jobId: string, input: { complaint: string; observations?: string | null; dtcs: string[]; nextStage: string; summary?: string | null }) {
+    const { data: existingJob, error: existingJobError } = await this.supabase.from('jobs').select('assigned_to').eq('id', jobId).single()
+    if (existingJobError) throw existingJobError
+    this.assertCanEditJob(existingJob.assigned_to)
     const { error } = await this.supabase.from('jobs').update({
       complaint: input.complaint,
       observations: input.observations || null,
@@ -297,6 +344,9 @@ export class WorkshopRepository {
     system?: string | null
     dtcs: string[]; items: Array<Record<string, unknown>>; resolve: boolean
   }) {
+    const { data: existingJob, error: existingJobError } = await this.supabase.from('jobs').select('assigned_to').eq('id', jobId).single()
+    if (existingJobError) throw existingJobError
+    this.assertCanEditJob(existingJob.assigned_to)
     // repair_records.cause holds an AI-generated summary of work_performed +
     // verification_notes, not a mechanic-entered diagnosis -- there's no UI
     // for the latter. Only (re)generated at completion time so drafts don't
