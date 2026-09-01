@@ -2586,8 +2586,8 @@ function openTechnicianModal(technician) {
   const roleOptions = ["technician", "manager", "owner"]
     .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${roleLabel(role)}</option>`)
     .join("");
-  openSheet(`<div class="confirmation-content">
-    <h2>${isNew ? "Add staff" : "Edit staff"}</h2>
+  openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add staff" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
       <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
       <label class="form-field"><div class="field-header"><span class="field-label">Last name <span class="muted">(optional)</span></span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" /></label>
@@ -2602,7 +2602,7 @@ function openTechnicianModal(technician) {
       </div>
       ${isNew ? "" : `<button class="text-button danger-text-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}">${icon("trash")} Delete technician</button>`}
     </form>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add staff" : "Edit staff" });
+    </div>`, { ariaLabel: isNew ? "Add staff" : "Edit staff" });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
