@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { ApiError } from '@/lib/server/http'
+import { generateInviteCode } from '@/lib/server/identity'
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
 import { hashPatternSource, summarizeNetworkPattern } from '@/lib/server/network-summary'
 import { generateRepairSummary } from '@/lib/server/repair-summary'
@@ -531,7 +532,7 @@ export class WorkshopRepository {
   }
 
   private static readonly SHOP_COLUMNS =
-    'id,name,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs'
+    'id,name,phone,email,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs'
 
   async getShop() {
     const { data, error } = await this.supabase
@@ -546,6 +547,8 @@ export class WorkshopRepository {
   async updateShop(input: {
     sharesRepairData?: boolean
     name?: string
+    phone?: string | null
+    email?: string | null
     branchId?: string | null
     region?: string
     timezone?: string
@@ -557,6 +560,8 @@ export class WorkshopRepository {
     const patch: Record<string, unknown> = {}
     if (input.sharesRepairData !== undefined) patch.shares_repair_data = input.sharesRepairData
     if (input.name !== undefined) patch.name = input.name
+    if (input.phone !== undefined) patch.phone = input.phone
+    if (input.email !== undefined) patch.email = input.email
     if (input.branchId !== undefined) patch.branch_id = input.branchId
     if (input.region !== undefined) patch.region = input.region
     if (input.timezone !== undefined) patch.timezone = input.timezone
@@ -634,7 +639,8 @@ export class WorkshopRepository {
   async listTechnicians() {
     const { data, error } = await this.supabase
       .from('shop_technicians')
-      .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
+      .select(`id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at,
+        invite:shop_invites(code,email,mobile,expires_at,consumed_at)`)
       .order('position')
       .order('first_name')
     if (error) throw error
@@ -709,7 +715,7 @@ export class WorkshopRepository {
   }) {
     const demotesOrDeactivatesOwner = (input.role !== undefined && input.role !== 'owner') || input.active === false
     if (demotesOrDeactivatesOwner && (await this.isLastActiveOwner(technicianId))) {
-      throw new ApiError("This is the workshop's only Admin -- assign another Admin before changing this role.", 409)
+      throw new ApiError("This is the workshop's only Owner -- assign another Owner before changing this role.", 409)
     }
 
     const patch: Record<string, unknown> = {}
@@ -733,7 +739,7 @@ export class WorkshopRepository {
 
   async deleteTechnician(technicianId: string) {
     if (await this.isLastActiveOwner(technicianId)) {
-      throw new ApiError("This is the workshop's only Admin -- assign another Admin before deleting this staff member.", 409)
+      throw new ApiError("This is the workshop's only Owner -- assign another Owner before deleting this staff member.", 409)
     }
     const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
     if (error) throw error
@@ -741,6 +747,93 @@ export class WorkshopRepository {
 
   private static deriveInitials(firstName: string, lastName?: string | null) {
     return `${firstName.trim().charAt(0)}${(lastName ?? '').trim().charAt(0)}`.toUpperCase() || null
+  }
+
+  // Only Owners and Admins manage the roster. Technicians can see who they
+  // work with but must not be able to mint logins into the shop.
+  private assertCanManageStaff() {
+    if (this.profile.role === 'technician') {
+      throw new ApiError('Only an Owner or Admin can invite staff.', 403)
+    }
+  }
+
+  /**
+   * Creates the roster row and its invite code in one step. The person does
+   * not exist as a login yet -- they appear on the staff list as "Invited"
+   * until they redeem the code, at which point redeemInvite links a profile.
+   */
+  async inviteStaff(input: {
+    firstName: string
+    email?: string | null
+    mobile?: string | null
+    role?: string
+    defaultBayId?: string | null
+  }) {
+    this.assertCanManageStaff()
+    const technician = await this.addTechnician({
+      firstName: input.firstName,
+      role: input.role ?? 'technician',
+      defaultBayId: input.defaultBayId ?? null,
+    })
+    const invite = await this.issueInvite(technician.id, {
+      email: input.email ?? null,
+      mobile: input.mobile ?? null,
+    })
+    return { technician, invite }
+  }
+
+  /**
+   * Mints (or replaces) the code for one roster row. Regenerating is the same
+   * operation as issuing -- there is only ever one live code per person, so a
+   * lost code is replaced rather than accumulating alongside the old one.
+   */
+  async issueInvite(technicianId: string, contact?: { email?: string | null; mobile?: string | null }) {
+    this.assertCanManageStaff()
+    const { data: technician, error: technicianError } = await this.supabase
+      .from('shop_technicians')
+      .select('id,profile_id')
+      .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (technicianError) throw technicianError
+    if (technician.profile_id) {
+      throw new ApiError('This staff member has already joined and has their own login.', 409)
+    }
+
+    const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+    // A collision is vanishingly unlikely across 32^6 codes, but the unique
+    // index makes it a hard failure rather than a silent overwrite, so retry.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const code = generateInviteCode()
+      const { data, error } = await this.supabase
+        .from('shop_invites')
+        .upsert({
+          shop_id: this.profile.shop_id,
+          technician_id: technicianId,
+          code,
+          email: contact?.email ?? null,
+          mobile: contact?.mobile ?? null,
+          expires_at: expiresAt,
+          consumed_at: null,
+          consumed_by: null,
+          created_by: this.profile.id,
+        }, { onConflict: 'technician_id' })
+        .select('id,code,expires_at,consumed_at,email,mobile')
+        .single()
+      if (!error) return data
+      if (error.code !== '23505') throw error
+    }
+    throw new ApiError('Could not generate a unique invite code. Try again.', 500)
+  }
+
+  async revokeInvite(technicianId: string) {
+    this.assertCanManageStaff()
+    const { error } = await this.supabase
+      .from('shop_invites')
+      .delete()
+      .eq('technician_id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+    if (error) throw error
   }
 
   // Resolves the profile bucket for an ad-hoc vehicle identity so a note can be

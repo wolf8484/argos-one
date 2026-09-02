@@ -3246,11 +3246,68 @@ button.settings-row:focus-visible {
   white-space: nowrap;
 }
 
+/* A staff member who has not redeemed their code yet cannot be assigned jobs,
+   so the roster says so plainly rather than showing them as Active. */
+.settings-row-value.is-invited {
+  color: var(--accent);
+}
+
+.settings-row-value.is-expired {
+  color: var(--danger);
+}
+
 .settings-row-chevron {
   display: flex;
   flex: none;
   align-items: center;
   color: var(--accent);
+}
+
+.sheet-intro {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 22px;
+}
+
+/* This block is the only place the invite code is ever shown -- nothing is
+   emailed or texted -- so it is sized to be read across a workbench. */
+.invite-code-block {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  margin-bottom: 24px;
+  padding: 24px 16px;
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.invite-code-value {
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  user-select: all;
+}
+
+.invite-code-block small {
+  color: var(--muted);
+  font-size: var(--copy-size);
+}
+
+.invite-code-block.is-expired .invite-code-value {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.invite-code-block.is-expired small {
+  color: var(--danger);
+}
+
+.invite-revoke-button {
+  width: 100%;
+  margin-top: 16px;
+  color: var(--danger);
 }
 
 .settings-row-chevron svg {

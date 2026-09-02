@@ -2429,11 +2429,28 @@ function technicianName(technician) {
   return [technician.first_name, technician.last_name].filter(Boolean).join(" ");
 }
 
-// "owner" is the stored role value (tied to auth/signup and RLS), but reads
-// clearer to staff as "Admin" -- a display-only relabel, not a schema change.
+// Owner created the workshop and cannot be invited away or removed while they
+// are the last one; Admin is the invitable equivalent with the same rights.
 function roleLabel(role) {
-  if (role === "owner") return "Admin";
+  if (role === "owner") return "Owner";
+  if (role === "admin") return "Admin";
   return role.charAt(0).toUpperCase() + role.slice(1);
+}
+
+// The roster row's live invite, if it still has one. A staff member who has
+// redeemed their code has a profile_id and no pending invite.
+function technicianInvite(technician) {
+  const invite = relatedRecord(technician.invite);
+  if (!invite || invite.consumed_at) return null;
+  return invite;
+}
+
+function isInvitePending(technician) {
+  return !technician.profile_id && Boolean(technicianInvite(technician));
+}
+
+function inviteExpired(invite) {
+  return Boolean(invite) && new Date(invite.expires_at).getTime() < Date.now();
 }
 
 function renderWorkshopProfilePage() {
@@ -2442,6 +2459,8 @@ function renderWorkshopProfilePage() {
     <span class="settings-group-label">Workshop details</span>
     <div class="settings-list">
       ${settingsEditRow({ title: "Workshop name", value: shop.name || "Not set", field: "name" })}
+      ${settingsEditRow({ title: "Workshop phone", value: shop.phone || "Not set", field: "phone", optional: true })}
+      ${settingsEditRow({ title: "Workshop email", value: shop.email || "Not set", field: "email", optional: true })}
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
@@ -2484,10 +2503,10 @@ function technicianSearchText(technician) {
 }
 
 function staffBreakdown(technicians) {
-  const counts = { technician: 0, manager: 0, owner: 0 };
+  const counts = { technician: 0, admin: 0, owner: 0 };
   technicians.forEach((technician) => { counts[technician.role] = (counts[technician.role] || 0) + 1; });
-  const labels = { technician: ["Technician", "Technicians"], manager: ["Manager", "Managers"], owner: ["Admin", "Admins"] };
-  return ["technician", "manager", "owner"]
+  const labels = { technician: ["Technician", "Technicians"], admin: ["Admin", "Admins"], owner: ["Owner", "Owners"] };
+  return ["technician", "admin", "owner"]
     .filter((role) => counts[role])
     .map((role) => `${counts[role]} ${counts[role] === 1 ? labels[role][0] : labels[role][1]}`)
     .join(" &middot; ");
@@ -2495,17 +2514,22 @@ function staffBreakdown(technicians) {
 
 function renderTechniciansPage() {
   const rows = state.technicians.length
-    ? state.technicians.map((technician) => `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
+    ? state.technicians.map((technician) => {
+      const pending = isInvitePending(technician);
+      const expired = pending && inviteExpired(technicianInvite(technician));
+      const status = pending ? (expired ? "Expired" : "Invited") : technician.active ? "Active" : "Inactive";
+      return `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
         <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
-        <span class="settings-row-value">${technician.active ? "Active" : "Inactive"}</span>
+        <span class="settings-row-value${pending ? (expired ? " is-expired" : " is-invited") : ""}">${status}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>`).join("")
+      </button>`;
+    }).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
   return `${settingsPageHeader("Manage staff", "Profile & management")}
     <label class="form-field jobs-search-field jobs-search-field-tight" for="staff-search">
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search by name or role" autocomplete="off" /></span>
     </label>
-    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Add user</button></div>
+    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>
     <div class="field-header"><span class="field-label">Staff</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
     <div class="settings-list">${rows}</div>
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
@@ -2607,6 +2631,8 @@ function renderWhatsNewPage() {
 function openShopFieldModal({ field, title, optional }) {
   const current = {
     name: state.shop?.name,
+    phone: state.shop?.phone,
+    email: state.shop?.email,
     branchId: state.shop?.branch_id,
     region: state.shop?.region,
     timezone: state.shop?.timezone,
@@ -2642,39 +2668,99 @@ function openBayModal(bay) {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Add bay" : "Edit bay" });
 }
 
+function bayOptionsHtml(selectedBayId) {
+  return [`<option value=""${selectedBayId ? "" : " selected"}>No bay assigned</option>`]
+    .concat(state.bays.map((bay) => `<option value="${bay.id}"${selectedBayId === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
+    .join("");
+}
+
+// Owner is deliberately absent: it belongs to whoever created the workshop and
+// is not something an invite can hand out.
+function roleOptionsHtml(selectedRole) {
+  return ["technician", "admin"]
+    .map((role) => `<option value="${role}"${(selectedRole || "technician") === role ? " selected" : ""}>${roleLabel(role)}</option>`)
+    .join("");
+}
+
+// Adding staff means inviting them, so this collects only what the admin
+// plausibly knows -- the invitee fills in their own surname and confirms their
+// contact details when they redeem the code.
+function openInviteStaffModal() {
+  openSheet(`<div class="sheet-head"><div><h2>Invite staff</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+    <form class="settings-edit-form" id="invite-staff-form" autocomplete="off">
+      <p class="sheet-intro">They'll get an invitation code to create their own login. You can hand it to them in person — nothing is sent automatically.</p>
+      <div class="customer-details-grid">
+        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" placeholder="First name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role">${roleOptionsHtml("technician")}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Mobile <span class="muted">(optional)</span></span></div><input class="input" name="mobile" type="tel" inputmode="tel" placeholder="0412 345 678" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" placeholder="name@email.com" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptionsHtml(null)}</select>${icon("down")}</span></label>
+      </div>
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("plus")} Create invite</button>
+      </div>
+    </form>
+    </div>`, { ariaLabel: "Invite staff" });
+}
+
+// Shown immediately after an invite is created, and reachable again from the
+// staff row while the code is still pending. This screen is the only delivery
+// mechanism -- there is no email or SMS -- so the code is large and copyable.
+function openInviteCodeModal(technician, invite) {
+  const expires = new Date(invite.expires_at);
+  const expiryLabel = new Intl.DateTimeFormat("en-AU", { weekday: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(expires);
+  const expired = inviteExpired(invite);
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(technicianName(technician) || "Invitation")}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <p class="sheet-intro">Give this code to ${escapeHTML(technician.first_name || "them")}. They open Argos One, tap <strong>Join a workshop</strong> and enter it to create their login.</p>
+      <div class="invite-code-block${expired ? " is-expired" : ""}">
+        <span class="field-label">Invitation code</span>
+        <strong class="invite-code-value">${escapeHTML(invite.code)}</strong>
+        <small>${expired ? "This code has expired — generate a new one." : `Expires ${escapeHTML(expiryLabel)}`}</small>
+      </div>
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="copy-invite-code" data-code="${escapeHTML(invite.code)}">${icon("clipboard")} Copy code</button>
+        <button class="primary-button" type="button" data-action="regenerate-invite" data-technician-id="${technician.id}">${icon("plus")} New code</button>
+      </div>
+      <button class="text-button invite-revoke-button" type="button" data-action="revoke-invite" data-technician-id="${technician.id}">Cancel this invitation</button>
+    </div>`, { ariaLabel: "Invitation code" });
+}
+
 function openTechnicianModal(technician) {
-  const isNew = !technician;
-  const bayOptions = [`<option value=""${technician?.default_bay_id ? "" : " selected"}>No bay assigned</option>`]
-    .concat(state.bays.map((bay) => `<option value="${bay.id}"${technician?.default_bay_id === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
-    .join("");
-  const roleOptions = ["technician", "manager", "owner"]
-    .map((role) => `<option value="${role}"${(technician?.role || "technician") === role ? " selected" : ""}>${roleLabel(role)}</option>`)
-    .join("");
-  // A shop with zero active Admins has nobody left who can reach this very
+  if (!technician) return openInviteStaffModal();
+  const pendingInvite = isInvitePending(technician) ? technicianInvite(technician) : null;
+  if (pendingInvite) return openInviteCodeModal(technician, pendingInvite);
+
+  // A shop with zero active Owners has nobody left who can reach this very
   // screen to fix that, so editing the last one locks the controls that
   // could strand the shop rather than only rejecting the save afterwards.
   const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
-  const isLastOwner = Boolean(technician && technician.role === "owner" && technician.active && activeOwnerCount <= 1);
-  openSheet(`<div class="sheet-head"><div><h2>${isNew ? "Add user" : "Edit staff"}</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
+  // Owner stays in the list only when editing an owner: it is not offered as a
+  // choice, but demoting the last one is blocked anyway.
+  const roleOptions = technician.role === "owner"
+    ? `<option value="owner" selected>${roleLabel("owner")}</option>${roleOptionsHtml(null)}`
+    : roleOptionsHtml(technician.role);
+  openSheet(`<div class="sheet-head"><div><h2>Edit staff</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
-    <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician?.id || ""}">
+    <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician.id}">
       <div class="customer-details-grid">
-        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician?.first_name || "")}" placeholder="First name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician?.last_name || "")}" placeholder="Last name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician?.initials || "")}" placeholder="e.g. DS" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician?.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician.first_name || "")}" placeholder="First name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician.last_name || "")}" placeholder="Last name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician.initials || "")}" placeholder="e.g. DS" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptions}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptionsHtml(technician.default_bay_id)}</select>${icon("down")}</span></label>
       </div>
-      ${isNew ? "" : settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
+      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
       <div class="profile-note-actions">
-        ${isNew
-          ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
-          : `<button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>`}
-        <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
+        <button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>
+        <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
-    </div>`, { ariaLabel: isNew ? "Add user" : "Edit staff" });
+    </div>`, { ariaLabel: "Edit staff" });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
@@ -2779,18 +2865,90 @@ async function saveTechnician(form) {
   };
   if (!payload.firstName) return showToast("Give the technician a first name");
   if (!payload.lastName) return showToast("Give the technician a last name");
-  const technicianId = form.dataset.technicianId;
   try {
-    await apiRequest(technicianId ? `/api/shop/technicians/${technicianId}` : "/api/shop/technicians", {
-      method: technicianId ? "PATCH" : "POST",
+    await apiRequest(`/api/shop/technicians/${form.dataset.technicianId}`, {
+      method: "PATCH",
       body: JSON.stringify(payload),
     });
     closeSheet();
     await loadWorkshopRoster();
-    showToast(technicianId ? "Technician updated" : "Technician added");
+    showToast("Staff member updated");
     render();
   } catch (error) {
     showToast(error.message || "Could not save that technician");
+  }
+}
+
+// Creates the roster row and its code together, then hands straight over to
+// the code screen -- that display is the only way the code reaches the staff
+// member, so it must never be skipped.
+async function saveStaffInvite(form) {
+  const data = new FormData(form);
+  const payload = {
+    firstName: String(data.get("firstName") || "").trim(),
+    email: String(data.get("email") || "").trim() || null,
+    mobile: String(data.get("mobile") || "").trim() || null,
+    role: String(data.get("role") || "technician"),
+    defaultBayId: String(data.get("defaultBayId") || "") || null,
+  };
+  if (!payload.firstName) return showToast("Give the staff member a first name");
+  try {
+    const { technician, invite } = await apiRequest("/api/shop/technicians", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    await loadWorkshopRoster();
+    render();
+    openInviteCodeModal(technician, invite);
+  } catch (error) {
+    showToast(error.message || "Could not create that invitation");
+  }
+}
+
+async function regenerateInvite(technicianId) {
+  try {
+    const { invite } = await apiRequest(`/api/shop/technicians/${technicianId}/invite`, { method: "POST" });
+    await loadWorkshopRoster();
+    render();
+    const technician = state.technicians.find((entry) => entry.id === technicianId);
+    if (technician) openInviteCodeModal(technician, invite);
+    showToast("New code generated");
+  } catch (error) {
+    showToast(error.message || "Could not generate a new code");
+  }
+}
+
+async function revokeInvite(technicianId) {
+  try {
+    await apiRequest(`/api/shop/technicians/${technicianId}/invite`, { method: "DELETE" });
+    await apiRequest(`/api/shop/technicians/${technicianId}`, { method: "DELETE" });
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast("Invitation cancelled");
+    render();
+  } catch (error) {
+    showToast(error.message || "Could not cancel that invitation");
+  }
+}
+
+// navigator.clipboard is unavailable on insecure origins and older tablet
+// browsers, so fall back to selecting the code for a manual copy.
+async function copyInviteCode(code) {
+  try {
+    await navigator.clipboard.writeText(code);
+    showToast("Code copied");
+  } catch (_) {
+    const target = document.querySelector(".invite-code-value");
+    if (target && window.getSelection) {
+      const range = document.createRange();
+      range.selectNodeContents(target);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      showToast("Press and hold to copy the code");
+      return;
+    }
+    showToast("Could not copy — write the code down");
   }
 }
 
@@ -4217,6 +4375,9 @@ document.addEventListener("click", (event) => {
     if (action === "add-bay") return openBayModal(null);
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
+    if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
+    if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId);
+    if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId);
     if (action === "edit-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     // The switch inside a bay/technician form is local state only -- it is read
     // off the DOM when the form is submitted, not saved on its own.
@@ -4745,6 +4906,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "shop-field-form") return saveShopField(event.target);
   if (event.target.id === "bay-form") return saveBay(event.target);
   if (event.target.id === "technician-form") return saveTechnician(event.target);
+  if (event.target.id === "invite-staff-form") return saveStaffInvite(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
     const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');

@@ -8,6 +8,7 @@ const publicEnvSchema = z.object({
 const serverEnvSchema = publicEnvSchema.extend({
   GROQ_API_KEY: z.string().min(20).optional(),
   SERPER_API_KEY: z.string().min(20).optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
 })
 
 export function publicEnv() {
@@ -22,5 +23,6 @@ export function serverEnv() {
     ...publicEnv(),
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     SERPER_API_KEY: process.env.SERPER_API_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   })
 }

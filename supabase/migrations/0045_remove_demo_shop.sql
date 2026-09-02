@@ -1,0 +1,11 @@
+-- Removes the "Argos One Demo" fixture shop seeded by 0036_demo_shop.sql.
+-- The user is instead creating a real demo shop through the normal signup
+-- flow, migrating the current fixture's live-looking content over by hand,
+-- so this canned fabricated-data version is no longer needed and would only
+-- collide on name with the replacement.
+--
+-- Every shop-scoped table's shop_id column is `on delete cascade` (0003 and
+-- onward), so removing the shop row is enough to take its customers,
+-- vehicles, jobs, DTC codes, repair records/steps/items, vehicle profiles and
+-- notes, and network contribution rows with it.
+delete from public.shops where id = '00000000-0000-0000-0000-000000000201';

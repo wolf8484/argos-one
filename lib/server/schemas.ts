@@ -121,6 +121,8 @@ export const resolveProfileSchema = z.object({
 export const shopSettingsSchema = z.object({
   sharesRepairData: z.boolean().optional(),
   name: z.string().trim().min(1).max(160).optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  email: z.string().trim().email().max(160).nullable().optional(),
   branchId: z.string().trim().max(60).nullable().optional(),
   region: z.string().trim().min(1).max(80).optional(),
   timezone: z.string().trim().min(1).max(80).optional(),
@@ -138,14 +140,45 @@ export const baySchema = z.object({
 
 export const updateBaySchema = baySchema.partial()
 
+// Last name is optional here because an invited staff member supplies their
+// own surname when they redeem the code -- the admin creating the invite is
+// only asked for a first name.
 export const technicianSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
-  lastName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().max(80).nullable().optional(),
   initials: z.string().trim().max(4).nullable().optional(),
   employeeId: z.string().trim().max(60).nullable().optional(),
-  role: z.enum(['owner', 'manager', 'technician']).default('technician'),
+  role: z.enum(['owner', 'admin', 'technician']).default('technician'),
   active: z.boolean().default(true),
   defaultBayId: z.string().uuid().nullable().optional(),
 })
 
 export const updateTechnicianSchema = technicianSchema.partial()
+
+// What an owner/admin fills in to invite someone. Contact details are both
+// optional: the admin may only know the person's name, and the invitee
+// supplies whichever identifier they actually have when they join.
+export const inviteStaffSchema = z.object({
+  firstName: z.string().trim().min(1).max(80),
+  email: z.string().trim().email().max(160).nullable().optional(),
+  mobile: z.string().trim().max(30).nullable().optional(),
+  role: z.enum(['admin', 'technician']).default('technician'),
+  defaultBayId: z.string().uuid().nullable().optional(),
+})
+
+export const inviteLookupSchema = z.object({
+  code: z.string().trim().min(4).max(12),
+})
+
+// Redemption. At least one identifier is required -- it becomes the login.
+export const joinWorkshopSchema = z.object({
+  code: z.string().trim().min(4).max(12),
+  firstName: z.string().trim().min(1).max(80),
+  lastName: z.string().trim().min(1).max(80),
+  email: z.string().trim().email().max(160).nullable().optional(),
+  mobile: z.string().trim().max(30).nullable().optional(),
+  password: z.string().min(8).max(200),
+}).refine((value) => Boolean(value.email) || Boolean(value.mobile), {
+  message: 'Enter an email address or a mobile number',
+  path: ['email'],
+})
