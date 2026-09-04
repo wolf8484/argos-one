@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { isEmailIdentifier, normalizePhone, staffAuthEmail } from '@/lib/identity'
+import { normalizePhone } from '@/lib/identity'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 import { PasswordField, ReviewRow } from './fields'
 import styles from './login.module.css'
@@ -60,22 +60,25 @@ export default function LoginPage() {
     const form = new FormData(event.currentTarget)
     const identifier = String(form.get('identifier') || '').trim()
     const password = String(form.get('password') || '')
-    // One field, two credential types: staff invited by mobile have no email
-    // to sign in with. Their account is keyed under a placeholder email derived
-    // from that same number (see staffAuthEmail) rather than Supabase's native
-    // phone auth, which needs a paid SMS provider just to allow sign-in.
-    let credentials: { email: string; password: string }
-    if (isEmailIdentifier(identifier)) {
-      credentials = { email: identifier, password }
-    } else {
-      const phone = normalizePhone(identifier)
-      if (!phone) {
-        setBusy(false)
-        return setMessage("That mobile number doesn't look right.")
-      }
-      credentials = { email: staffAuthEmail(phone), password }
+    // One field, two credential types. Which email a mobile belongs to can only
+    // be answered server-side -- staff who joined with a mobile *and* an email
+    // are keyed on the real one -- so resolve it before signing in rather than
+    // guessing the placeholder form here and locking half of them out.
+    let email: string
+    try {
+      const response = await fetch('/api/auth/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Could not check those details')
+      email = payload.email
+    } catch (error) {
+      setBusy(false)
+      return setMessage((error as Error).message)
     }
-    const { error } = await createBrowserSupabaseClient().auth.signInWithPassword(credentials)
+    const { error } = await createBrowserSupabaseClient().auth.signInWithPassword({ email, password })
     setBusy(false)
     if (error) return setMessage(error.message)
     const next = new URLSearchParams(window.location.search).get('next')

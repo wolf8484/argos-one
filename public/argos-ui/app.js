@@ -2882,6 +2882,10 @@ async function saveTechnician(form) {
 // Creates the roster row and its code together, then hands straight over to
 // the code screen -- that display is the only way the code reaches the staff
 // member, so it must never be skipped.
+// Every one of these disables its own button for the round trip. Generating a
+// code has no optimistic UI to show progress, so without it the button looks
+// inert and a second press quietly issues a second code, replacing the first
+// one the admin may have already read out.
 async function saveStaffInvite(form) {
   const data = new FormData(form);
   const payload = {
@@ -2892,6 +2896,9 @@ async function saveStaffInvite(form) {
     defaultBayId: String(data.get("defaultBayId") || "") || null,
   };
   if (!payload.firstName) return showToast("Give the staff member a first name");
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  setButtonLoading(submitButton, "Creating…");
   try {
     const { technician, invite } = await apiRequest("/api/shop/technicians", {
       method: "POST",
@@ -2901,11 +2908,14 @@ async function saveStaffInvite(form) {
     render();
     openInviteCodeModal(technician, invite);
   } catch (error) {
+    resetButtonLoading(submitButton);
     showToast(error.message || "Could not create that invitation");
   }
 }
 
-async function regenerateInvite(technicianId) {
+async function regenerateInvite(technicianId, button) {
+  if (button?.disabled) return;
+  setButtonLoading(button, "Generating…");
   try {
     const { invite } = await apiRequest(`/api/shop/technicians/${technicianId}/invite`, { method: "POST" });
     await loadWorkshopRoster();
@@ -2914,11 +2924,14 @@ async function regenerateInvite(technicianId) {
     if (technician) openInviteCodeModal(technician, invite);
     showToast("New code generated");
   } catch (error) {
+    resetButtonLoading(button);
     showToast(error.message || "Could not generate a new code");
   }
 }
 
-async function revokeInvite(technicianId) {
+async function revokeInvite(technicianId, button) {
+  if (button?.disabled) return;
+  setButtonLoading(button, "Cancelling…");
   try {
     await apiRequest(`/api/shop/technicians/${technicianId}/invite`, { method: "DELETE" });
     await apiRequest(`/api/shop/technicians/${technicianId}`, { method: "DELETE" });
@@ -2927,6 +2940,7 @@ async function revokeInvite(technicianId) {
     showToast("Invitation cancelled");
     render();
   } catch (error) {
+    resetButtonLoading(button);
     showToast(error.message || "Could not cancel that invitation");
   }
 }
@@ -4376,8 +4390,8 @@ document.addEventListener("click", (event) => {
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
     if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
-    if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId);
-    if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId);
+    if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId, actionButton);
+    if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "edit-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     // The switch inside a bay/technician form is local state only -- it is read
     // off the DOM when the form is submitted, not saved on its own.

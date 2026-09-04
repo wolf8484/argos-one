@@ -90,10 +90,18 @@ export async function redeemInvite(input: {
 
   const email = input.email?.trim() || null
   const phone = input.mobile?.trim() ? normalizePhone(input.mobile) : null
-  if (input.mobile?.trim() && !phone) {
+  if (!phone) {
     throw new ApiError("That mobile number doesn't look right. Use a format like 0412 345 678.", 400)
   }
-  if (!email && !phone) throw new ApiError('Enter an email address or a mobile number.', 400)
+
+  // The mobile is a sign-in identifier, so a second account cannot claim one
+  // that is already in use -- /api/auth/resolve maps a typed number to exactly
+  // one login, and a duplicate would make that mapping ambiguous.
+  const { data: phoneTaken } = await admin
+    .from('profiles').select('id').eq('phone', phone).maybeSingle()
+  if (phoneTaken) {
+    throw new ApiError('An account already uses that mobile number. Sign in instead.', 409)
+  }
 
   const fullName = `${input.firstName.trim()} ${input.lastName.trim()}`.trim()
   // Auth always keys off an email -- a real one if they gave us one, otherwise

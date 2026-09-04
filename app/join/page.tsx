@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-import { formatPhoneForDisplay, isEmailIdentifier, normalizePhone, staffAuthEmail } from '@/lib/identity'
+import { formatPhoneForDisplay, normalizePhone, staffAuthEmail } from '@/lib/identity'
 import { PasswordField, ReviewRow } from '../login/fields'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 import styles from '../login/login.module.css'
@@ -59,7 +59,8 @@ export default function JoinPage() {
     const form = new FormData(event.currentTarget)
     const email = String(form.get('email') || '').trim()
     const mobile = String(form.get('mobile') || '').trim()
-    if (!email && !mobile) return setMessage('Enter an email or a mobile — you sign in with one of them.')
+    if (!mobile) return setMessage('Enter your mobile number — it becomes how you sign in.')
+    if (!normalizePhone(mobile)) return setMessage("That mobile number doesn't look right. Try 0412 345 678.")
     setDraft((current) => ({
       ...current,
       firstName: String(form.get('firstName') || '').trim(),
@@ -95,14 +96,12 @@ export default function JoinPage() {
       })
       // The account is created pre-confirmed, so there is no reason to make
       // them retype the password they set moments ago -- sign them straight in.
-      // Mobile-only accounts are keyed under a placeholder email (see
-      // staffAuthEmail / redeemInvite) rather than Supabase's native phone
-      // auth, which needs a paid SMS provider just to allow sign-in.
-      const identifier = draft.email || draft.mobile
-      const credentials = isEmailIdentifier(identifier)
-        ? { email: identifier, password: draft.password }
-        : { email: staffAuthEmail(normalizePhone(identifier) ?? identifier), password: draft.password }
-      await createBrowserSupabaseClient().auth.signInWithPassword(credentials).catch(() => {})
+      // Mirrors redeemInvite's choice of auth email exactly: the real address
+      // when they gave one, otherwise the placeholder derived from their mobile
+      // (Supabase's own phone auth needs a paid SMS provider to allow sign-in).
+      const email = draft.email || staffAuthEmail(normalizePhone(draft.mobile) ?? draft.mobile)
+      await createBrowserSupabaseClient().auth
+        .signInWithPassword({ email, password: draft.password }).catch(() => {})
       setStep('done')
     } catch (error) {
       setMessage((error as Error).message)
@@ -134,14 +133,14 @@ export default function JoinPage() {
         <label>First name<input name="firstName" defaultValue={draft.firstName} autoComplete="given-name" required /></label>
         <label>Last name<input name="lastName" defaultValue={draft.lastName} autoComplete="family-name" required /></label>
         <label>
-          <span className={styles.labelText}>Email {!invite.email && <span className={styles.optional}>(optional)</span>}</span>
-          <input name="email" type="email" inputMode="email" defaultValue={draft.email} autoComplete="email" placeholder="name@email.com" />
+          <span className={styles.labelText}>Mobile</span>
+          <input name="mobile" type="tel" inputMode="tel" defaultValue={draft.mobile} autoComplete="tel" placeholder="0412 345 678" required />
         </label>
         <label>
-          <span className={styles.labelText}>Mobile {!invite.mobile && <span className={styles.optional}>(optional)</span>}</span>
-          <input name="mobile" type="tel" inputMode="tel" defaultValue={draft.mobile} autoComplete="tel" placeholder="0412 345 678" />
+          <span className={styles.labelText}>Email <span className={styles.optional}>(optional)</span></span>
+          <input name="email" type="email" inputMode="email" defaultValue={draft.email} autoComplete="email" placeholder="name@email.com" />
         </label>
-        <p className={styles.hint}>Use at least one — it becomes how you sign in. You&apos;ll join as {roleLabels[invite.role] || invite.role}.</p>
+        <p className={styles.hint}>Your mobile is how you sign in. You&apos;ll join as {roleLabels[invite.role] || invite.role}.</p>
         {message && <p className={styles.message} role="status">{message}</p>}
         <div className={styles.actions}>
           <button className={styles.primary} type="submit">Continue</button>

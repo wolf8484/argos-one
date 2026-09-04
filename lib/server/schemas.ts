@@ -176,9 +176,9 @@ export const joinWorkshopSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   email: z.string().trim().email().max(160).nullable().optional(),
-  mobile: z.string().trim().max(30).nullable().optional(),
+  // Mandatory, unlike at invite time: the mobile is the one identifier every
+  // staff member is guaranteed to be able to sign in with, so letting someone
+  // finish onboarding without it is how an account gets stranded.
+  mobile: z.string().trim().min(1).max(30),
   password: z.string().min(8).max(200),
-}).refine((value) => Boolean(value.email) || Boolean(value.mobile), {
-  message: 'Enter an email address or a mobile number',
-  path: ['email'],
 })
