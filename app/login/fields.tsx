@@ -9,12 +9,29 @@ import styles from './login.module.css'
  * gloves or dirty hands, where a mistyped password is likely and invisible --
  * being able to check what was typed matters more here than on a desktop.
  */
-export function PasswordField({ name, label, autoComplete }: { name: string; label: string; autoComplete: string }) {
+export const PASSWORD_MIN_LENGTH = 8
+
+export function PasswordField({ name, label, autoComplete, rule }: {
+  name: string
+  label: string
+  autoComplete: string
+  /** Shows a live requirement line under the field that ticks green once met. */
+  rule?: boolean
+}) {
   const [visible, setVisible] = useState(false)
+  const [length, setLength] = useState(0)
+  const met = length >= PASSWORD_MIN_LENGTH
   return <label>
     {label}
     <span className={styles.passwordControl}>
-      <input name={name} type={visible ? 'text' : 'password'} autoComplete={autoComplete} minLength={8} required />
+      <input
+        name={name}
+        type={visible ? 'text' : 'password'}
+        autoComplete={autoComplete}
+        minLength={PASSWORD_MIN_LENGTH}
+        onChange={(event) => setLength(event.target.value.length)}
+        required
+      />
       <button
         type="button"
         className={styles.reveal}
@@ -25,12 +42,24 @@ export function PasswordField({ name, label, autoComplete }: { name: string; lab
         {visible ? <EyeOff /> : <Eye />}
       </button>
     </span>
+    {/* Always on screen, not just once it fails: the requirement is what to do
+        next, so hiding it until after a rejected attempt is the wrong moment. */}
+    {rule && <span className={met ? `${styles.rule} ${styles.ruleMet}` : styles.rule}>
+      <Check />
+      At least {PASSWORD_MIN_LENGTH} characters
+    </span>}
   </label>
 }
 
 export function ReviewRow({ label, value }: { label: string; value: string }) {
   if (!value) return null
   return <div className={styles.reviewRow}><span>{label}</span><strong>{value}</strong></div>
+}
+
+function Check() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="18" height="18">
+    <path d="m4 12.5 5.5 5.5L20 6.5" />
+  </svg>
 }
 
 function Eye() {

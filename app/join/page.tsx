@@ -153,9 +153,8 @@ export default function JoinPage() {
   if (step === 'password' && invite) {
     return <Shell eyebrow={`Join ${invite.shopName}`} step="Step 2 of 2" heading="Create password">
       <form key="password" onSubmit={capturePassword} className={styles.form}>
-        <PasswordField name="password" label="Password" autoComplete="new-password" />
+        <PasswordField name="password" label="Password" autoComplete="new-password" rule />
         <PasswordField name="confirmPassword" label="Repeat password" autoComplete="new-password" />
-        <p className={styles.hint}>At least 8 characters.</p>
         {message && <p className={styles.message} role="status">{message}</p>}
         <div className={styles.actions}>
           <button className={styles.primary} type="submit">Continue</button>

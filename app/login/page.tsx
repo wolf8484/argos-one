@@ -194,9 +194,8 @@ export default function LoginPage() {
     if (step === 3) {
       return <Shell heading="Create password" eyebrow="Create workshop" step="Step 3 of 3">
         <form key="step-3" onSubmit={(event) => captureStep(event, ['password'], 4)} className={styles.form}>
-          <PasswordField name="password" label="Password" autoComplete="new-password" />
+          <PasswordField name="password" label="Password" autoComplete="new-password" rule />
           <PasswordField name="confirmPassword" label="Repeat password" autoComplete="new-password" />
-          <p className={styles.hint}>At least 8 characters.</p>
           {message && <p className={styles.message} role="status">{message}</p>}
           <div className={styles.actions}>
             <button className={styles.primary} type="submit">Continue</button>

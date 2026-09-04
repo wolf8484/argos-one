@@ -46,6 +46,18 @@
 
 .hint{margin:0;color:#c3c3c3;font-size:15px;line-height:22px}
 .optional{color:#6f6f6b;text-transform:none}
-.message{margin:0;color:#FFC001;text-transform:none;font-size:16px;line-height:22px}
+
+/* Live password requirement. Muted until satisfied, then the app's completed
+   check-item green (#22c55e, as used by .complete-job-check-item.is-done). */
+.rule{display:flex;align-items:center;gap:8px;color:#9b9b97;font-size:15px;line-height:22px;text-transform:none;font-weight:400}
+.rule svg{flex:none}
+.ruleMet{color:#22c55e}
+
+/* This only ever carries a failure, so it is red -- but a lighter tint of the
+   app's --danger (#b91c1c) rather than the token itself. That value is a
+   button *fill* carrying white text; as text on #111 it measures 2.92:1,
+   under the 4.5:1 minimum, which is the wrong place to lose legibility on a
+   glare-lit workshop tablet. This tint holds the same hue at 4.99:1. */
+.message{margin:0;color:#ef4444;text-transform:none;font-size:16px;line-height:22px}
 
 @media(max-width:500px){.page{padding:0}.panel{min-height:100svh;align-content:center;padding:24px}}
