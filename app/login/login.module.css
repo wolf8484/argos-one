@@ -52,7 +52,7 @@
 .notice{display:flex;gap:12px;align-items:flex-start;padding:16px;background:#1a1a1a;border:1px solid #FFC001}
 .notice svg{flex:none;color:#FFC001;margin-top:1px}
 .noticeTitle{display:block;color:#f0f0f0;font-size:16px;line-height:22px;font-weight:600;text-transform:none}
-.noticeText{margin:4px 0 0;color:#9b9b97;font-size:15px;line-height:22px;text-transform:none}
+.noticeText{margin:4px 0 0;color:#c3c3c3;font-size:15px;line-height:22px;text-transform:none}
 .optional{color:#6f6f6b;text-transform:none}
 
 /* Live password requirement. Muted until satisfied, then the app's completed
