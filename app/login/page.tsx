@@ -178,6 +178,7 @@ export default function LoginPage() {
     if (step === 2) {
       return <Shell heading="Owner details" eyebrow="Create workshop" step="Step 2 of 3">
         <form key="step-2" onSubmit={(event) => captureStep(event, ['firstName', 'lastName', 'ownerEmail', 'ownerPhone'], 3)} className={styles.form}>
+          <p className={styles.notice}>This email and mobile are your own sign-in details — not the workshop&apos;s contact info from the last step.</p>
           <label>First name<input name="firstName" defaultValue={draft.firstName} autoComplete="given-name" required /></label>
           <label>Last name<input name="lastName" defaultValue={draft.lastName} autoComplete="family-name" required /></label>
           <label>Your email<input name="ownerEmail" type="email" inputMode="email" defaultValue={draft.ownerEmail} autoComplete="email" required /></label>

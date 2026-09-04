@@ -45,6 +45,10 @@
 .reviewRow strong{font-weight:500;line-height:22px;text-align:right;word-break:break-word}
 
 .hint{margin:0;color:#c3c3c3;font-size:15px;line-height:22px}
+
+/* Mirrors the app's own .disclaimer (argos-ui.css): solid notice yellow,
+   dark text, for a message the reader should not skim past. */
+.notice{margin:0;padding:13px 14px;background:#f7e75d;color:#111;font-size:15px;line-height:1.4}
 .optional{color:#6f6f6b;text-transform:none}
 
 /* Live password requirement. Muted until satisfied, then the app's completed
