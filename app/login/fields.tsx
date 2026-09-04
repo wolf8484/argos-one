@@ -85,9 +85,29 @@ export function PhoneField({ name, label, defaultValue = '', placeholder, option
   </label>
 }
 
+/** Bordered callout with an info icon, for a fact worth pausing on rather than
+ * skimming past (e.g. "this is your login, not the workshop's contact info"). */
+export function Notice({ title, children }: { title: string; children: React.ReactNode }) {
+  return <div className={styles.notice}>
+    <Info />
+    <div>
+      <strong className={styles.noticeTitle}>{title}</strong>
+      <p className={styles.noticeText}>{children}</p>
+    </div>
+  </div>
+}
+
 export function ReviewRow({ label, value }: { label: string; value: string }) {
   if (!value) return null
   return <div className={styles.reviewRow}><span>{label}</span><strong>{value}</strong></div>
+}
+
+function Info() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" width="20" height="20">
+    <circle cx="12" cy="12" r="9.5" />
+    <path d="M12 11v5.5" strokeLinecap="round" />
+    <circle cx="12" cy="7.6" r="1.15" fill="currentColor" stroke="none" />
+  </svg>
 }
 
 function Check() {

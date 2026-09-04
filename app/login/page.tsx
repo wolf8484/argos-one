@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { normalizePhone } from '@/lib/identity'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
-import { PasswordField, PhoneField, ReviewRow } from './fields'
+import { Notice, PasswordField, PhoneField, ReviewRow } from './fields'
 import styles from './login.module.css'
 
 type Draft = {
@@ -178,7 +178,9 @@ export default function LoginPage() {
     if (step === 2) {
       return <Shell heading="Owner details" eyebrow="Create workshop" step="Step 2 of 3">
         <form key="step-2" onSubmit={(event) => captureStep(event, ['firstName', 'lastName', 'ownerEmail', 'ownerPhone'], 3)} className={styles.form}>
-          <p className={styles.notice}>This is your personal login, not the workshop&apos;s contact details you just entered.</p>
+          <Notice title="Create your personal login">
+            These are the details you are gonna need to login on your account, not the workshop details from the previous step.
+          </Notice>
           <label>First name<input name="firstName" defaultValue={draft.firstName} autoComplete="given-name" required /></label>
           <label>Last name<input name="lastName" defaultValue={draft.lastName} autoComplete="family-name" required /></label>
           <label>Your email<input name="ownerEmail" type="email" inputMode="email" defaultValue={draft.ownerEmail} autoComplete="email" required /></label>
