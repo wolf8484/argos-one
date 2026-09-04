@@ -4388,8 +4388,15 @@ document.addEventListener("click", (event) => {
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "open-settings-page") {
       if (actionButton.dataset.locked === "true") return showToast("You don't have access to this section.");
-      settingsOpenPage(actionButton.dataset.settingsPage || null);
-      return render();
+      const page = actionButton.dataset.settingsPage || null;
+      settingsOpenPage(page);
+      render();
+      // The roster is only fetched at app boot and after actions taken from
+      // this same tab, so a staff member joining from their own device (the
+      // whole point of the invite flow) would otherwise stay "Invited" here
+      // until the admin reloads or logs out and back in.
+      if (page === "technicians") loadWorkshopRoster().then(render);
+      return;
     }
     if (action === "settings-back") {
       settingsGoBack();

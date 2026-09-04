@@ -162,7 +162,7 @@ export default function JoinPage() {
   }
 
   if (step === 'review' && invite) {
-    return <Shell eyebrow="Join a workshop: Review" heading="Review and join">
+    return <Shell eyebrow={`Join ${invite.shopName}`} heading="Review and join">
       <div className={styles.reviewList}>
         <ReviewRow label="Workshop" value={invite.shopName} />
         <ReviewRow label="Name" value={`${draft.firstName} ${draft.lastName}`.trim()} />
@@ -178,7 +178,7 @@ export default function JoinPage() {
     </Shell>
   }
 
-  return <Shell eyebrow="Workshop access" heading="You're in">
+  return <Shell eyebrow={invite ? `Join ${invite.shopName}` : 'Workshop access'} heading="You're in">
     <p className={styles.hint}>You&apos;ve joined {invite?.shopName}. Next time, sign in with your email or mobile and the password you just set.</p>
     <div className={styles.actions}>
       <button className={styles.primary} type="button" onClick={() => { router.replace('/dashboard'); router.refresh() }}>Go to app</button>
