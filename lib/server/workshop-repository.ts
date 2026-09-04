@@ -640,7 +640,8 @@ export class WorkshopRepository {
     const { data, error } = await this.supabase
       .from('shop_technicians')
       .select(`id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at,
-        invite:shop_invites(code,email,mobile,expires_at,consumed_at)`)
+        invite:shop_invites(code,email,mobile,expires_at,consumed_at),
+        profile:profiles(phone,email)`)
       .order('position')
       .order('first_name')
     if (error) throw error

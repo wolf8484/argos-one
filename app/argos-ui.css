@@ -3723,6 +3723,41 @@ button.settings-toggle-row {
   height: 19px;
 }
 
+/* A quieter delete: same shape as .secondary-button, but the stroke, label
+   and icon carry --danger against a transparent fill, rather than the solid
+   fill of .danger-button. For a two-CTA row (e.g. staff details) where
+   Delete sits beside Edit/Save, the solid-red treatment reads as more
+   alarming than the action deserves at this step. */
+.danger-outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 0 18px;
+  gap: 8px;
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  font-size: var(--copy-size);
+  font-weight: 500;
+  text-align: center;
+}
+
+.danger-outline-button:active {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.danger-outline-button:disabled {
+  opacity: 1;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.danger-outline-button svg {
+  width: 19px;
+  height: 19px;
+}
+
 .sheet-body > .muted {
   font-size: var(--copy-size);
   line-height: 1.45;

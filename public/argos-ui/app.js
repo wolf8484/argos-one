@@ -1464,6 +1464,15 @@ function formatPhoneInput(raw) {
   return groups.filter(Boolean).join(" ");
 }
 
+// Mirrors formatPhoneForDisplay in lib/identity.ts: +61412345678 -> 0412 345 678.
+function formatPhoneForDisplay(e164) {
+  if (!e164) return "";
+  const match = /^\+61(\d{9})$/.exec(e164);
+  if (!match) return e164;
+  const digits = match[1];
+  return `0${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+}
+
 function formatKilometres(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return "";
@@ -2473,6 +2482,16 @@ function isInvitePending(technician) {
   return !technician.profile_id && Boolean(technicianInvite(technician));
 }
 
+// Real contact details for an already-joined technician live on their linked
+// profile (profiles.phone / profiles.email, set at redemption time) -- not
+// the invite's own email/mobile, which is only what the owner typed when
+// creating the invite and may not match what the technician actually entered
+// when they joined.
+function technicianContact(technician) {
+  const profile = relatedRecord(technician.profile);
+  return { phone: profile?.phone || null, email: profile?.email || null };
+}
+
 function inviteExpired(invite) {
   return Boolean(invite) && new Date(invite.expires_at).getTime() < Date.now();
 }
@@ -2553,7 +2572,7 @@ function renderTechniciansPage() {
       if (isTechnicianRole) {
         return `<div class="settings-row" data-staff-search="${escapeHTML(technicianSearchText(technician))}">${text}</div>`;
       }
-      return `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
+      return `<button class="settings-row" type="button" data-action="view-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
         ${text}
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`;
@@ -2766,7 +2785,41 @@ function openTechnicianModal(technician) {
   if (!technician) return openInviteStaffModal();
   const pendingInvite = isInvitePending(technician) ? technicianInvite(technician) : null;
   if (pendingInvite) return openInviteCodeModal(technician, pendingInvite);
+  return openTechnicianDetailsSheet(technician);
+}
 
+// Tapping a name opens this read-only view first, not the edit form directly
+// -- editing is a deliberate next step from here, not the default outcome of
+// looking someone up. Reuses the same avatar-header + facts-grid shape as
+// "Your profile" (technicianProfileSheet) rather than inventing a new layout.
+function openTechnicianDetailsSheet(technician) {
+  const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
+  const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
+  const bay = state.bays.find((b) => b.id === technician.default_bay_id);
+  const contact = technicianContact(technician);
+  const initials = technician.initials || technicianName(technician).split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const fact = (value, hasValue) => hasValue ? `<strong>${escapeHTML(value)}</strong>` : `<span class="profile-fact-empty">${escapeHTML(value)}</span>`;
+  openSheet(`<div class="sheet-head"><div><h2>Staff details</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <section class="technician-profile" aria-label="Staff member">
+        <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
+        <div><h3>${escapeHTML(technicianName(technician))}</h3><p>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}</p></div>
+      </section>
+      <div class="profile-facts" aria-label="Staff contact and work details">
+        <div class="profile-fact"><span class="field-label">Mobile</span>${fact(formatPhoneForDisplay(contact.phone) || "Not set", Boolean(contact.phone))}</div>
+        <div class="profile-fact"><span class="field-label">Email</span>${fact(contact.email || "Not set", Boolean(contact.email))}</div>
+        <div class="profile-fact"><span class="field-label">Assigned bay</span>${fact(bay?.name || "No bay assigned", Boolean(bay))}</div>
+        <div class="profile-fact"><span class="field-label">Employee ID</span>${fact(technician.employee_id || "Not registered", Boolean(technician.employee_id))}</div>
+        <div class="profile-fact"><span class="field-label">Status</span>${fact(technician.active ? "Active" : "Inactive", true)}</div>
+      </div>
+      <div class="profile-note-actions">
+        <button class="danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
+        <button class="primary-button" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
+      </div>
+    </div>`, { ariaLabel: "Staff details" });
+}
+
+function openTechnicianEditModal(technician) {
   // A shop with zero active Owners has nobody left who can reach this very
   // screen to fix that, so editing the last one locks the controls that
   // could strand the shop rather than only rejecting the save afterwards.
@@ -2790,7 +2843,7 @@ function openTechnicianModal(technician) {
       </div>
       ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
       <div class="profile-note-actions">
-        <button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete staff</button>
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
         <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
@@ -4431,10 +4484,11 @@ document.addEventListener("click", (event) => {
     if (action === "add-bay") return openBayModal(null);
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
+    if (action === "edit-technician-form") return openTechnicianEditModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
     if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId, actionButton);
-    if (action === "edit-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
+    if (action === "view-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     // The switch inside a bay/technician form is local state only -- it is read
     // off the DOM when the form is submitted, not saved on its own.
     if (action === "toggle-form-active") {

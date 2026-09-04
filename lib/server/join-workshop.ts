@@ -137,6 +137,7 @@ export async function redeemInvite(input: {
       full_name: fullName,
       role: technician.role,
       phone,
+      email,
     })
     if (profileError) throw profileError
 
