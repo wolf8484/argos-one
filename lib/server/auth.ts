@@ -54,7 +54,7 @@ export async function requireWorkshopUser() {
   if (!membership) {
     return {
       error: NextResponse.json(
-        { error: 'Your access to this workshop has been turned off. Ask your manager to reactivate you.', code: 'no_workshop' },
+        { error: 'Your access to this workshop has been deactivated. Contact your manager for more information.', code: 'no_workshop' },
         { status: 403 },
       ),
     }

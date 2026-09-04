@@ -37,7 +37,7 @@ export default function LoginPage() {
   // here, so the arrival reads as an explanation rather than a random logout.
   const [message, setMessage] = useState(() =>
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('revoked') === '1'
-      ? 'Your access to this workshop has been turned off. Ask your manager to reactivate you.'
+      ? 'Your access to this workshop has been deactivated. Contact your manager for more information.'
       : '')
   const [busy, setBusy] = useState(false)
 
@@ -95,7 +95,7 @@ export default function LoginPage() {
       const payload = await me.json().catch(() => ({}))
       await supabase.auth.signOut()
       setBusy(false)
-      return setMessage(payload.error || 'Your access to this workshop has been turned off. Ask your manager to reactivate you.')
+      return setMessage(payload.error || 'Your access to this workshop has been deactivated. Contact your manager for more information.')
     }
 
     setBusy(false)
