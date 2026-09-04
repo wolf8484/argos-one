@@ -6,7 +6,7 @@ import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { formatPhoneForDisplay, normalizePhone, staffAuthEmail } from '@/lib/identity'
-import { PasswordField, ReviewRow } from '../login/fields'
+import { PasswordField, PhoneField, ReviewRow } from '../login/fields'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 import styles from '../login/login.module.css'
 
@@ -132,10 +132,7 @@ export default function JoinPage() {
       <form key="details" onSubmit={captureDetails} className={styles.form}>
         <label>First name<input name="firstName" defaultValue={draft.firstName} autoComplete="given-name" required /></label>
         <label>Last name<input name="lastName" defaultValue={draft.lastName} autoComplete="family-name" required /></label>
-        <label>
-          <span className={styles.labelText}>Mobile</span>
-          <input name="mobile" type="tel" inputMode="tel" defaultValue={draft.mobile} autoComplete="tel" placeholder="0412 345 678" required />
-        </label>
+        <PhoneField name="mobile" label="Mobile" defaultValue={draft.mobile} placeholder="0412 345 678" required />
         <label>
           <span className={styles.labelText}>Email <span className={styles.optional}>(optional)</span></span>
           <input name="email" type="email" inputMode="email" defaultValue={draft.email} autoComplete="email" placeholder="name@email.com" />

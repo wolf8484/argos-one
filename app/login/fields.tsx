@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 
+import { PHONE_INPUT_MAX_LENGTH, formatPhoneInput } from '@/lib/identity'
 import styles from './login.module.css'
 
 /**
@@ -48,6 +49,39 @@ export function PasswordField({ name, label, autoComplete, rule }: {
       <Check />
       At least {PASSWORD_MIN_LENGTH} characters
     </span>}
+  </label>
+}
+
+/**
+ * Phone input that formats and caps as it is typed. Controlled, unlike the
+ * other fields here, because the value shown has to be rewritten on each
+ * keystroke -- it still submits through FormData by name like the rest.
+ */
+export function PhoneField({ name, label, defaultValue = '', placeholder, optional, required }: {
+  name: string
+  label: string
+  defaultValue?: string
+  placeholder: string
+  optional?: boolean
+  required?: boolean
+}) {
+  const [value, setValue] = useState(() => formatPhoneInput(defaultValue))
+  return <label>
+    <span className={styles.labelText}>
+      {label}
+      {optional && <span className={styles.optional}>(optional)</span>}
+    </span>
+    <input
+      name={name}
+      type="tel"
+      inputMode="tel"
+      autoComplete="tel"
+      value={value}
+      onChange={(event) => setValue(formatPhoneInput(event.target.value))}
+      placeholder={placeholder}
+      maxLength={PHONE_INPUT_MAX_LENGTH}
+      required={required}
+    />
   </label>
 }
 

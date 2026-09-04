@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 
 import { normalizePhone } from '@/lib/identity'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
-import { PasswordField, ReviewRow } from './fields'
+import { PasswordField, PhoneField, ReviewRow } from './fields'
 import styles from './login.module.css'
 
 type Draft = {
@@ -163,7 +163,7 @@ export default function LoginPage() {
       return <Shell heading="Workshop details" eyebrow="Create workshop" step="Step 1 of 3">
         <form key="step-1" onSubmit={(event) => captureStep(event, ['shopName', 'shopPhone', 'shopEmail'], 2)} className={styles.form}>
           <label>Workshop name<input name="shopName" defaultValue={draft.shopName} autoComplete="organization" required /></label>
-          <label><span className={styles.labelText}>Workshop phone <span className={styles.optional}>(optional)</span></span><input name="shopPhone" type="tel" inputMode="tel" defaultValue={draft.shopPhone} placeholder="02 9000 0000" /></label>
+          <PhoneField name="shopPhone" label="Workshop phone" defaultValue={draft.shopPhone} placeholder="02 9000 0000" optional />
           <label><span className={styles.labelText}>Workshop email <span className={styles.optional}>(optional)</span></span><input name="shopEmail" type="email" inputMode="email" defaultValue={draft.shopEmail} placeholder="shop@workshop.com.au" /></label>
           <p className={styles.hint}>You can add these later from Workshop profile in Settings.</p>
           {message && <p className={styles.message} role="status">{message}</p>}
@@ -181,7 +181,7 @@ export default function LoginPage() {
           <label>First name<input name="firstName" defaultValue={draft.firstName} autoComplete="given-name" required /></label>
           <label>Last name<input name="lastName" defaultValue={draft.lastName} autoComplete="family-name" required /></label>
           <label>Your email<input name="ownerEmail" type="email" inputMode="email" defaultValue={draft.ownerEmail} autoComplete="email" required /></label>
-          <label>Your mobile<input name="ownerPhone" type="tel" inputMode="tel" defaultValue={draft.ownerPhone} autoComplete="tel" placeholder="0412 345 678" required /></label>
+          <PhoneField name="ownerPhone" label="Your mobile" defaultValue={draft.ownerPhone} placeholder="0412 345 678" required />
           {message && <p className={styles.message} role="status">{message}</p>}
           <div className={styles.actions}>
             <button className={styles.primary} type="submit">Continue</button>

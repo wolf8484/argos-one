@@ -27,6 +27,28 @@ export function normalizePhone(raw: string) {
   return null
 }
 
+/** Longest value formatPhoneInput can return: "+" plus 15 international digits. */
+export const PHONE_INPUT_MAX_LENGTH = 16
+
+/**
+ * Formats a phone number as it is being typed, and caps its length -- an
+ * unconstrained tel input otherwise accepts unlimited characters, none of
+ * which normalizePhone can do anything with.
+ *
+ * Grouping follows how the number is read aloud in Australia: mobiles as
+ * 0412 345 678, landlines as 02 9000 0000. Anything starting with "+" is
+ * treated as already-international and only stripped of separators, since
+ * grouping rules vary by country.
+ */
+export function formatPhoneInput(raw: string) {
+  if (raw.trimStart().startsWith('+')) return `+${raw.replace(/\D/g, '').slice(0, 15)}`
+  const digits = raw.replace(/\D/g, '').slice(0, 10)
+  const groups = digits.startsWith('04')
+    ? [digits.slice(0, 4), digits.slice(4, 7), digits.slice(7, 10)]
+    : [digits.slice(0, 2), digits.slice(2, 6), digits.slice(6, 10)]
+  return groups.filter(Boolean).join(' ')
+}
+
 /** Display form for a stored E.164 AU mobile: +61412345678 -> 0412 345 678 */
 export function formatPhoneForDisplay(e164: string | null | undefined) {
   if (!e164) return ''

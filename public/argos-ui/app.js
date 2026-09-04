@@ -1448,6 +1448,22 @@ function formatMileageDisplay(rawMileage) {
   return formatKilometres(Number(digits));
 }
 
+// Mirrors formatPhoneInput in lib/identity.ts -- app.js is a standalone runtime
+// and cannot import it. Keep the two in step if the grouping rules change.
+// Mobiles group as 0412 345 678, landlines as 02 9000 0000; anything starting
+// with "+" is left international and only stripped of separators.
+const PHONE_INPUT_MAX_LENGTH = 16;
+
+function formatPhoneInput(raw) {
+  const value = String(raw ?? "");
+  if (value.trimStart().startsWith("+")) return `+${value.replace(/\D/g, "").slice(0, 15)}`;
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  const groups = digits.startsWith("04")
+    ? [digits.slice(0, 4), digits.slice(4, 7), digits.slice(7, 10)]
+    : [digits.slice(0, 2), digits.slice(2, 6), digits.slice(6, 10)];
+  return groups.filter(Boolean).join(" ");
+}
+
 function formatKilometres(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return "";
@@ -2641,7 +2657,7 @@ function openShopFieldModal({ field, title, optional }) {
   openSheet(`<div class="confirmation-content">
     <h2>${escapeHTML(title)}</h2>
     <form class="settings-edit-form" id="shop-field-form" autocomplete="off" data-field="${field}">
-      <input class="input" name="value" value="${escapeHTML(current)}" placeholder="${escapeHTML(title)}"${optional ? "" : " required"} />
+      <input class="input" name="value" value="${escapeHTML(current)}" placeholder="${escapeHTML(title)}"${field === "phone" ? ` type="tel" inputmode="tel" maxlength="${PHONE_INPUT_MAX_LENGTH}"` : ""}${field === "email" ? ' type="email" inputmode="email"' : ""}${optional ? "" : " required"} />
       <div class="profile-note-actions">
         <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
         <button class="primary-button" type="submit">${icon("save")} Save</button>
@@ -2693,7 +2709,7 @@ function openInviteStaffModal() {
       <div class="customer-details-grid">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" placeholder="First name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role">${roleOptionsHtml("technician")}</select>${icon("down")}</span></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Mobile <span class="muted">(optional)</span></span></div><input class="input" name="mobile" type="tel" inputmode="tel" placeholder="0412 345 678" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Mobile <span class="muted">(optional)</span></span></div><input class="input" name="mobile" type="tel" inputmode="tel" placeholder="0412 345 678" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" placeholder="name@email.com" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptionsHtml(null)}</select>${icon("down")}</span></label>
       </div>
@@ -3058,7 +3074,7 @@ function renderVehicle() {
       <div class="customer-details-grid span-2">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="customerLastName" autocomplete="family-name" value="${escapeHTML(lastName)}" placeholder="Last name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
       <div class="action-dock vehicle-actions span-2"><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
@@ -4801,6 +4817,22 @@ document.addEventListener("input", (event) => {
     if (digitsBeforeCursor === 0) cursor = 0;
     event.target.setSelectionRange(cursor, cursor);
     state.vehicle.mileage = formatted;
+    return;
+  }
+  if (event.target.matches('input[type="tel"], input[inputmode="tel"]')) {
+    // Same cursor-preserving approach as mileage above: reformatting on every
+    // keystroke otherwise throws the caret to the end mid-word.
+    const digitsBeforeCursor = event.target.value.slice(0, event.target.selectionStart).replace(/[^0-9+]/g, "").length;
+    const formatted = formatPhoneInput(event.target.value);
+    event.target.value = formatted;
+    let cursor = formatted.length;
+    let seen = 0;
+    for (let i = 0; i < formatted.length; i++) {
+      if (/[0-9+]/.test(formatted[i])) seen++;
+      if (seen === digitsBeforeCursor) { cursor = i + 1; break; }
+    }
+    if (digitsBeforeCursor === 0) cursor = 0;
+    event.target.setSelectionRange(cursor, cursor);
     return;
   }
   if (event.target.matches("#vin")) {
