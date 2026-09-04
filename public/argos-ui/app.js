@@ -2293,18 +2293,18 @@ function settingsPageHeader(title, eyebrow) {
   </header>`;
 }
 
-function settingsRow({ iconName, title, description, value = "", page = "", disabled = false, locked = false }) {
+function settingsRow({ iconName, title, description, value = "", page = "", disabled = false }) {
   const inner = `<span class="settings-row-icon" aria-hidden="true">${anyIcon(iconName)}</span>
     <span class="settings-row-text"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
     ${value ? `<span class="settings-row-value">${escapeHTML(value)}</span>` : ""}
     ${page && !disabled ? `<span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>` : ""}`;
   if (!page || disabled) return `<div class="settings-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
-  return `<button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="${page}"${locked ? ' data-locked="true"' : ""}>${inner}</button>`;
+  return `<button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="${page}">${inner}</button>`;
 }
 
-function settingsGroup(label, rowsHtml, { locked = false } = {}) {
+function settingsGroup(label, rowsHtml) {
   return `<section class="settings-group">
-    <span class="settings-group-label">${escapeHTML(label)}${locked ? `<span class="settings-group-lock" aria-hidden="true">${icon("lock")}</span>` : ""}</span>
+    <span class="settings-group-label">${escapeHTML(label)}</span>
     <div class="settings-list">${rowsHtml}</div>
   </section>`;
 }
@@ -2347,11 +2347,19 @@ function renderSettingsHome() {
     ].join(""))}
 
     ${settingsGroup("Profile & management", [
-      settingsRow({ iconName: "building", title: "Workshop profile", description: "Details and suppliers", page: "workshop-profile", locked: isTechnicianRole }),
-      settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays", locked: isTechnicianRole }),
-      settingsRow({ iconName: "technicians", title: "Staff management", description: "Add, edit or remove staff", value: String(activeTechnicians), page: "technicians", locked: isTechnicianRole }),
-      settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults", locked: isTechnicianRole }),
-    ].join(""), { locked: isTechnicianRole })}
+      // A technician only ever sees the one row this group has for them --
+      // Workshop profile, Bay management and Job defaults are owner/admin
+      // territory and are left out entirely rather than shown locked, so the
+      // section reads as "what you can do" instead of "what you're missing".
+      !isTechnicianRole ? settingsRow({ iconName: "building", title: "Workshop profile", description: "Details and suppliers", page: "workshop-profile" }) : "",
+      !isTechnicianRole ? settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }) : "",
+      settingsRow({
+        iconName: "technicians", title: "Staff directory",
+        description: isTechnicianRole ? "See who's on the team" : "Add, edit or remove staff",
+        value: String(activeTechnicians), page: "technicians",
+      }),
+      !isTechnicianRole ? settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }) : "",
+    ].join(""))}
 
     ${settingsGroup("Preferences", [
       settingsRow({ iconName: "gauge", title: "Units & measurements", description: "Metric, imperial and unit types", value: unitsLabel, page: "units" }),
@@ -2529,23 +2537,33 @@ function staffBreakdown(technicians) {
 }
 
 function renderTechniciansPage() {
+  // A technician can open this page to see the roster, but not act on it: no
+  // row opens a profile, none carries the "tap to edit" chevron, and there is
+  // no invite action. The label on the home row already says "directory" for
+  // exactly this reason -- the page itself has to actually be read only, not
+  // just described that way.
+  const isTechnicianRole = (currentTechnician()?.role || state.profile?.role || "technician") === "technician";
   const rows = state.technicians.length
     ? state.technicians.map((technician) => {
       const pending = isInvitePending(technician);
       const expired = pending && inviteExpired(technicianInvite(technician));
       const status = pending ? (expired ? "Expired" : "Invited") : technician.active ? "Active" : "Inactive";
+      const text = `<span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
+        <span class="settings-row-value${pending ? (expired ? " is-expired" : " is-invited") : ""}">${status}</span>`;
+      if (isTechnicianRole) {
+        return `<div class="settings-row" data-staff-search="${escapeHTML(technicianSearchText(technician))}">${text}</div>`;
+      }
       return `<button class="settings-row" type="button" data-action="edit-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
-        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
-        <span class="settings-row-value${pending ? (expired ? " is-expired" : " is-invited") : ""}">${status}</span>
+        ${text}
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`;
     }).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No technicians yet</strong><small>Add the crew who work in this workshop.</small></span></div>`;
-  return `${settingsPageHeader("Manage staff", "Profile & management")}
+  return `${settingsPageHeader("Staff directory", "Profile & management")}
     <label class="form-field jobs-search-field jobs-search-field-tight" for="staff-search">
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search by name or role" autocomplete="off" /></span>
     </label>
-    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>
+    ${isTechnicianRole ? "" : `<div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>`}
     <div class="field-header"><span class="field-label">Staff</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
     <div class="settings-list">${rows}</div>
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
@@ -3017,7 +3035,9 @@ function updateMicPermissionLabel() {
     .catch(() => { const current = document.querySelector("#mic-permission-value"); if (current) current.textContent = "Unknown"; });
 }
 
-const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "bays", "technicians", "job-defaults"]);
+// "technicians" is deliberately not in this set: a technician can open the
+// staff directory, just as a read-only list -- see renderTechniciansPage.
+const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "bays", "job-defaults"]);
 
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
@@ -4387,7 +4407,6 @@ document.addEventListener("click", (event) => {
     if (action === "reload-app") { showUpdateOverlay(); return; }
     if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
     if (action === "open-settings-page") {
-      if (actionButton.dataset.locked === "true") return showToast("You don't have access to this section.");
       const page = actionButton.dataset.settingsPage || null;
       settingsOpenPage(page);
       render();

@@ -3145,18 +3145,6 @@ button.journey-item:active {
   margin-top: 40px;
 }
 
-.settings-group-lock {
-  display: inline-flex;
-  margin-left: 6px;
-  vertical-align: -4px;
-}
-
-.settings-group-lock svg {
-  width: 20px;
-  height: 20px;
-  color: var(--accent);
-}
-
 .settings-list {
   display: flex;
   flex-direction: column;
