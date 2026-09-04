@@ -4123,6 +4123,21 @@ button.settings-toggle-row {
   line-height: 20px;
 }
 
+/* A fact that is actually a quick-edit control (e.g. assigned bay) rather
+   than plain read-only text -- same tile, but tappable. */
+button.profile-fact {
+  display: block;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.profile-fact:hover,
+button.profile-fact:focus-visible {
+  background: var(--surface-3);
+}
+
 .profile-menu {
   background: var(--line);
   gap: 1px;
@@ -5459,7 +5474,8 @@ body.dictation-active .toast {
 .profile-note-actions .dictate-button,
 .profile-note-actions .secondary-button,
 .profile-note-actions .primary-button,
-.profile-note-actions .danger-button {
+.profile-note-actions .danger-button,
+.profile-note-actions .danger-outline-button {
   flex: 1 1 0;
   min-height: 52px;
 }

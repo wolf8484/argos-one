@@ -599,19 +599,22 @@ async function loadBackendData() {
     const [{ jobs }, account] = await Promise.all([apiRequest("/api/jobs"), apiRequest("/api/me")]);
     state.profile = account.profile || null;
     state.shop = account.shop ? { ...account.shop, sharesRepairData: Boolean(account.shop.shares_repair_data), networkReadExempt: Boolean(account.shop.network_read_exempt) } : null;
-    const profileInitials = state.profile?.full_name?.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
-    const profileLabel = document.querySelector(".profile-button span");
-    if (profileInitials && profileLabel) profileLabel.textContent = profileInitials;
     const loadedJobs = (jobs || []).map(databaseJobToUi);
     jobRecords = loadedJobs;
     const rememberedJob = loadedJobs.find((job) => job.id === storedActiveJobId() && job.status === "open");
     state.activeJobId = rememberedJob?.id || null;
     state.currentJobId = rememberedJob?.id || null;
     state.backendStatus = "connected";
+    // After the roster loads (not before): the navbar's initials have to
+    // agree with the roster's own initials field, which currentTechnician()
+    // can only resolve once state.technicians is populated.
     await Promise.all([loadWorkshopRoster(), loadLibraryProfiles()]);
+    const profileLabel = document.querySelector(".profile-button span");
+    if (profileLabel) profileLabel.textContent = initialsFor(state.profile?.full_name, currentTechnician()?.initials);
   } catch (error) {
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
   }
+  hideBootOverlay();
   render();
 }
 
@@ -660,6 +663,16 @@ async function loadWorkshopRoster() {
 function currentTechnician() {
   if (!state.profile) return null;
   return state.technicians.find((technician) => technician.profile_id === state.profile.id) || null;
+}
+
+// Single source of truth for a person's avatar initials, used by the navbar,
+// "Your profile" and "Staff details" alike so they never disagree: the
+// roster's own initials field wins when set, since that is the one place
+// someone can deliberately choose theirs (e.g. "DS" over an auto-derived
+// "DS" from a different name order); derived-from-name is only the fallback.
+function initialsFor(name, storedInitials) {
+  if (storedInitials) return storedInitials.trim().slice(0, 2).toUpperCase();
+  return (name || "").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 }
 
 // Every job on the floor is visible to everyone, but only the technician a
@@ -1070,6 +1083,41 @@ function checkForUpdate() {
     })
     .catch(() => {})
     .finally(() => { clearTimeout(timeout); updateCheckInFlight = false; });
+}
+
+// Signing in shows the app shell before /api/me and the roster resolve, so
+// the navbar avatar has nothing to show and briefly displays stale or blank
+// initials. Reuses the update overlay's exact look (same classes) for a
+// consistent full-screen loading treatment, but is driven by the real fetch
+// finishing rather than a fixed timeout: the bar eases toward (never reaches)
+// 85% while waiting, and hideBootOverlay() finishes it off once data arrives.
+function showBootOverlay() {
+  const overlay = document.createElement("div");
+  overlay.className = "update-overlay is-visible";
+  overlay.id = "boot-overlay";
+  overlay.setAttribute("role", "status");
+  overlay.setAttribute("aria-live", "polite");
+  overlay.innerHTML = `<div class="update-overlay-content">
+    <div class="update-overlay-bar"><div class="update-overlay-bar-fill"></div></div>
+    <p class="update-overlay-message">Loading your workshop&hellip;</p>
+  </div>`;
+  document.body.appendChild(overlay);
+  const fill = overlay.querySelector(".update-overlay-bar-fill");
+  requestAnimationFrame(() => {
+    fill.style.transition = "width 3000ms ease-out";
+    fill.style.width = "85%";
+  });
+}
+
+function hideBootOverlay() {
+  const overlay = document.getElementById("boot-overlay");
+  if (!overlay) return;
+  const fill = overlay.querySelector(".update-overlay-bar-fill");
+  if (fill) { fill.style.transition = "width 200ms ease"; fill.style.width = "100%"; }
+  setTimeout(() => {
+    overlay.classList.remove("is-visible");
+    setTimeout(() => overlay.remove(), 260);
+  }, 180);
 }
 
 // A bare location.reload() is near-instant and easy to miss entirely --
@@ -2322,11 +2370,11 @@ function unwiredBanner(text) {
   return `<div class="settings-unwired-banner">${icon("info")}<span>${escapeHTML(text)}</span></div>`;
 }
 
-function settingsSwitchRow({ title, description = "", checked, action = "", disabled = false }) {
+function settingsSwitchRow({ title, description = "", checked, action = "", disabled = false, extraAttrs = "" }) {
   const switchHtml = `<span class="switch${checked ? " is-on" : ""}${disabled ? " is-disabled" : ""}" role="switch" aria-checked="${checked ? "true" : "false"}"><span class="switch-thumb"></span></span>`;
   const inner = `<span class="settings-row-text"><strong>${escapeHTML(title)}</strong>${description ? `<small>${escapeHTML(description)}</small>` : ""}</span>${switchHtml}`;
   if (disabled || !action) return `<div class="settings-row settings-toggle-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
-  return `<button class="settings-row settings-toggle-row" type="button" data-action="${action}" aria-pressed="${checked ? "true" : "false"}">${inner}</button>`;
+  return `<button class="settings-row settings-toggle-row" type="button" data-action="${action}" aria-pressed="${checked ? "true" : "false"}"${extraAttrs}>${inner}</button>`;
 }
 
 function renderSettingsHome() {
@@ -2797,7 +2845,7 @@ function openTechnicianDetailsSheet(technician) {
   const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
   const bay = state.bays.find((b) => b.id === technician.default_bay_id);
   const contact = technicianContact(technician);
-  const initials = technician.initials || technicianName(technician).split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const initials = initialsFor(technicianName(technician), technician.initials);
   const fact = (value, hasValue) => hasValue ? `<strong>${escapeHTML(value)}</strong>` : `<span class="profile-fact-empty">${escapeHTML(value)}</span>`;
   openSheet(`<div class="sheet-head"><div><h2>Staff details</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
@@ -2808,10 +2856,12 @@ function openTechnicianDetailsSheet(technician) {
       <div class="profile-facts" aria-label="Staff contact and work details">
         <div class="profile-fact"><span class="field-label">Mobile</span>${fact(formatPhoneForDisplay(contact.phone) || "Not set", Boolean(contact.phone))}</div>
         <div class="profile-fact"><span class="field-label">Email</span>${fact(contact.email || "Not set", Boolean(contact.email))}</div>
-        <div class="profile-fact"><span class="field-label">Assigned bay</span>${fact(bay?.name || "No bay assigned", Boolean(bay))}</div>
+        <button class="profile-fact" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
+          <span class="field-label">Assigned bay</span>${fact(bay?.name || "No bay assigned", Boolean(bay))}
+        </button>
         <div class="profile-fact"><span class="field-label">Employee ID</span>${fact(technician.employee_id || "Not registered", Boolean(technician.employee_id))}</div>
-        <div class="profile-fact"><span class="field-label">Status</span>${fact(technician.active ? "Active" : "Inactive", true)}</div>
       </div>
+      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner, extraAttrs: ` data-technician-id="${technician.id}"` })}
       <div class="profile-note-actions">
         <button class="danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
         <button class="primary-button" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
@@ -2830,12 +2880,15 @@ function openTechnicianEditModal(technician) {
   const roleOptions = technician.role === "owner"
     ? `<option value="owner" selected>${roleLabel("owner")}</option>${roleOptionsHtml(null)}`
     : roleOptionsHtml(technician.role);
+  const contact = technicianContact(technician);
   openSheet(`<div class="sheet-head"><div><h2>Edit staff</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician.id}">
       <div class="customer-details-grid">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician.first_name || "")}" placeholder="First name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician.last_name || "")}" placeholder="Last name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Mobile</span></div><input class="input" name="mobile" type="tel" inputmode="tel" maxlength="${PHONE_INPUT_MAX_LENGTH}" value="${escapeHTML(formatPhoneForDisplay(contact.phone))}" placeholder="0412 345 678" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" value="${escapeHTML(contact.email || "")}" placeholder="name@email.com" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician.initials || "")}" placeholder="e.g. DS" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span></label>
@@ -2852,15 +2905,15 @@ function openTechnicianEditModal(technician) {
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
 // they share a single chooser rather than each getting a bespoke screen.
-function openDefaultPickerModal({ title, options, selectedId, action }) {
-  const rows = options.map((option) => `<button class="settings-row" type="button" data-action="${action}" data-choice-id="${option.id}">
+function openDefaultPickerModal({ title, options, selectedId, action, extraAttrs = "" }) {
+  const rows = options.map((option) => `<button class="settings-row" type="button" data-action="${action}" data-choice-id="${option.id}"${extraAttrs}>
       <span class="settings-row-text"><strong>${escapeHTML(option.label)}</strong></span>
       ${selectedId === option.id ? `<span class="settings-row-value">Selected</span>` : ""}
     </button>`).join("");
   openSheet(`<div class="confirmation-content">
     <h2>${escapeHTML(title)}</h2>
     <div class="settings-list">
-      <button class="settings-row" type="button" data-action="${action}" data-choice-id="">
+      <button class="settings-row" type="button" data-action="${action}" data-choice-id=""${extraAttrs}>
         <span class="settings-row-text"><strong>Not set</strong></span>
         ${selectedId ? "" : `<span class="settings-row-value">Selected</span>`}
       </button>
@@ -2944,14 +2997,24 @@ async function saveTechnician(form) {
   const payload = {
     firstName: String(data.get("firstName") || "").trim(),
     lastName: String(data.get("lastName") || "").trim(),
+    mobile: String(data.get("mobile") || "").trim() || null,
+    email: String(data.get("email") || "").trim() || null,
     initials: String(data.get("initials") || "").trim() || null,
     employeeId: String(data.get("employeeId") || "").trim() || null,
-    role: String(data.get("role") || "technician"),
+    // A disabled <select> (the last Owner's role, locked so they can't demote
+    // themselves) is excluded from FormData entirely rather than reporting an
+    // empty value -- data.get("role") comes back null, and defaulting that to
+    // "technician" would silently demote them on every single save.
+    ...(data.get("role") !== null ? { role: String(data.get("role")) } : {}),
     defaultBayId: String(data.get("defaultBayId") || "") || null,
     active: formActiveState(form),
   };
   if (!payload.firstName) return showToast("Give the technician a first name");
   if (!payload.lastName) return showToast("Give the technician a last name");
+  // Mobile is the one identifier every technician can sign in with -- clearing
+  // it here could strand a phone-only login the same way skipping it at join
+  // time would (see the join wizard's own mandatory mobile field).
+  if (!payload.mobile) return showToast("Give the technician a mobile number");
   try {
     await apiRequest(`/api/shop/technicians/${form.dataset.technicianId}`, {
       method: "PATCH",
@@ -4090,7 +4153,7 @@ function calendarSheet() {
 
 function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
-  const initials = fullName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const initials = initialsFor(fullName, currentTechnician()?.initials);
   const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
   const bayLabel = assignedBayLabel();
@@ -4518,6 +4581,45 @@ document.addEventListener("click", (event) => {
           render();
         })
         .catch((error) => showToast(error.message || "Could not delete that technician"));
+    }
+    if (action === "toggle-technician-active") {
+      const technician = state.technicians.find((t) => t.id === actionButton.dataset.technicianId);
+      if (!technician) return;
+      const next = !technician.active;
+      return apiRequest(`/api/shop/technicians/${technician.id}`, { method: "PATCH", body: JSON.stringify({ active: next }) })
+        .then(async () => {
+          await loadWorkshopRoster();
+          const updated = state.technicians.find((t) => t.id === technician.id);
+          if (updated) openTechnicianDetailsSheet(updated);
+          render();
+        })
+        .catch((error) => showToast(error.message || "Could not update status"));
+    }
+    if (action === "pick-technician-bay") {
+      const technician = state.technicians.find((t) => t.id === actionButton.dataset.technicianId);
+      if (!technician) return;
+      return openDefaultPickerModal({
+        title: "Assigned bay",
+        options: state.bays.filter((bay) => bay.active).map((bay) => ({ id: bay.id, label: bay.name })),
+        selectedId: technician.default_bay_id || "",
+        action: "set-technician-bay",
+        extraAttrs: ` data-technician-id="${technician.id}"`,
+      });
+    }
+    if (action === "set-technician-bay") {
+      const technicianId = actionButton.dataset.technicianId;
+      return apiRequest(`/api/shop/technicians/${technicianId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ defaultBayId: actionButton.dataset.choiceId || null }),
+      })
+        .then(async () => {
+          await loadWorkshopRoster();
+          const updated = state.technicians.find((t) => t.id === technicianId);
+          if (updated) openTechnicianDetailsSheet(updated);
+          render();
+          showToast("Assigned bay updated");
+        })
+        .catch((error) => showToast(error.message || "Could not update that bay"));
     }
     if (action === "pick-default-bay") {
       return openDefaultPickerModal({
@@ -5205,6 +5307,7 @@ hydrateIcons();
 updateWorkshopClock();
 setInterval(updateWorkshopClock, 30000);
 render();
+showBootOverlay();
 loadBackendData();
 
 checkForUpdate();

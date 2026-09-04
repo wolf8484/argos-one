@@ -143,14 +143,26 @@ export const updateBaySchema = baySchema.partial()
 // Last name is optional here because an invited staff member supplies their
 // own surname when they redeem the code -- the admin creating the invite is
 // only asked for a first name.
+// Only ever consumed as updateTechnicianSchema (.partial(), below) -- role and
+// active are deliberately plain .optional() rather than .default(...): Zod's
+// .partial() does not strip an underlying .default(), so an update payload
+// that simply omits role (e.g. a disabled role <select> for the last Owner,
+// or any quick-action PATCH that only touches one field) would otherwise
+// silently reset it to "technician" on every save, and likewise reset active
+// to true. Both would demote/reactivate someone as a side effect of an
+// unrelated edit.
 export const technicianSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().max(80).nullable().optional(),
   initials: z.string().trim().max(4).nullable().optional(),
   employeeId: z.string().trim().max(60).nullable().optional(),
-  role: z.enum(['owner', 'admin', 'technician']).default('technician'),
-  active: z.boolean().default(true),
+  role: z.enum(['owner', 'admin', 'technician']).optional(),
+  active: z.boolean().optional(),
   defaultBayId: z.string().uuid().nullable().optional(),
+  // These patch the technician's linked profile (profiles.phone / .email),
+  // not the shop_technicians row itself -- see WorkshopRepository.updateTechnician.
+  mobile: z.string().trim().max(30).nullable().optional(),
+  email: z.string().trim().email().max(160).nullable().optional(),
 })
 
 export const updateTechnicianSchema = technicianSchema.partial()

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { ApiError } from '@/lib/server/http'
-import { generateInviteCode } from '@/lib/server/identity'
+import { generateInviteCode, normalizePhone } from '@/lib/server/identity'
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
 import { hashPatternSource, summarizeNetworkPattern } from '@/lib/server/network-summary'
 import { generateRepairSummary } from '@/lib/server/repair-summary'
@@ -713,6 +713,8 @@ export class WorkshopRepository {
     role?: string
     active?: boolean
     defaultBayId?: string | null
+    mobile?: string | null
+    email?: string | null
   }) {
     const demotesOrDeactivatesOwner = (input.role !== undefined && input.role !== 'owner') || input.active === false
     if (demotesOrDeactivatesOwner && (await this.isLastActiveOwner(technicianId))) {
@@ -735,6 +737,30 @@ export class WorkshopRepository {
       .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
       .single()
     if (error) throw error
+
+    // Mobile and email live on the linked login (profiles), not the roster
+    // row -- a technician with no profile_id is still a pending invite and
+    // never reaches this path (the edit form only opens for someone who has
+    // already joined).
+    if (input.mobile !== undefined || input.email !== undefined) {
+      const profilePatch: Record<string, unknown> = {}
+      if (input.mobile !== undefined) {
+        const phone = input.mobile?.trim() ? normalizePhone(input.mobile) : null
+        if (input.mobile?.trim() && !phone) {
+          throw new ApiError("That mobile number doesn't look right. Use a format like 0412 345 678.", 400)
+        }
+        profilePatch.phone = phone
+      }
+      if (input.email !== undefined) profilePatch.email = input.email?.trim() || null
+
+      const { error: profileError } = await this.supabase
+        .from('profiles').update(profilePatch).eq('id', data.profile_id)
+      if (profileError) {
+        if (profileError.code === '23505') throw new ApiError('An account already uses that mobile number.', 409)
+        throw profileError
+      }
+    }
+
     return data
   }
 
