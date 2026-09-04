@@ -59,7 +59,7 @@ export default function JoinPage() {
     const form = new FormData(event.currentTarget)
     const email = String(form.get('email') || '').trim()
     const mobile = String(form.get('mobile') || '').trim()
-    if (!mobile) return setMessage('Enter your mobile number — it becomes how you sign in.')
+    if (!mobile) return setMessage('Enter your mobile number. It becomes how you sign in.')
     if (!normalizePhone(mobile)) return setMessage("That mobile number doesn't look right. Try 0412 345 678.")
     setDraft((current) => ({
       ...current,
@@ -162,7 +162,7 @@ export default function JoinPage() {
   }
 
   if (step === 'review' && invite) {
-    return <Shell eyebrow="Join a workshop — Review" heading="Review and join">
+    return <Shell eyebrow="Join a workshop: Review" heading="Review and join">
       <div className={styles.reviewList}>
         <ReviewRow label="Workshop" value={invite.shopName} />
         <ReviewRow label="Name" value={`${draft.firstName} ${draft.lastName}`.trim()} />
