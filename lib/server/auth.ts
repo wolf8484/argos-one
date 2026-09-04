@@ -32,7 +32,7 @@ export async function requireWorkshopUser() {
   if (!profile.shop_id) {
     return {
       error: NextResponse.json(
-        { error: 'You are not a member of a workshop. Ask your manager for an invite code.', code: 'no_workshop' },
+        { error: 'You are not a member of this workshop. Contact your manager for more information.', code: 'no_workshop' },
         { status: 403 },
       ),
     }
