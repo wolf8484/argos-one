@@ -424,6 +424,7 @@ async function apiRequest(path, options = {}) {
   if (!response.ok) {
     const error = new Error(payload.error || `Request failed (${response.status})`);
     error.status = response.status;
+    error.code = payload.code || null;
     throw error;
   }
   return payload;
@@ -612,6 +613,15 @@ async function loadBackendData() {
     const profileLabel = document.querySelector(".profile-button span");
     if (profileLabel) profileLabel.textContent = initialsFor(state.profile?.full_name, currentTechnician()?.initials);
   } catch (error) {
+    // Deleted from the roster, or switched to Inactive, while this tab was
+    // open. Every further request would 403, so end the session here rather
+    // than leaving a signed-in shell that can reach nothing -- the login
+    // screen explains why they landed there.
+    if (error.code === "no_workshop") {
+      await apiRequest("/api/auth/signout", { method: "POST" }).catch(() => {});
+      window.location.href = "/login?revoked=1";
+      return;
+    }
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
   }
   hideBootOverlay();

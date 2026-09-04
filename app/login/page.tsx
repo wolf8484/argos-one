@@ -33,7 +33,12 @@ export default function LoginPage() {
   const [view, setView] = useState<'signin' | 'create' | 'created'>('signin')
   const [step, setStep] = useState(1)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
-  const [message, setMessage] = useState('')
+  // Set by the dashboard when it signs a revoked session out and sends it
+  // here, so the arrival reads as an explanation rather than a random logout.
+  const [message, setMessage] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('revoked') === '1'
+      ? 'Your access to this workshop has been turned off. Ask your manager to reactivate you.'
+      : '')
   const [busy, setBusy] = useState(false)
 
   function goToStep(next: number) {
@@ -78,9 +83,22 @@ export default function LoginPage() {
       setBusy(false)
       return setMessage((error as Error).message)
     }
-    const { error } = await createBrowserSupabaseClient().auth.signInWithPassword({ email, password })
+    const supabase = createBrowserSupabaseClient()
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setBusy(false); return setMessage(error.message) }
+
+    // The password was right, but being suspended has to stop the sign-in
+    // itself rather than dropping them into an app that can reach nothing.
+    // /api/me is the same membership check every other request goes through.
+    const me = await fetch('/api/me')
+    if (me.status === 403) {
+      const payload = await me.json().catch(() => ({}))
+      await supabase.auth.signOut()
+      setBusy(false)
+      return setMessage(payload.error || 'Your access to this workshop has been turned off. Ask your manager to reactivate you.')
+    }
+
     setBusy(false)
-    if (error) return setMessage(error.message)
     const next = new URLSearchParams(window.location.search).get('next')
     router.replace(next || '/dashboard')
     router.refresh()

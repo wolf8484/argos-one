@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto'
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { ApiError } from '@/lib/server/http'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { generateInviteCode, normalizePhone } from '@/lib/server/identity'
 import { generateMatchInsights } from '@/lib/server/repair-match-insights'
 import { hashPatternSource, summarizeNetworkPattern } from '@/lib/server/network-summary'
@@ -761,15 +764,100 @@ export class WorkshopRepository {
       }
     }
 
+    // Switching someone to Inactive revokes access exactly like a delete does
+    // (current_shop_id() requires an *active* grant), so it has to drop their
+    // sessions too -- otherwise the toggle looks like an access control while
+    // the tablet in their hand carries on until its token expires. shop_id is
+    // deliberately left pointing here: reactivating them restores access
+    // without re-inviting.
+    if (input.active === false && data.profile_id) {
+      await createAdminSupabaseClient().rpc('revoke_workshop_sessions', { target_profile: data.profile_id })
+    }
+
     return data
   }
 
+  /**
+   * Removing the roster row is only half of it. The row is the grant that
+   * current_shop_id() checks (migration 0048), so dropping it already ends
+   * their access -- but their profile would go on pointing at this shop, which
+   * under multi-branch is a selection they no longer hold. Clearing it puts
+   * them on the join screen instead of an app that renders nothing, and
+   * revoking their refresh tokens makes an already-open tablet drop now rather
+   * than whenever its token next expires.
+   *
+   * Their login itself is deliberately left alone: the jobs they worked on
+   * reference profiles.id, and a re-hire is a fresh invite, not a new account.
+   */
   async deleteTechnician(technicianId: string) {
     if (await this.isLastActiveOwner(technicianId)) {
       throw new ApiError("This is the workshop's only Owner -- assign another Owner before deleting this staff member.", 409)
     }
-    const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
-    if (error) throw error
+    const { data: row, error: readError } = await this.supabase
+      .from('shop_technicians')
+      .select('id, profile_id, shop_id')
+      .eq('id', technicianId)
+      .single()
+    if (readError) throw readError
+
+    // No linked login (an unredeemed invite, or an imported roster row): there
+    // is nothing to retire beyond the row itself.
+    if (!row.profile_id) {
+      const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
+      if (error) throw error
+      return
+    }
+
+    // Service role throughout: an owner holds no RLS grant to write another
+    // person's profile, and none at all over auth.
+    const admin = createAdminSupabaseClient()
+
+    // Delete is "this person no longer works for the business", not "not at
+    // this branch" -- that is what Inactive is for. So every roster row they
+    // hold goes, which under multi-branch means all branches at once.
+    const { error: rosterError } = await admin
+      .from('shop_technicians')
+      .delete()
+      .eq('profile_id', row.profile_id)
+    if (rosterError) throw rosterError
+
+    await this.retireLogin(row.profile_id)
+  }
+
+  /**
+   * Destroys someone's ability to sign in and frees the email and mobile they
+   * were using, so a future re-hire can join again on the same details.
+   *
+   * The profile row itself deliberately survives, stripped to a name. Jobs,
+   * repairs, customers and vehicles all carry profiles.id with no delete rule,
+   * so Postgres would refuse to remove it anyway -- but keeping it is also what
+   * lets a repair from two years ago still say who carried it out. What makes
+   * the person gone is that the login no longer exists in any usable form: the
+   * auth row is re-pointed at an unreachable address and given a random
+   * password, and the identifying columns are cleared.
+   */
+  private async retireLogin(profileId: string) {
+    const admin = createAdminSupabaseClient()
+
+    // Clearing these frees both unique constraints (profiles_phone_unique and
+    // the email lookup the join flow checks) for reuse by a new account.
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({ shop_id: null, phone: null, email: null })
+      .eq('id', profileId)
+    if (profileError) throw profileError
+
+    // auth.users.email is unique too, and for phone-only staff it is derived
+    // from the mobile (staffAuthEmail), so the mobile stays taken until this
+    // address is moved out of the way.
+    const { error: authError } = await admin.auth.admin.updateUserById(profileId, {
+      email: `deleted-${profileId}@removed.invalid`,
+      email_confirm: true,
+      password: randomUUID(),
+    })
+    if (authError) throw authError
+
+    await admin.rpc('revoke_workshop_sessions', { target_profile: profileId })
   }
 
   private static deriveInitials(firstName: string, lastName?: string | null) {
