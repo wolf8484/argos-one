@@ -2350,8 +2350,8 @@ function settingsPageHeader(title, eyebrow) {
   </header>`;
 }
 
-function settingsRow({ iconName, title, description, value = "", page = "", disabled = false }) {
-  const inner = `<span class="settings-row-icon" aria-hidden="true">${anyIcon(iconName)}</span>
+function settingsRow({ iconName = "", title, description, value = "", page = "", disabled = false }) {
+  const inner = `${iconName ? `<span class="settings-row-icon" aria-hidden="true">${anyIcon(iconName)}</span>` : ""}
     <span class="settings-row-text"><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
     ${value ? `<span class="settings-row-value">${escapeHTML(value)}</span>` : ""}
     ${page && !disabled ? `<span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>` : ""}`;
@@ -2653,11 +2653,11 @@ function renderUnitsPage() {
     </div>
     <span class="settings-group-label settings-group-label-spaced">Units preview</span>
     <div class="settings-list">
-      ${settingsRow({ iconName: "gauge", title: "Length", description: "Vehicle dimensions", value: isMetric ? "mm" : "in" })}
-      ${settingsRow({ iconName: "gauge", title: "Temperature", description: "Fluid and ambient readings", value: isMetric ? "°C" : "°F" })}
-      ${settingsRow({ iconName: "gauge", title: "Pressure", description: "Tyre and system pressure", value: isMetric ? "kPa" : "psi" })}
-      ${settingsRow({ iconName: "gauge", title: "Torque", description: "Fastener specifications", value: isMetric ? "Nm" : "ft-lb" })}
-      ${settingsRow({ iconName: "gauge", title: "Weight", description: "Parts and vehicle weight", value: isMetric ? "kg" : "lb" })}
+      ${settingsRow({ title: "Length", description: "Vehicle dimensions", value: isMetric ? "mm" : "in" })}
+      ${settingsRow({ title: "Temperature", description: "Fluid and ambient readings", value: isMetric ? "°C" : "°F" })}
+      ${settingsRow({ title: "Pressure", description: "Tyre and system pressure", value: isMetric ? "kPa" : "psi" })}
+      ${settingsRow({ title: "Torque", description: "Fastener specifications", value: isMetric ? "Nm" : "ft-lb" })}
+      ${settingsRow({ title: "Weight", description: "Parts and vehicle weight", value: isMetric ? "kg" : "lb" })}
     </div>
     ${unwiredBanner("Job odometer readings switch units immediately -- that's the only numeric measurement Argos One tracks today. The rest of this preview shows which unit each category would use; length, temperature, pressure, torque and weight aren't recorded as fields anywhere yet.")}`;
 }
@@ -2869,6 +2869,50 @@ function openTechnicianDetailsSheet(technician) {
     </div>`, { ariaLabel: "Staff details" });
 }
 
+// Removing someone from the roster can't be undone from inside the app, so it
+// asks for the word rather than a plain Yes/No -- the same tap that opens this
+// can't also complete it. Deleting the roster row does not touch the person's
+// login or the jobs they worked on (those hang off profiles.id): it ends their
+// membership of this workshop.
+function deleteTechnicianConfirmation(technician) {
+  if (!technician) return;
+  openSheet(`<div class="confirmation-content">
+    <h2>Remove ${escapeHTML(technicianName(technician))}?</h2>
+    <p>They lose access to this workshop and drop off the staff directory. Jobs they already worked on keep their name and history. This can't be undone from here -- you would have to invite them again.</p>
+    <form class="settings-edit-form" id="delete-technician-form" data-technician-id="${technician.id}" autocomplete="off">
+      <label class="form-field">
+        <div class="field-header"><span class="field-label">Type DELETE to confirm</span></div>
+        <input class="input" name="confirm" placeholder="DELETE" autocapitalize="characters" autocorrect="off" spellcheck="false" required />
+      </label>
+      <div class="confirmation-actions">
+        <button class="secondary-button full" type="button" data-action="view-technician" data-technician-id="${technician.id}">Cancel</button>
+        <button class="danger-button full" type="submit">${icon("trash")} Delete</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm staff removal" });
+}
+
+async function deleteTechnician(form) {
+  const typed = String(new FormData(form).get("confirm") || "").trim().toUpperCase();
+  if (typed !== "DELETE") return showToast("Type DELETE to confirm this removal");
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  setButtonLoading(submitButton, "Deleting\u2026");
+  sheetLayer.classList.add("is-busy");
+  try {
+    await apiRequest(`/api/shop/technicians/${form.dataset.technicianId}`, { method: "DELETE" });
+    sheetLayer.classList.remove("is-busy");
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast("Staff member removed");
+    render();
+  } catch (error) {
+    sheetLayer.classList.remove("is-busy");
+    resetButtonLoading(submitButton);
+    showToast(error.message || "Could not remove that staff member");
+  }
+}
+
 function openTechnicianEditModal(technician) {
   // A shop with zero active Owners has nobody left who can reach this very
   // screen to fix that, so editing the last one locks the controls that
@@ -2881,7 +2925,10 @@ function openTechnicianEditModal(technician) {
     ? `<option value="owner" selected>${roleLabel("owner")}</option>${roleOptionsHtml(null)}`
     : roleOptionsHtml(technician.role);
   const contact = technicianContact(technician);
-  openSheet(`<div class="sheet-head"><div><h2>Edit staff</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  // No close X and no backdrop dismiss here: the only ways out are Cancel
+  // (back to the read-only view this was opened from) and a completed Save,
+  // so a mistap outside can't throw away half-typed changes.
+  openSheet(`<div class="sheet-head"><div><h2>Edit staff</h2></div></div>
     <div class="sheet-body">
     <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician.id}">
       <div class="customer-details-grid">
@@ -2896,11 +2943,11 @@ function openTechnicianEditModal(technician) {
       </div>
       ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
       <div class="profile-note-actions">
-        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="secondary-button" type="button" data-action="cancel-technician-edit" data-technician-id="${technician.id}">Cancel</button>
         <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
-    </div>`, { ariaLabel: "Edit staff" });
+    </div>`, { ariaLabel: "Edit staff", dismissible: false });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
@@ -3015,16 +3062,24 @@ async function saveTechnician(form) {
   // it here could strand a phone-only login the same way skipping it at join
   // time would (see the join wizard's own mandatory mobile field).
   if (!payload.mobile) return showToast("Give the technician a mobile number");
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  setButtonLoading(submitButton, "Saving\u2026");
+  sheetLayer.classList.add("is-busy");
   try {
     await apiRequest(`/api/shop/technicians/${form.dataset.technicianId}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
+    sheetLayer.classList.remove("is-busy");
     closeSheet();
     await loadWorkshopRoster();
     showToast("Staff member updated");
     render();
   } catch (error) {
+    // Stay on the form so the rejected values are still there to correct.
+    sheetLayer.classList.remove("is-busy");
+    resetButtonLoading(submitButton);
     showToast(error.message || "Could not save that technician");
   }
 }
@@ -3751,7 +3806,11 @@ function setStep(step) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
+// dismissible:false is for a sheet whose only exits are its own buttons --
+// an edit form mid-change, or any sheet with a save in flight. It suppresses
+// the backdrop tap and Escape so a stray tap outside can't silently discard
+// what was typed; such a sheet must supply its own Cancel.
+function openSheet(content, { sheetClass = "", ariaLabel = "", dismissible = true } = {}) {
   clearTimeout(sheetCloseTimer);
   const isRefreshing = !sheetLayer.hidden && sheetLayer.classList.contains("is-open");
   const previousScrollTop = sheetLayer.querySelector(".bottom-sheet")?.scrollTop || 0;
@@ -3769,6 +3828,8 @@ function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
   document.documentElement.classList.add("sheet-open");
   document.body.classList.add("sheet-open");
   sheetLayer.classList.toggle("is-confirmation-modal", sheetClass.split(/\s+/).includes("confirmation-sheet"));
+  sheetLayer.dataset.dismissible = dismissible ? "true" : "false";
+  sheetLayer.classList.remove("is-busy");
   if (!isRefreshing) sheetLayer.classList.remove("is-open");
   sheetLayer.innerHTML = `<section class="bottom-sheet${sheetClass ? ` ${sheetClass}` : ""}" role="dialog" aria-modal="true"${ariaLabel ? ` aria-label="${escapeHTML(ariaLabel)}"` : ""}>${content}</section>`;
   sheetLayer.hidden = false;
@@ -4526,6 +4587,7 @@ document.addEventListener("click", (event) => {
       const page = actionButton.dataset.settingsPage || null;
       settingsOpenPage(page);
       render();
+      window.scrollTo({ top: 0, behavior: "instant" });
       // The roster is only fetched at app boot and after actions taken from
       // this same tab, so a staff member joining from their own device (the
       // whole point of the invite flow) would otherwise stay "Invited" here
@@ -4535,7 +4597,9 @@ document.addEventListener("click", (event) => {
     }
     if (action === "settings-back") {
       settingsGoBack();
-      return render();
+      render();
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
     }
     if (action === "edit-shop-field") {
       return openShopFieldModal({
@@ -4548,6 +4612,7 @@ document.addEventListener("click", (event) => {
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
     if (action === "edit-technician-form") return openTechnicianEditModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
+    if (action === "cancel-technician-edit") return openTechnicianDetailsSheet(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
     if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId, actionButton);
@@ -4573,27 +4638,36 @@ document.addEventListener("click", (event) => {
         .catch((error) => showToast(error.message || "Could not delete that bay"));
     }
     if (action === "delete-technician") {
-      return apiRequest(`/api/shop/technicians/${actionButton.dataset.technicianId}`, { method: "DELETE" })
-        .then(async () => {
-          closeSheet();
-          await loadWorkshopRoster();
-          showToast("Technician deleted");
-          render();
-        })
-        .catch((error) => showToast(error.message || "Could not delete that technician"));
+      return deleteTechnicianConfirmation(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
     }
+    // Moves the switch on the tap and reconciles afterwards, the same way the
+    // in-form switch does. Waiting for the round trip before animating (and
+    // then re-rendering the whole sheet to show the result) read as a freeze.
     if (action === "toggle-technician-active") {
       const technician = state.technicians.find((t) => t.id === actionButton.dataset.technicianId);
-      if (!technician) return;
+      if (!technician || actionButton.dataset.pending === "true") return;
+      const control = actionButton.querySelector(".switch");
       const next = !technician.active;
+      const paint = (value) => {
+        control.classList.toggle("is-on", value);
+        control.setAttribute("aria-checked", String(value));
+        actionButton.setAttribute("aria-pressed", String(value));
+      };
+      paint(next);
+      actionButton.dataset.pending = "true";
       return apiRequest(`/api/shop/technicians/${technician.id}`, { method: "PATCH", body: JSON.stringify({ active: next }) })
         .then(async () => {
+          technician.active = next;
           await loadWorkshopRoster();
-          const updated = state.technicians.find((t) => t.id === technician.id);
-          if (updated) openTechnicianDetailsSheet(updated);
+          // Only the roster list behind the sheet is repainted -- the switch
+          // in front of the technician is already showing the new value.
           render();
         })
-        .catch((error) => showToast(error.message || "Could not update status"));
+        .catch((error) => {
+          paint(!next);
+          showToast(error.message || "Could not update status");
+        })
+        .finally(() => { delete actionButton.dataset.pending; });
     }
     if (action === "pick-technician-bay") {
       const technician = state.technicians.find((t) => t.id === actionButton.dataset.technicianId);
@@ -5134,6 +5208,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "shop-field-form") return saveShopField(event.target);
   if (event.target.id === "bay-form") return saveBay(event.target);
   if (event.target.id === "technician-form") return saveTechnician(event.target);
+  if (event.target.id === "delete-technician-form") return deleteTechnician(event.target);
   if (event.target.id === "invite-staff-form") return saveStaffInvite(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
@@ -5269,7 +5344,7 @@ vinCameraInput.addEventListener("change", async () => {
 });
 
 sheetLayer.addEventListener("click", (event) => {
-  if (event.target === sheetLayer) closeSheet();
+  if (event.target === sheetLayer && sheetLayer.dataset.dismissible !== "false") closeSheet();
 });
 sheetLayer.addEventListener("pointerdown", beginPhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointermove", movePhotoGesture, { passive: false });
@@ -5277,7 +5352,7 @@ sheetLayer.addEventListener("pointerup", endPhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointercancel", endPhotoGesture, { passive: false });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !sheetLayer.hidden) closeSheet();
+  if (event.key === "Escape" && !sheetLayer.hidden && sheetLayer.dataset.dismissible !== "false") closeSheet();
 });
 
 window.addEventListener("scroll", () => {

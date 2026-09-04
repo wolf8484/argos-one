@@ -3560,6 +3560,15 @@ button.settings-toggle-row {
   padding: 20px var(--gutter) 32px;
 }
 
+/* While a sheet's own save is in flight, nothing inside it (or the backdrop
+   behind it) should be reachable -- the submit button already shows its
+   spinner, and a second tap on Cancel or the backdrop mid-request would
+   abandon a write that is still going to land. */
+.sheet-layer.is-busy,
+.bottom-sheet.is-busy {
+  pointer-events: none;
+}
+
 .sheet-layer.is-confirmation-modal {
   align-items: center;
   padding: max(16px, var(--safe-top)) var(--gutter) max(16px, var(--safe-bottom));
@@ -3594,6 +3603,12 @@ button.settings-toggle-row {
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.5;
+}
+
+/* A confirmation that asks the reader to type something needs the field set
+   apart from the paragraph explaining what they're confirming. */
+.confirmation-content .settings-edit-form {
+  margin-top: 20px;
 }
 
 .confirmation-actions {
@@ -5466,8 +5481,16 @@ body.dictation-active .toast {
   gap: 12px;
 }
 
+/* Equal tracks rather than flex:1 1 0 -- these buttons have different
+   horizontal padding and borders, and with box-sizing:border-box a zero
+   flex-basis is floored at each item's own padding+border, so a flex row
+   hands the wider-padded button a few extra pixels and the pair stops
+   reading as a true 50/50. Grid tracks ignore that. */
 .profile-note-actions {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin-top: 12px;
   gap: 12px;
 }
 
@@ -5476,13 +5499,12 @@ body.dictation-active .toast {
 .profile-note-actions .primary-button,
 .profile-note-actions .danger-button,
 .profile-note-actions .danger-outline-button {
-  flex: 1 1 0;
   min-height: 52px;
 }
 
 @media (max-width: 500px) {
   .profile-note-actions {
-    flex-direction: column;
+    grid-auto-flow: row;
   }
 }
 
