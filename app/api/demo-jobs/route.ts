@@ -113,6 +113,21 @@ export async function POST() {
   try {
     const { supabase, profile } = auth
     const shopId = profile.shop_id
+
+    // Seeding is gated on the branch being marked as demo. This runs on every
+    // dashboard load, so without the gate a workshop can never be empty: a
+    // brand-new branch created for real customers refills itself with seven
+    // fabricated jobs the first time anyone opens it, and deleting them just
+    // brings them back on the next load. The is_demo flag is what separates
+    // "a shop that wants sample data" from "a shop that must never have any".
+    const { data: shop, error: shopError } = await supabase
+      .from('shops')
+      .select('is_demo')
+      .eq('id', shopId)
+      .single()
+    if (shopError) throw shopError
+    if (!shop.is_demo) return NextResponse.json({ created: 0, skipped: 'not_a_demo_branch' })
+
     const { data: markedCustomers, error: customerLookupError } = await supabase
       .from('customers')
       .select('id,notes')

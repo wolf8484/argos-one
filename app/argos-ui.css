@@ -5994,3 +5994,139 @@ a.profile-recall:focus-visible {
 .resolved-report-identity {
   min-width: 0;
 }
+
+/* Branches
+   ------------------------------------------------------------------------ */
+
+/* Reads as a state, not an action -- the branch you are already in is the one
+   row in the directory that cannot be switched to. */
+.settings-row-value.branch-current-badge {
+  color: var(--accent);
+}
+
+.branch-membership {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.branch-membership .text-button {
+  align-self: flex-start;
+  min-height: 52px;
+}
+
+.branch-membership-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.branch-membership-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  font-size: var(--caps-size);
+  line-height: 18px;
+}
+
+/* The switcher and the "which branch are you at" prompt both list branches as
+   profile-menu buttons; the current one is inert, so it should not read as a
+   target. */
+.profile-menu-button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* The first branch is created from Workshop profile, because the directory
+   that normally holds "Add branch" does not exist until there are two of
+   them. Extra room above so it reads as a separate decision from editing the
+   fields it follows. */
+.settings-page-action.settings-page-action-spaced {
+  margin-top: 28px;
+}
+
+/* Branch bar
+   ------------------------------------------------------------------------
+   Sits directly under the header, above the scrolling content, for anyone who
+   holds more than one branch. Not sticky: .topbar already occupies top:0 and
+   offsetting a second sticky layer against a header whose height changes at
+   three breakpoints is more fragility than the cue is worth. Every screen
+   opens scrolled to the top, so it is read at the moment it matters. */
+.branch-bar {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.branch-bar-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--gutter);
+  border: 0;
+  background: none;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: var(--caps-size);
+  text-align: left;
+}
+
+.branch-bar-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-bar-swap {
+  margin-left: auto;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* A demo branch is the whole reason this bar exists, so it does not whisper:
+   solid fill, because it has to survive being glanced at sideways in daylight.
+   --notice rather than --danger deliberately. The demo shop is where this
+   workshop will be shown to prospective customers, and a red bar across the
+   top would make a working product look broken for the length of every demo.
+   Yellow reads as a deliberate label instead of a fault. */
+.branch-bar.is-demo {
+  border-bottom-color: var(--notice);
+  background: var(--notice);
+}
+
+.branch-bar.is-demo .branch-bar-button,
+.branch-bar.is-demo .branch-bar-swap {
+  color: #111111;
+}
+
+.branch-bar-tag {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.16);
+  color: #111111;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* The first paragraph of an explanatory page carries more weight than the
+   trailing notes that use the same class. */
+.settings-detail-intro.settings-detail-intro-lead {
+  color: var(--muted-strong);
+  margin-top: 4px;
+}

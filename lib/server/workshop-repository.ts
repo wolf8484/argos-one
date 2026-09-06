@@ -535,7 +535,7 @@ export class WorkshopRepository {
   }
 
   private static readonly SHOP_COLUMNS =
-    'id,name,phone,email,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs'
+    'id,org_id,name,phone,email,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs,is_demo,abn'
 
   async getShop() {
     const { data, error } = await this.supabase
@@ -559,8 +559,10 @@ export class WorkshopRepository {
     defaultBayId?: string | null
     defaultTechnicianId?: string | null
     autoAssignJobs?: boolean
+    abn?: string | null
   }) {
     const patch: Record<string, unknown> = {}
+    if (input.abn !== undefined) patch.abn = input.abn
     if (input.sharesRepairData !== undefined) patch.shares_repair_data = input.sharesRepairData
     if (input.name !== undefined) patch.name = input.name
     if (input.phone !== undefined) patch.phone = input.phone
@@ -582,6 +584,223 @@ export class WorkshopRepository {
       .single()
     if (error) throw error
     return data
+  }
+
+  // ---------------------------------------------------------------------
+  // Branches
+  // ---------------------------------------------------------------------
+
+  private static readonly BRANCH_COLUMNS = 'id,name,phone,email,region,timezone,branch_id,org_id,auto_assign_jobs,is_demo,abn'
+
+  /**
+   * Set by listBranches: whether this device has been told which branch it is
+   * at, as opposed to falling back to profiles.shop_id. Only interesting for
+   * someone who holds more than one -- see has_session_branch (0050).
+   */
+  sessionPinned = false
+
+  /**
+   * Every branch this login holds an active place in -- which is what the
+   * switcher offers and the branch directory lists. RLS (0050) already limits
+   * shops to exactly that set, so there is nothing to filter here.
+   *
+   * Counts come from one roster read rather than an embedded aggregate per
+   * shop: the same widened policy makes every relevant row reachable in a
+   * single round trip, and it also carries the caller's own role per branch,
+   * which decides whether they may edit that branch at all.
+   */
+  async listBranches() {
+    const [{ data: shops, error: shopsError }, { data: roster, error: rosterError }, { data: pinned }] =
+      await Promise.all([
+        this.supabase.from('shops').select(WorkshopRepository.BRANCH_COLUMNS).order('name'),
+        this.supabase.from('shop_technicians').select('shop_id,profile_id,role,active'),
+        this.supabase.rpc('has_session_branch'),
+      ])
+    if (shopsError) throw shopsError
+    if (rosterError) throw rosterError
+    this.sessionPinned = pinned === true
+
+    return (shops ?? []).map((shop) => {
+      const rows = (roster ?? []).filter((row) => row.shop_id === shop.id)
+      const mine = rows.find((row) => row.profile_id === this.profile.id && row.active)
+      return {
+        ...shop,
+        staffCount: rows.filter((row) => row.active).length,
+        myRole: mine?.role ?? null,
+        isCurrent: shop.id === this.profile.shop_id,
+        canEdit: mine?.role === 'owner' || mine?.role === 'admin',
+      }
+    })
+  }
+
+  /** The business this login is currently working inside. */
+  async getBusiness() {
+    const { data, error } = await this.supabase
+      .from('shops')
+      // Named FK: 0056 added organisations.primary_shop_id, so shops and
+      // organisations are now joined twice and PostgREST will not guess.
+      .select('org:organisations!shops_org_id_fkey(id,name,primary_shop_id)')
+      .eq('id', this.profile.shop_id)
+      .single()
+    if (error) throw error
+    // A to-one embed still arrives typed as an array from PostgREST.
+    type Business = { id: string; name: string; primary_shop_id: string | null }
+    const org = (data as unknown as { org: Business | Business[] | null }).org
+    return (Array.isArray(org) ? org[0] : org) ?? null
+  }
+
+  /** The business holds a name and nothing else -- see migration 0055. */
+  async updateBusiness(input: { name: string }) {
+    const business = await this.getBusiness()
+    if (!business) throw new ApiError('No business is configured for this workshop.', 404)
+
+    const { data, error } = await this.supabase
+      .from('organisations')
+      .update({ name: input.name })
+      .eq('id', business.id)
+      .select('id,name')
+      .single()
+    if (error) throw error
+    // Only an Owner may write it (org_update policy); RLS returns no row
+    // rather than an error when an Admin tries.
+    if (!data) throw new ApiError('Only an Owner can change the business details.', 403)
+    return data
+  }
+
+  /**
+   * create_branch does the work in one statement so there is never a branch
+   * without an Owner. It also enforces the permission, so no guard is needed
+   * here -- the function raises 42501 if the caller is not an Owner of this
+   * business, which apiError surfaces as a 403.
+   */
+  async createBranch(input: {
+    name: string
+    phone?: string | null
+    email?: string | null
+    region?: string | null
+    timezone?: string | null
+    copyJobDefaults?: boolean
+  }) {
+    const shop = await this.getShop() as { auto_assign_jobs?: boolean }
+    const { data: newShopId, error } = await this.supabase.rpc('create_branch', {
+      p_name: input.name,
+      p_phone: input.phone ?? null,
+      p_email: input.email ?? null,
+      p_region: input.region ?? null,
+      p_timezone: input.timezone ?? null,
+      // Only the behavioural half of job defaults travels. The default bay and
+      // default technician point at records a brand-new branch does not have.
+      p_auto_assign: input.copyJobDefaults ? (shop.auto_assign_jobs ?? false) : false,
+    })
+    if (error) throw error
+
+    const { data, error: readError } = await this.supabase
+      .from('shops')
+      .select(WorkshopRepository.BRANCH_COLUMNS)
+      .eq('id', newShopId)
+      .single()
+    if (readError) throw readError
+    return data
+  }
+
+  /**
+   * Per-session, not per-login: set_session_branch keys the choice on the
+   * access token's session_id, so switching on a phone leaves the workshop
+   * tablet where it was. It re-checks the grant itself, which is why no
+   * membership test happens here.
+   */
+  async switchBranch(shopId: string) {
+    const { error } = await this.supabase.rpc('set_session_branch', { target_shop: shopId })
+    if (error) throw error
+    const { data, error: readError } = await this.supabase
+      .from('shops')
+      .select(WorkshopRepository.BRANCH_COLUMNS)
+      .eq('id', shopId)
+      .single()
+    if (readError) throw readError
+    return data
+  }
+
+  /**
+   * Editing a branch you are not standing in. The shop_update policy requires
+   * an active Owner or Admin row in that specific branch, so an Admin at one
+   * site cannot rename another -- there is no extra check to make here beyond
+   * letting RLS answer.
+   */
+  async updateBranch(shopId: string, input: {
+    name?: string
+    phone?: string | null
+    email?: string | null
+    region?: string
+    timezone?: string
+    branchId?: string | null
+    isDemo?: boolean
+    abn?: string | null
+  }) {
+    const patch: Record<string, unknown> = {}
+    if (input.isDemo !== undefined) patch.is_demo = input.isDemo
+    if (input.abn !== undefined) patch.abn = input.abn
+    if (input.name !== undefined) patch.name = input.name
+    if (input.phone !== undefined) patch.phone = input.phone
+    if (input.email !== undefined) patch.email = input.email
+    if (input.region !== undefined) patch.region = input.region
+    if (input.timezone !== undefined) patch.timezone = input.timezone
+    if (input.branchId !== undefined) patch.branch_id = input.branchId
+    if (!Object.keys(patch).length) {
+      const { data, error } = await this.supabase
+        .from('shops').select(WorkshopRepository.BRANCH_COLUMNS).eq('id', shopId).single()
+      if (error) throw error
+      return data
+    }
+
+    const { data, error } = await this.supabase
+      .from('shops')
+      .update(patch)
+      .eq('id', shopId)
+      .select(WorkshopRepository.BRANCH_COLUMNS)
+      .single()
+    if (error) throw error
+    if (!data) throw new ApiError('You cannot edit that branch.', 403)
+    return data
+  }
+
+  /** Which other branches this person works in -- the "Also works at" list. */
+  async listTechnicianBranches(technicianId: string) {
+    const { data: source, error: sourceError } = await this.supabase
+      .from('shop_technicians')
+      .select('profile_id')
+      .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (sourceError) throw sourceError
+    if (!source.profile_id) return []
+
+    const { data, error } = await this.supabase
+      .from('shop_technicians')
+      // Disambiguated: shops and shop_technicians are joined twice -- by
+      // shop_technicians.shop_id, and by shops.default_technician_id pointing
+      // back the other way. PostgREST refuses to guess between them.
+      .select('id,shop_id,role,active,shop:shops!shop_technicians_shop_id_fkey(name)')
+      .eq('profile_id', source.profile_id)
+    if (error) throw error
+    return (data ?? []).map((row) => ({
+      technicianId: row.id,
+      shopId: row.shop_id,
+      name: (row.shop as { name?: string } | null)?.name ?? 'Unknown branch',
+      role: row.role,
+      active: row.active,
+      isCurrent: row.shop_id === this.profile.shop_id,
+    }))
+  }
+
+  async addTechnicianToBranch(technicianId: string, shopId: string, role?: string) {
+    const { data, error } = await this.supabase.rpc('add_technician_to_branch', {
+      p_technician_id: technicianId,
+      p_target_shop: shopId,
+      p_role: role ?? null,
+    })
+    if (error) throw error
+    return { technicianId: data as string, shopId }
   }
 
   async listBays() {
@@ -645,6 +864,7 @@ export class WorkshopRepository {
       .select(`id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at,
         invite:shop_invites(code,email,mobile,expires_at,consumed_at),
         profile:profiles(phone,email)`)
+      .eq('shop_id', this.profile.shop_id)
       .order('position')
       .order('first_name')
     if (error) throw error
@@ -663,6 +883,7 @@ export class WorkshopRepository {
     const { data: last } = await this.supabase
       .from('shop_technicians')
       .select('position')
+      .eq('shop_id', this.profile.shop_id)
       .order('position', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -695,6 +916,7 @@ export class WorkshopRepository {
       .from('shop_technicians')
       .select('role,active')
       .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
       .single()
     if (currentError) throw currentError
     if (current.role !== 'owner' || !current.active) return false
@@ -702,6 +924,7 @@ export class WorkshopRepository {
     const { count, error: countError } = await this.supabase
       .from('shop_technicians')
       .select('id', { count: 'exact', head: true })
+      .eq('shop_id', this.profile.shop_id)
       .eq('role', 'owner')
       .eq('active', true)
     if (countError) throw countError
@@ -719,6 +942,12 @@ export class WorkshopRepository {
     mobile?: string | null
     email?: string | null
   }) {
+    await this.assertCanActOnRoster(technicianId)
+    // Promoting someone to Owner is an Owner's call alone; an Admin doing it
+    // would be granting authority they do not hold.
+    if (input.role === 'owner' && this.profile.role !== 'owner') {
+      throw new ApiError('Only an Owner can make someone else an Owner.', 403)
+    }
     const demotesOrDeactivatesOwner = (input.role !== undefined && input.role !== 'owner') || input.active === false
     if (demotesOrDeactivatesOwner && (await this.isLastActiveOwner(technicianId))) {
       throw new ApiError("This is the workshop's only Owner -- assign another Owner before changing this role.", 409)
@@ -737,6 +966,7 @@ export class WorkshopRepository {
       .from('shop_technicians')
       .update(patch)
       .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
       .select('id,profile_id,first_name,last_name,initials,employee_id,role,active,default_bay_id,position,created_at,updated_at')
       .single()
     if (error) throw error
@@ -767,14 +997,54 @@ export class WorkshopRepository {
     // Switching someone to Inactive revokes access exactly like a delete does
     // (current_shop_id() requires an *active* grant), so it has to drop their
     // sessions too -- otherwise the toggle looks like an access control while
-    // the tablet in their hand carries on until its token expires. shop_id is
-    // deliberately left pointing here: reactivating them restores access
-    // without re-inviting.
+    // the tablet in their hand carries on until its token expires.
     if (input.active === false && data.profile_id) {
-      await createAdminSupabaseClient().rpc('revoke_workshop_sessions', { target_profile: data.profile_id })
+      await this.endBranchAccess(data.profile_id)
     }
 
     return data
+  }
+
+  /**
+   * Deactivating someone here must not touch a branch where they are still
+   * active -- that is the whole point of the flag being per roster row. So:
+   *
+   *  - only the sessions actually pointed at this branch are dropped, which
+   *    signs out the tablet they were working on without disturbing a device
+   *    signed in at another site;
+   *  - if their profile's fallback selection still names this branch, it is
+   *    moved to one they can still reach, so their next sign-in lands
+   *    somewhere real instead of on the "access deactivated" screen.
+   *
+   * Their roster row here stays put, inactive. Reactivating restores access
+   * with no re-invite -- which is why shop_id is re-pointed rather than
+   * cleared while any other grant survives.
+   */
+  private async endBranchAccess(profileId: string) {
+    const admin = createAdminSupabaseClient()
+    await admin.rpc('revoke_branch_sessions', {
+      target_profile: profileId,
+      target_shop: this.profile.shop_id,
+    })
+
+    const { data: profile } = await admin
+      .from('profiles').select('shop_id').eq('id', profileId).maybeSingle()
+    if (profile?.shop_id !== this.profile.shop_id) return
+
+    const { data: elsewhere } = await admin
+      .from('shop_technicians')
+      .select('shop_id')
+      .eq('profile_id', profileId)
+      .eq('active', true)
+      .neq('shop_id', this.profile.shop_id)
+      .limit(1)
+      .maybeSingle()
+
+    const { error } = await admin
+      .from('profiles')
+      .update({ shop_id: elsewhere?.shop_id ?? null })
+      .eq('id', profileId)
+    if (error) throw error
   }
 
   /**
@@ -790,6 +1060,7 @@ export class WorkshopRepository {
    * reference profiles.id, and a re-hire is a fresh invite, not a new account.
    */
   async deleteTechnician(technicianId: string) {
+    await this.assertCanActOnRoster(technicianId)
     if (await this.isLastActiveOwner(technicianId)) {
       throw new ApiError("This is the workshop's only Owner -- assign another Owner before deleting this staff member.", 409)
     }
@@ -797,13 +1068,15 @@ export class WorkshopRepository {
       .from('shop_technicians')
       .select('id, profile_id, shop_id')
       .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
       .single()
     if (readError) throw readError
 
     // No linked login (an unredeemed invite, or an imported roster row): there
     // is nothing to retire beyond the row itself.
     if (!row.profile_id) {
-      const { error } = await this.supabase.from('shop_technicians').delete().eq('id', technicianId)
+      const { error } = await this.supabase.from('shop_technicians').delete()
+        .eq('id', technicianId).eq('shop_id', this.profile.shop_id)
       if (error) throw error
       return
     }
@@ -869,6 +1142,30 @@ export class WorkshopRepository {
   private assertCanManageStaff() {
     if (this.profile.role === 'technician') {
       throw new ApiError('Only an Owner or Admin can invite staff.', 403)
+    }
+  }
+
+  /**
+   * Mirrors the roster policies from 0054. They are the real enforcement --
+   * this exists so the app answers "Only an Owner can change another Owner"
+   * instead of the silent no-rows-matched that RLS returns, which surfaces as
+   * a confusing generic failure.
+   */
+  private async assertCanActOnRoster(technicianId: string) {
+    if (this.profile.role === 'technician') {
+      throw new ApiError('Only an Owner or Admin can change staff records.', 403)
+    }
+    if (this.profile.role === 'owner') return
+
+    const { data, error } = await this.supabase
+      .from('shop_technicians')
+      .select('role')
+      .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+      .maybeSingle()
+    if (error) throw error
+    if (data?.role === 'owner') {
+      throw new ApiError('Only an Owner can change another Owner.', 403)
     }
   }
 

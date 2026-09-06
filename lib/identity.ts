@@ -49,13 +49,22 @@ export function formatPhoneInput(raw: string) {
   return groups.filter(Boolean).join(' ')
 }
 
-/** Display form for a stored E.164 AU mobile: +61412345678 -> 0412 345 678 */
+/**
+ * Display form for a stored E.164 AU number:
+ *   +61412345678 -> 0412 345 678   (mobile, subscriber number starts with 4)
+ *   +61290000000 -> 02 9000 0000   (landline, area code 02/03/07/08)
+ *
+ * Grouping has to branch on the number type or a workshop's landline reads
+ * back as "029 000 0000", which is not how anyone says it. Mirrors the
+ * grouping formatPhoneInput already applies while typing.
+ */
 export function formatPhoneForDisplay(e164: string | null | undefined) {
   if (!e164) return ''
   const match = /^\+61(\d{9})$/.exec(e164)
   if (!match) return e164
   const digits = match[1]
-  return `0${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  if (digits.startsWith('4')) return `0${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  return `0${digits.slice(0, 1)} ${digits.slice(1, 5)} ${digits.slice(5)}`
 }
 
 /**

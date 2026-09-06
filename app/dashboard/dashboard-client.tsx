@@ -59,6 +59,12 @@ export default function DashboardClient({ buildVersion }: { buildVersion: string
           </button>
         </header>
 
+        {/* Populated by app.js and shown only for a login that holds more
+            than one branch. Placed outside .topbar deliberately: that header
+            assigns explicit grid columns per breakpoint, so a fifth child
+            would land somewhere different at every screen size. */}
+        <div id="branch-bar" className="branch-bar" hidden />
+
         <main id="app" tabIndex={-1} />
 
         <nav className="bottom-nav" aria-label="Primary navigation">

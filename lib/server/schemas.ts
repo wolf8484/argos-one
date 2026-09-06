@@ -130,6 +130,7 @@ export const shopSettingsSchema = z.object({
   defaultBayId: z.string().uuid().nullable().optional(),
   defaultTechnicianId: z.string().uuid().nullable().optional(),
   autoAssignJobs: z.boolean().optional(),
+  abn: z.string().trim().max(20).nullable().optional(),
 })
 
 export const baySchema = z.object({
@@ -193,4 +194,41 @@ export const joinWorkshopSchema = z.object({
   // finish onboarding without it is how an account gets stranded.
   mobile: z.string().trim().min(1).max(30),
   password: z.string().min(8).max(200),
+})
+
+export const createBranchSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  phone: z.string().trim().max(30).nullable().optional(),
+  email: z.string().trim().email().max(160).nullable().optional(),
+  region: z.string().trim().max(80).nullable().optional(),
+  timezone: z.string().trim().max(80).nullable().optional(),
+  // Copies auto-assignment only. The default bay and default technician point
+  // at records the new branch does not have yet -- see createBranch.
+  copyJobDefaults: z.boolean().optional(),
+})
+
+export const updateBranchSchema = z.object({
+  name: z.string().trim().min(1).max(160).optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  email: z.string().trim().email().max(160).nullable().optional(),
+  region: z.string().trim().min(1).max(80).optional(),
+  timezone: z.string().trim().min(1).max(80).optional(),
+  branchId: z.string().trim().max(60).nullable().optional(),
+  isDemo: z.boolean().optional(),
+  abn: z.string().trim().max(20).nullable().optional(),
+})
+
+export const switchBranchSchema = z.object({
+  shopId: z.string().uuid(),
+})
+
+// A business is a name that groups sites; every other detail belongs to a
+// workshop. See migration 0055.
+export const businessSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+})
+
+export const addTechnicianBranchSchema = z.object({
+  shopId: z.string().uuid(),
+  role: z.enum(['owner', 'admin', 'technician']).optional(),
 })
