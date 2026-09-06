@@ -120,6 +120,7 @@ export const resolveProfileSchema = z.object({
 
 export const shopSettingsSchema = z.object({
   sharesRepairData: z.boolean().optional(),
+  sharesWithBranches: z.boolean().optional(),
   name: z.string().trim().min(1).max(160).optional(),
   phone: z.string().trim().max(30).nullable().optional(),
   email: z.string().trim().email().max(160).nullable().optional(),
@@ -231,4 +232,9 @@ export const businessSchema = z.object({
 export const addTechnicianBranchSchema = z.object({
   shopId: z.string().uuid(),
   role: z.enum(['owner', 'admin', 'technician']).optional(),
+})
+
+export const branchShareTargetSchema = z.object({
+  targetShopId: z.string().uuid(),
+  shared: z.boolean(),
 })

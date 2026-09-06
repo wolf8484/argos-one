@@ -11,7 +11,14 @@ export async function PATCH(request: NextRequest) {
   try {
     const input = shopSettingsSchema.parse(await request.json())
     const repository = new WorkshopRepository(auth.supabase, auth.profile)
-    const shop = await repository.updateShop(input)
+    let shop = await repository.updateShop(input)
+
+    // Routed through its own definer function rather than the shops patch,
+    // because branch sharing is owner/admin only while the rest of this
+    // endpoint is open to every role.
+    if (input.sharesWithBranches !== undefined) {
+      shop = await repository.setBranchSharing(input.sharesWithBranches)
+    }
 
     // Rebuild immediately either way: turning sharing on should surface this
     // shop's existing repair history right away rather than waiting for the

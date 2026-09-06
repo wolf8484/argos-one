@@ -519,21 +519,6 @@ main:focus {
   padding: 24px 0 40px;
 }
 
-.home-kicker {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 16px;
-  color: var(--muted);
-  font-size: var(--caps-size);
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.home-kicker span {
-  color: var(--accent);
-}
-
 .home-metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3133,7 +3118,7 @@ button.journey-item:active {
 .settings-group-label {
   display: block;
   margin-bottom: 16px;
-  color: var(--muted);
+  color: var(--muted-strong);
   font-size: var(--caps-size);
   font-weight: 600;
   line-height: 18px;
@@ -4581,14 +4566,22 @@ button.profile-fact:focus-visible {
   line-height: 1.4;
 }
 
+/* Pinned under the header the same way the branch bar is, and one z-index
+   below it for the same reason. Sits in the layout rather than in .screen so
+   it runs edge to edge instead of inside the content column's max-width. */
+.update-banner {
+  position: sticky;
+  z-index: 39;
+  top: var(--topbar-height);
+}
+
 .settings-update-banner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
   width: 100%;
-  margin-bottom: 24px;
-  padding: 16px;
+  padding: 16px var(--gutter);
   border: 0;
   background: #ffc001;
   color: #111111;
@@ -4601,19 +4594,11 @@ button.profile-fact:focus-visible {
 }
 
 .settings-update-banner-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.settings-update-banner-text strong {
   color: #111111;
-}
-
-.settings-update-banner-text small {
-  color: #111111;
-  line-height: 1.4;
-  font-size: var(--caps-size);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .top-progress-bar {
@@ -6063,9 +6048,15 @@ a.profile-recall:focus-visible {
    offsetting a second sticky layer against a header whose height changes at
    three breakpoints is more fragility than the cue is worth. Every screen
    opens scrolled to the top, so it is read at the moment it matters. */
+/* Sticks directly under the topbar rather than scrolling away with the page,
+   so the branch and bay stay legible while the home screen scrolls. z-index
+   one below the topbar: if the header ever renders taller than
+   --topbar-height, the strip should slide under it rather than over it. */
 .branch-bar {
-  border-bottom: 1px solid var(--line);
-  background: var(--surface-2);
+  position: sticky;
+  z-index: 39;
+  top: var(--topbar-height);
+  background: #111111;
 }
 
 .branch-bar-button {
@@ -6083,45 +6074,46 @@ a.profile-recall:focus-visible {
   text-align: left;
 }
 
-.branch-bar-name {
-  font-weight: 600;
+.branch-bar-name,
+.branch-bar-bay {
+  color: var(--accent-fill);
+  font-size: var(--caps-size);
+  letter-spacing: 0;
+  text-transform: uppercase;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.branch-bar-swap {
+.branch-bar-name {
+  font-weight: 600;
+}
+
+/* Right-aligned whatever is to its left, so a single-site workshop showing
+   only a bay still lands it in the same place as a multi-branch one. */
+.branch-bar-bay {
   margin-left: auto;
-  color: var(--muted);
+  flex: none;
+  padding-left: 12px;
+  font-weight: 600;
+}
+
+/* Filling a demo branch's whole bar yellow put a solid stripe across every
+   screen, which was louder than the job needed doing. The chip below does it
+   instead: the bar stays black like the rest of the chrome, and the one thing
+   that differs about a demo branch is the one thing that is highlighted.
+   --notice rather than --danger deliberately -- the demo shop is where this
+   workshop gets shown to prospective customers, and red would make a working
+   product look broken for the length of every demo. */
+.branch-bar-tag {
+  background: var(--notice);
+  color: #111111;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-
-/* A demo branch is the whole reason this bar exists, so it does not whisper:
-   solid fill, because it has to survive being glanced at sideways in daylight.
-   --notice rather than --danger deliberately. The demo shop is where this
-   workshop will be shown to prospective customers, and a red bar across the
-   top would make a working product look broken for the length of every demo.
-   Yellow reads as a deliberate label instead of a fault. */
-.branch-bar.is-demo {
-  border-bottom-color: var(--notice);
-  background: var(--notice);
-}
-
-.branch-bar.is-demo .branch-bar-button,
-.branch-bar.is-demo .branch-bar-swap {
-  color: #111111;
-}
-
-.branch-bar-tag {
-  flex: none;
-  padding: 2px 8px;
   border-radius: 2px;
-  background: rgba(0, 0, 0, 0.16);
-  color: #111111;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  flex: none;
+  padding: 1px 4px 0px;
+  font-weight: 600;
 }
 
 /* The first paragraph of an explanatory page carries more weight than the
@@ -6129,4 +6121,30 @@ a.profile-recall:focus-visible {
 .settings-detail-intro.settings-detail-intro-lead {
   color: var(--muted-strong);
   margin-top: 4px;
+}
+
+/* A branch case is named, unlike a network case, so the row carries the site
+   it came from. Sits in the same meta slot as the network row's "N shops",
+   tinted so the two are distinguishable at a glance when both sections are
+   open on the same profile. */
+.branch-case-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px 1px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  color: var(--muted-strong);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Trailing clarification under the two sharing switches. Lighter than
+   .settings-detail-intro, which opens a page rather than closing one. */
+.settings-detail-note {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 1.5;
 }

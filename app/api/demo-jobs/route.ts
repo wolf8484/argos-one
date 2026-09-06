@@ -122,11 +122,22 @@ export async function POST() {
     // "a shop that wants sample data" from "a shop that must never have any".
     const { data: shop, error: shopError } = await supabase
       .from('shops')
-      .select('is_demo')
+      .select('is_demo,org:organisations!shops_org_id_fkey(primary_shop_id)')
       .eq('id', shopId)
       .single()
     if (shopError) throw shopError
     if (!shop.is_demo) return NextResponse.json({ created: 0, skipped: 'not_a_demo_branch' })
+
+    // Only the head shop of a demo business gets the fixtures. Seeding every
+    // demo branch put the same seven vehicles at all of them, which makes the
+    // branches indistinguishable in a demo and fills the cross-branch repair
+    // view with what look like duplicates of one job. A demo branch is worth
+    // having precisely because its content differs from its siblings', so the
+    // sample set belongs at one site and hand-built data at the rest.
+    const org = shop.org as unknown as { primary_shop_id: string | null } | null
+    if (org?.primary_shop_id && org.primary_shop_id !== shopId) {
+      return NextResponse.json({ created: 0, skipped: 'not_the_head_branch' })
+    }
 
     const { data: markedCustomers, error: customerLookupError } = await supabase
       .from('customers')

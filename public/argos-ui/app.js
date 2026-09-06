@@ -66,6 +66,9 @@ const state = {
   branches: [],
   business: null,
   branchDetailId: null,
+  // null until the sharing page has fetched them, so the list can say
+  // "loading" rather than briefly claiming the business has no branches.
+  branchShareTargets: null,
   // Starts true so nothing prompts before the branch list has loaded.
   sessionPinned: true,
   settingsTrail: [],
@@ -326,6 +329,7 @@ const icons = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   arrow: '<path d="m9 18 6-6-6-6"/>',
+  refresh: '<path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M8 21H3v-5"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
   camera: '<path d="M3 8h4l2-3h6l2 3h4v11H3Z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -604,7 +608,7 @@ async function loadBackendData() {
     await apiRequest("/api/demo-jobs", { method: "POST" });
     const [{ jobs }, account] = await Promise.all([apiRequest("/api/jobs"), apiRequest("/api/me")]);
     state.profile = account.profile || null;
-    state.shop = account.shop ? { ...account.shop, sharesRepairData: Boolean(account.shop.shares_repair_data), networkReadExempt: Boolean(account.shop.network_read_exempt) } : null;
+    state.shop = hydrateShop(account.shop);
     const loadedJobs = (jobs || []).map(databaseJobToUi);
     jobRecords = loadedJobs;
     const rememberedJob = loadedJobs.find((job) => job.id === storedActiveJobId() && job.status === "open");
@@ -631,34 +635,60 @@ async function loadBackendData() {
   }
   hideBootOverlay();
   render();
-  renderBranchBar();
   promptForBranchIfNeeded();
 }
 
-// A strip under the header naming the branch this device is in. Hidden for
-// anyone who holds one branch, so a single-site workshop never sees it.
+// A strip under the header: where you are on the left, the bay you work from
+// on the right. Deliberately not a control -- switching branch lives in the
+// profile sheet, and putting it here too made the strip read as a thing to
+// press on every screen when it is only ever a statement of fact.
 //
-// It exists for one specific mistake: a business running a real workshop and a
-// demo one is looking at the same tablet in the same room either way, so the
-// physical-location cue that makes this unnecessary for two real sites does
-// not apply. A demo branch is called out loudly for that reason -- the cost of
-// filing a real customer's job into fake data is not symmetric with the cost
-// of a slightly busier header.
+// The branch half exists for one specific mistake: a business running a real
+// workshop and a demo one is looking at the same tablet in the same room
+// either way, so the physical-location cue that makes this unnecessary for two
+// real sites does not apply. A demo branch is called out loudly for that
+// reason -- the cost of filing a real customer's job into fake data is not
+// symmetric with the cost of a slightly busier header.
+//
+// A single-site workshop gets the strip too. The workshop name rides along
+// even with one site -- not because anyone needs telling where they work, but
+// because a strip holding one right-aligned word reads as a layout fault, and
+// the head shop genuinely is the branch they are in the moment a second one
+// exists.
+//
+// Home only. It answers "where am I, and on what bay?", which is a question
+// asked on arrival, not one worth re-answering on top of every job, profile
+// and settings screen for the rest of the shift.
+// Lives in the layout, not in the settings screen, so it can run edge to edge
+// and pin under the header. Settings home only -- the same place it has always
+// appeared, and the screen a mechanic is on when they go looking for it.
+function renderUpdateBanner() {
+  const host = document.querySelector("#update-banner");
+  if (!host) return;
+  const show = updateAvailable && state.route === "settings" && !state.settingsPage;
+  if (!show) { host.hidden = true; host.innerHTML = ""; return; }
+
+  host.hidden = false;
+  host.innerHTML = `<button class="settings-update-banner" type="button" data-action="reload-app">
+    <span class="settings-update-banner-text">A new version of Argos One is available, tap here to update.</span>
+    <span class="settings-update-banner-arrow" aria-hidden="true">${icon("refresh")}</span>
+  </button>`;
+  hydrateIcons(host);
+}
+
 function renderBranchBar() {
   const bar = document.querySelector("#branch-bar");
   if (!bar) return;
-  const branch = currentBranch();
-  if (!isMultiBranch() || !branch) { bar.hidden = true; bar.innerHTML = ""; return; }
+  const name = currentBranch()?.name || state.shop?.name;
+  if (!name || state.route !== "home") { bar.hidden = true; bar.innerHTML = ""; return; }
 
-  const demo = Boolean(branch.is_demo);
-  const label = `${demo ? `<span class="branch-bar-tag">Demo data</span>` : ""}<span class="branch-bar-name">${escapeHTML(branch.name)}</span>`;
-  bar.classList.toggle("is-demo", demo);
+  const demo = Boolean(currentBranch()?.is_demo ?? state.shop?.is_demo);
   bar.hidden = false;
-  // Only Owners and Admins can act on it; for everyone else it is a label, and
-  // a button that does nothing when pressed is worse than plain text.
-  bar.innerHTML = canSwitchBranch()
-    ? `<button class="branch-bar-button" type="button" data-action="open-branch-switcher">${label}<span class="branch-bar-swap">Switch</span></button>`
-    : `<div class="branch-bar-button is-static">${label}</div>`;
+  bar.innerHTML = `<div class="branch-bar-button">
+    ${demo ? `<span class="branch-bar-tag">Demo</span>` : ""}
+    <span class="branch-bar-name">${escapeHTML(name)}</span>
+    <span class="branch-bar-bay">${escapeHTML(assignedBayLabel())}</span>
+  </div>`;
 }
 
 function vehiclePayload() {
@@ -712,6 +742,20 @@ async function loadWorkshopRoster() {
 // what it saw before: no switcher, no directory, no extra tap.
 function currentBranch() {
   return state.branches.find((branch) => branch.isCurrent) || null;
+}
+
+// Three server-side booleans arrive snake_case and are read all over the app
+// in camelCase. Hydrating them in one place is what stops the next flag from
+// being wired into two of the three assignment sites and silently defaulting
+// to false on the third.
+function hydrateShop(shop) {
+  if (!shop) return null;
+  return {
+    ...shop,
+    sharesRepairData: Boolean(shop.shares_repair_data),
+    sharesWithBranches: Boolean(shop.shares_with_branches),
+    networkReadExempt: Boolean(shop.network_read_exempt),
+  };
 }
 
 function isMultiBranch() {
@@ -805,11 +849,15 @@ function assignmentBar() {
 }
 
 // Shown wherever the app states which bay the signed-in technician works from.
-// Says so plainly when nothing is assigned rather than implying a bay.
+// Says so plainly when nothing is assigned rather than implying a bay. Kept
+// short because its main home is the branch bar, where it sits beside the
+// branch name on a single line.
+const NO_BAY = "No bay";
+
 function assignedBayLabel() {
   const bayId = currentTechnician()?.default_bay_id;
-  if (!bayId) return "No bay assigned";
-  return state.bays.find((bay) => bay.id === bayId)?.name || "No bay assigned";
+  if (!bayId) return NO_BAY;
+  return state.bays.find((bay) => bay.id === bayId)?.name || NO_BAY;
 }
 
 function defaultBayName() {
@@ -1157,7 +1205,7 @@ function checkForUpdate() {
       const wasAvailable = updateAvailable;
       updateAvailable = Boolean(data && data.version && data.version !== BUILD_VERSION);
       updateNavUpdateBadge();
-      if (updateAvailable !== wasAvailable && state.route === "settings") renderSettings();
+      if (updateAvailable !== wasAvailable && state.route === "settings") render();
     })
     .catch(() => {})
     .finally(() => { clearTimeout(timeout); updateCheckInFlight = false; });
@@ -1385,7 +1433,6 @@ function renderHome() {
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
     <div class="home-status-block">
-      <div class="home-kicker"><span>${escapeHTML(assignedBayLabel())}</span></div>
       <div class="home-metrics" aria-label="Today's workshop status">
         <div class="home-metric"><strong>${String(openJobs.length).padStart(2, "0")}</strong><span>Open jobs</span></div>
         <div class="home-metric"><strong>${String(resolvedJobs.length).padStart(2, "0")}</strong><span>Resolved today</span></div>
@@ -1562,6 +1609,26 @@ function filterNetworkByTrim(networkGroups, trimKey) {
     if (rows.length) kept.push({ ...group, rows, occurrences: rows.reduce((sum, row) => sum + row.occurrences, 0) });
     return kept;
   }, []);
+}
+
+// Branch cases arrive as flat rows rather than pre-grouped, because they carry
+// a branch as well as a system and grouping by system alone would throw that
+// away. Filter to the trim first, then group -- same order as the network path.
+function filterBranchByTrim(branchRows, trimKey) {
+  const rows = (branchRows || []).filter((row) => (row.trim || "") === trimKey);
+  const bySystem = new Map();
+  for (const row of rows) {
+    const list = bySystem.get(row.system) || [];
+    list.push(row);
+    bySystem.set(row.system, list);
+  }
+  return [...bySystem.entries()]
+    .map(([system, systemRows]) => ({
+      system,
+      occurrences: systemRows.reduce((sum, row) => sum + row.occurrences, 0),
+      rows: systemRows.sort((a, b) => b.occurrences - a.occurrences),
+    }))
+    .sort((a, b) => b.occurrences - a.occurrences);
 }
 
 // Vehicle mileage is stored/entered as a raw km number everywhere in the
@@ -1962,6 +2029,57 @@ function profileNetworkSection(networkGroups) {
     </div>`;
 }
 
+function branchPatternRow(row) {
+  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="branch" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}" data-trim="${escapeHTML(row.trim || "")}" data-branch-id="${escapeHTML(row.branchId)}">
+    <span class="profile-repair-label">${escapeHTML(row.label)}</span>
+    <span class="profile-repair-meta"><span class="branch-case-tag">${escapeHTML(row.branchName)}</span> <strong>${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span>
+  </button></li>`;
+}
+
+// A third section, distinct from both "Common symptoms & repairs" (this
+// branch's own verified work) and "Network cases" (anonymised strangers).
+// This one is the same business at a different site, so it is named and shows
+// the real job text. Hidden entirely for a single-site shop -- an empty
+// "your other branches" panel would be noise, not a call to action.
+function profileBranchSection(branchGroups) {
+  if (!isMultiBranch()) return "";
+  const sharing = Boolean(state.shop?.sharesWithBranches);
+  const statusTag = sharing
+    ? `<span class="reference-tag reference-tag-active">Active</span>`
+    : `<span class="reference-tag">Off</span>`;
+  const heading = `<div class="field-header"><span class="field-label">Your other branches${statusTag}</span></div>`;
+
+  if (!branchGroups.length) {
+    return `${heading}<p class="profile-empty">${sharing ? "No repairs from your other branches for this trim yet." : "Turn on branch sharing in Settings to see what your other sites have fixed."}</p>`;
+  }
+  return `${heading}
+    <div class="known-issues-list">
+      ${branchGroups.map((group) => `<details class="known-issues-accordion">
+        <summary>
+          <span class="known-issues-summary-text known-issues-summary-text-stacked"><span class="field-label">${escapeHTML(REPAIR_SYSTEM_LABELS.get(group.system) || "Other")}</span><span class="known-issues-case-count">${caseCountLabel(group.rows.length)}</span></span>
+          <span class="known-issues-count">${icon("down")}</span>
+        </summary>
+        <ul class="profile-repair-list">${group.rows.map(branchPatternRow).join("")}</ul>
+      </details>`).join("")}
+    </div>`;
+}
+
+// Verbatim job text, not an AI summary. The network sheet needs one because
+// raw wording would identify the shop that wrote it; a sibling branch is the
+// same business, so its own words are both safe to show and more use than a
+// paraphrase.
+function branchRepairCaseSheet(row) {
+  const meta = `${row.branchName} · ${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}`;
+  const list = (entries) => entries.length
+    ? `<div class="repair-summary-box">${entries.map((entry) => `<p>${escapeHTML(entry)}</p>`).join("")}</div>`
+    : `<p class="profile-empty">Nothing recorded.</p>`;
+  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.label)}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      ${resolvedDetailSection("Symptoms", list(row.symptoms || []))}
+      ${resolvedDetailSection("Repair", list(row.repairs || []))}
+    </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.label });
+}
+
 function recallCard(recall) {
   const years = [recall.year_from, recall.year_to].filter(Boolean);
   const yearLabel = years.length === 2 && years[0] !== years[1] ? `${years[0]}–${years[1]}` : (years[0] ? String(years[0]) : "");
@@ -2039,12 +2157,13 @@ function renderCarProfile() {
       : `<section class="screen workflow-shell"><section class="empty-state"><h1>Car profile not found</h1><p>That car profile is unavailable.</p><button class="secondary-button" type="button" data-route="knowledge">Back to library</button></section></section>`;
     return;
   }
-  const { profile, notes, repairGroups = [], repairs, recalls = [], complaintTrends = [], networkPatterns = [] } = detail;
+  const { profile, notes, repairGroups = [], repairs, recalls = [], complaintTrends = [], networkPatterns = [], branchPatterns = [] } = detail;
   const activeVariant = state.profileVariantFilter || "";
   const visibleRepairs = repairs.filter((job) => repairVariantKey(job) === activeVariant);
   const visibleGroups = filterRepairGroups(repairGroups, activeVariant);
   const visibleNotes = filterNotesByVariant(notes, activeVariant);
   const visibleNetwork = filterNetworkByTrim(networkPatterns, activeVariant);
+  const visibleBranches = filterBranchByTrim(branchPatterns, activeVariant);
   const modelLabel = profile.model || profileName(profile);
   const trimTitle = activeVariant ? `${modelLabel} ${activeVariant}`.trim() : modelLabel;
   const isNotesTab = state.profileTab !== "history";
@@ -2070,6 +2189,7 @@ function renderCarProfile() {
         ${visibleNotes.length ? `<button class="secondary-button" type="button" data-action="open-edit-notes">${icon("edit")} Edit note</button>` : ""}
       </div>
       ${visibleNotes.length ? `<p class="profile-note-modified">Last modified ${escapeHTML(formatShortDate(lastNoteModified(visibleNotes)))}</p>` : ""}
+      ${profileBranchSection(visibleBranches)}
       ${profileNetworkSection(visibleNetwork)}
       <div class="field-header"><span class="field-label">Known issues <span class="optional-label">(all trims)</span></span></div>
       <div class="known-issues-list">
@@ -2460,7 +2580,12 @@ function renderSettingsHome() {
   // Until the shop has loaded, show no value rather than defaulting to "Off":
   // this row reports whether repair data leaves the workshop, and stating
   // "Off" while it is actually on misrepresents a privacy setting.
-  const sharingLabel = state.shop ? (state.shop.sharesRepairData ? "On" : "Off") : "";
+  // Reports both switches, because one row now stands for two of them and
+  // "On" would be ambiguous about which. Blank until the shop has loaded:
+  // stating "Off" while sharing is actually on misrepresents a privacy setting.
+  const sharingLabel = state.shop
+    ? [state.shop.sharesRepairData ? "Network" : "", state.shop.sharesWithBranches && isMultiBranch() ? "Branches" : ""].filter(Boolean).join(" & ") || "Off"
+    : "";
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   const activeBays = state.bays.filter((bay) => bay.active).length;
   const activeTechnicians = state.technicians.filter((technician) => technician.active).length;
@@ -2468,17 +2593,12 @@ function renderSettingsHome() {
   app.innerHTML = `<section class="screen workflow-shell settings-shell">
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
-    ${updateAvailable ? `<button class="settings-update-banner" type="button" data-action="reload-app">
-      <span class="settings-update-banner-text"><strong>A new version of Argos One is available</strong><small>Tap to update now.</small></span>
-      <span class="settings-update-banner-arrow" aria-hidden="true">${icon("arrow")}</span>
-    </button>` : ""}
-
     ${settingsGroup("Appearance", [
       settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Reduced glare in the workshop" : "Maximum clarity in daylight", value: theme === "dark" ? "Dark" : "Light", page: "theme" }),
     ].join(""))}
 
     ${settingsGroup("Network", [
-      settingsRow({ iconName: "globe", title: "Cross-shop repair patterns", description: "Share anonymised repair patterns", value: sharingLabel, page: "network-sharing" }),
+      settingsRow({ iconName: "globe", title: "Repair sharing", description: "Share repairs with the network and your branches", value: sharingLabel, page: "network-sharing" }),
     ].join(""))}
 
     ${settingsGroup("Profile & management", [
@@ -2535,14 +2655,22 @@ function renderThemePage() {
     </div>`;
 }
 
+// Two independent switches, not one three-way choice. They answer different
+// questions -- "may strangers see an anonymised version of my work?" and "may
+// my own other sites see it by name?" -- and an owner can reasonably want
+// either, both, or neither.
 function renderNetworkSharingPage() {
   const loaded = Boolean(state.shop);
   const sharing = Boolean(state.shop?.sharesRepairData);
-  return `${settingsPageHeader("Cross-shop repair patterns", "Network")}
-    <p class="settings-detail-intro">Share anonymised repair patterns and see what other workshops are fixing.</p>
+  const branchSharing = Boolean(state.shop?.sharesWithBranches);
+  const canManageBranches = ["owner", "admin"].includes(myBranchRole());
+  return `${settingsPageHeader("Repair sharing", "Network")}
+    <p class="settings-detail-intro">Share your verified repairs and see what others have already fixed.</p>
     <div class="settings-list">
-      ${settingsSwitchRow({ title: "Share repair patterns", description: loaded ? "Allow sharing of your verified repairs" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
+      ${settingsSwitchRow({ title: "Share with the network", description: loaded ? "Anonymised patterns, shared with every workshop" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
+      ${isMultiBranch() ? settingsSwitchRow({ title: "Share across your branches", description: canManageBranches ? "Named repairs, shared with your own sites only" : "Only an Owner or Admin can change this", checked: branchSharing, action: "toggle-branch-sharing", disabled: !loaded || !canManageBranches }) : ""}
     </div>
+    ${isMultiBranch() && branchSharing ? branchShareTargetsSection(canManageBranches) : ""}
     <span class="settings-group-label settings-group-label-spaced">What's shared</span>
     <ul class="settings-check-list">
       <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
@@ -2554,7 +2682,48 @@ function renderNetworkSharingPage() {
     <span class="settings-group-label settings-group-label-spaced">What's not shared</span>
     <ul class="settings-check-list is-muted">
       <li>${icon("close")}<span>Customer, VIN or technician details</span></li>
-    </ul>`;
+    </ul>
+    ${isMultiBranch() ? `<p class="settings-detail-note">Repairs shared across your branches keep the branch name, so your team can see which site did the work. Nothing leaves your business.</p>` : ""}`;
+}
+
+// Rendered only when the branch switch is on. Turning that switch on shares
+// with every branch; these are for taking individual ones back out, which is
+// why they are opt-out rows rather than an empty list waiting to be filled.
+function branchShareTargetsSection(canManage) {
+  const targets = state.branchShareTargets;
+  if (targets === null) {
+    return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
+      <div class="settings-list"><div class="settings-row"><span class="settings-row-text"><strong>Loading branches…</strong></span></div></div>`;
+  }
+  if (!targets.length) {
+    return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
+      <p class="settings-detail-note">This is your only branch, so there is nothing to share with yet.</p>`;
+  }
+  return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
+    <div class="settings-list">
+      ${targets.map((target) => settingsSwitchRow({
+        title: target.name,
+        description: target.shared ? "Can see this branch's repairs" : "Not sharing with this branch",
+        checked: target.shared,
+        action: "toggle-branch-share-target",
+        disabled: !canManage,
+        extraAttrs: ` data-target-shop-id="${escapeHTML(target.id)}"`,
+      })).join("")}
+    </div>`;
+}
+
+// Fetched when the page opens rather than with the account payload: it is one
+// list on one settings screen, and every dashboard load should not pay for it.
+async function loadBranchShareTargets() {
+  if (!isMultiBranch() || !state.shop?.sharesWithBranches) return;
+  if (state.branchShareTargets !== null) return;
+  try {
+    const { targets } = await apiRequest("/api/shop/branch-sharing");
+    state.branchShareTargets = targets || [];
+  } catch (_) {
+    state.branchShareTargets = [];
+  }
+  if (state.route === "settings" && state.settingsPage === "network-sharing") render();
 }
 
 function renderVoiceDictationPage() {
@@ -3114,7 +3283,7 @@ function openBayModal(bay) {
 }
 
 function bayOptionsHtml(selectedBayId) {
-  return [`<option value=""${selectedBayId ? "" : " selected"}>No bay assigned</option>`]
+  return [`<option value=""${selectedBayId ? "" : " selected"}>No bay</option>`]
     .concat(state.bays.map((bay) => `<option value="${bay.id}"${selectedBayId === bay.id ? " selected" : ""}>${escapeHTML(bay.name)}</option>`))
     .join("");
 }
@@ -3220,7 +3389,7 @@ function openTechnicianDetailsSheet(technician) {
         <div class="profile-fact"><span class="field-label">Mobile</span>${fact(formatPhoneForDisplay(contact.phone) || "Not set", Boolean(contact.phone))}</div>
         <div class="profile-fact"><span class="field-label">Email</span>${fact(contact.email || "Not set", Boolean(contact.email))}</div>
         <button class="profile-fact" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
-          <span class="field-label">Assigned bay</span>${fact(bay?.name || "No bay assigned", Boolean(bay))}
+          <span class="field-label">Assigned bay</span>${fact(bay?.name || NO_BAY, Boolean(bay))}
         </button>
         <div class="profile-fact"><span class="field-label">Employee ID</span>${fact(technician.employee_id || "Not registered", Boolean(technician.employee_id))}</div>
       </div>
@@ -3454,7 +3623,6 @@ async function saveShopField(form) {
     closeSheet();
     showToast(isBusiness ? "Business updated" : branchId ? "Branch updated" : "Workshop profile updated");
     render();
-    renderBranchBar();
   } catch (error) {
     showToast(error.message || "Could not save that change");
   }
@@ -3621,7 +3789,7 @@ async function copyInviteCode(code) {
 
 async function saveShopFields(patch) {
   const { shop } = await apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify(patch) });
-  state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data), networkReadExempt: Boolean(shop.network_read_exempt) };
+  state.shop = hydrateShop(shop);
 }
 
 const SETTINGS_PAGES = {
@@ -3672,6 +3840,7 @@ function renderSettings() {
   }
   app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
   if (state.settingsPage === "voice-dictation") updateMicPermissionLabel();
+  if (state.settingsPage === "network-sharing") loadBranchShareTargets();
 }
 
 function renderVehicle() {
@@ -4067,6 +4236,8 @@ function partRow(name, number, key) {
 }
 
 function render() {
+  renderBranchBar();
+  renderUpdateBanner();
   if (state.route === "home") renderHome();
   if (state.route === "jobs") renderJobs();
   if (state.route === "knowledge") renderKnowledge();
@@ -4668,7 +4839,7 @@ function technicianProfileSheet() {
   const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
   const bayLabel = assignedBayLabel();
-  const hasBay = bayLabel !== "No bay assigned";
+  const hasBay = bayLabel !== NO_BAY;
   // An unset fact reads as a placeholder (same weight/colour as the role
   // line above), not as data worth bolding -- only a real value earns
   // <strong>.
@@ -5090,7 +5261,6 @@ document.addEventListener("click", (event) => {
           state.shop = { ...state.shop, ...branch };
           state.branches = state.branches.map((item) => item.id === branch.id ? { ...item, ...branch } : item);
           render();
-          renderBranchBar();
           showToast(next ? "Marked as a demo branch" : "No longer a demo branch");
         })
         .catch((error) => showToast(error.message || "Could not change that setting"));
@@ -5232,9 +5402,36 @@ document.addEventListener("click", (event) => {
       const next = !state.shop?.sharesRepairData;
       return apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify({ sharesRepairData: next }) })
         .then(({ shop }) => {
-          state.shop = { ...shop, sharesRepairData: Boolean(shop.shares_repair_data), networkReadExempt: Boolean(shop.network_read_exempt) };
+          state.shop = hydrateShop(shop);
           render();
           showToast(next ? "Sharing anonymised repair patterns with the network." : "Stopped sharing with the network.");
+        })
+        .catch((error) => showToast(error.message));
+    }
+    if (action === "toggle-branch-sharing") {
+      const next = !state.shop?.sharesWithBranches;
+      return apiRequest("/api/shop", { method: "PATCH", body: JSON.stringify({ sharesWithBranches: next }) })
+        .then(({ shop }) => {
+          state.shop = hydrateShop(shop);
+          // Drop the cached list on the way out so the next switch-on refetches
+          // it: a branch may have been added or renamed in between.
+          state.branchShareTargets = null;
+          render();
+          if (next) loadBranchShareTargets();
+          showToast(next ? "Sharing repairs across your branches." : "Stopped sharing across your branches.");
+        })
+        .catch((error) => showToast(error.message));
+    }
+    if (action === "toggle-branch-share-target") {
+      const targetShopId = actionButton.dataset.targetShopId;
+      const target = (state.branchShareTargets || []).find((row) => row.id === targetShopId);
+      if (!target) return;
+      const next = !target.shared;
+      return apiRequest("/api/shop/branch-sharing", { method: "PATCH", body: JSON.stringify({ targetShopId, shared: next }) })
+        .then(({ targets }) => {
+          state.branchShareTargets = targets || [];
+          render();
+          showToast(next ? `Sharing with ${target.name}.` : `Stopped sharing with ${target.name}.`);
         })
         .catch((error) => showToast(error.message));
     }
@@ -5446,6 +5643,12 @@ document.addEventListener("click", (event) => {
         return;
       }
       const networkTrim = actionButton.dataset.trim || "";
+      if (source === "branch") {
+        const branchId = actionButton.dataset.branchId;
+        const branchRow = (detail.branchPatterns || []).find((r) => r.branchId === branchId && (r.system || "other") === system && r.label === label && (r.trim || "") === networkTrim);
+        if (branchRow) branchRepairCaseSheet(branchRow);
+        return;
+      }
       const systemGroup = (detail.networkPatterns || []).find((g) => g.system === system);
       const row = systemGroup?.rows.find((r) => r.label === label && (r.trim || "") === networkTrim);
       if (row) networkRepairCaseSheet(row);

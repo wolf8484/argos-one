@@ -65,6 +65,11 @@ export default function DashboardClient({ buildVersion }: { buildVersion: string
             would land somewhere different at every screen size. */}
         <div id="branch-bar" className="branch-bar" hidden />
 
+        {/* Same reasoning, and outside .screen as well: the update banner is
+            full-bleed and sticks under the header, neither of which it can do
+            from inside a max-width, gutter-padded content column. */}
+        <div id="update-banner" className="update-banner" hidden />
+
         <main id="app" tabIndex={-1} />
 
         <nav className="bottom-nav" aria-label="Primary navigation">

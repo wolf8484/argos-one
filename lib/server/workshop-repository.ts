@@ -439,15 +439,16 @@ export class WorkshopRepository {
       .single()
     if (profileError) throw profileError
 
-    const [notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns] = await Promise.all([
+    const [notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns, branchPatterns] = await Promise.all([
       this.listProfileNotes(profileId),
       this.getProfileRepairGroups(profileId),
       this.listProfileRepairs(profileId),
       this.getMatchingRecalls(profile.make, profile.model),
       this.getComplaintTrends(profile.make, profile.model),
       this.getNetworkRepairPatterns(profile.make, profile.model),
+      this.getBranchRepairPatterns(profile.make, profile.model),
     ])
-    return { profile, notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns }
+    return { profile, notes, repairGroups, repairs, recalls, complaintTrends, networkPatterns, branchPatterns }
   }
 
   async listProfileNotes(profileId: string) {
@@ -534,8 +535,37 @@ export class WorkshopRepository {
     if (error) throw error
   }
 
+  // shares_with_branches deliberately does not go through updateShop. The
+  // shops update policy lets any role edit their own shop -- correct for the
+  // network toggle, which every role can flip -- so routing this one through
+  // a definer function is what keeps it owner/admin only.
+  async setBranchSharing(enabled: boolean) {
+    const { error } = await this.supabase.rpc('set_branch_sharing', { p_enabled: enabled })
+    if (error) throw error
+    return this.getShop()
+  }
+
+  async setBranchShareTarget(targetShopId: string, shared: boolean) {
+    const { error } = await this.supabase.rpc('set_branch_share_target', {
+      target_shop: targetShopId,
+      p_shared: shared,
+    })
+    if (error) throw error
+    return this.listBranchShareTargets()
+  }
+
+  async listBranchShareTargets() {
+    const { data, error } = await this.supabase.rpc('list_branch_share_targets')
+    if (error) throw error
+    return ((data ?? []) as Array<{ shop_id: string; name: string; shared: boolean }>).map((row) => ({
+      id: row.shop_id,
+      name: row.name,
+      shared: row.shared,
+    }))
+  }
+
   private static readonly SHOP_COLUMNS =
-    'id,org_id,name,phone,email,timezone,shares_repair_data,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs,is_demo,abn'
+    'id,org_id,name,phone,email,timezone,shares_repair_data,shares_with_branches,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs,is_demo,abn'
 
   async getShop() {
     const { data, error } = await this.supabase
@@ -1365,6 +1395,37 @@ export class WorkshopRepository {
       occurrences: systemRows.reduce((sum, row) => sum + row.occurrences, 0),
       rows: systemRows.sort((a, b) => b.occurrences - a.occurrences),
     })).sort((a, b) => b.occurrences - a.occurrences)
+  }
+
+  // The same idea as getNetworkRepairPatterns, for the shop's own other
+  // branches -- and simpler at every step, because there is nobody to hide
+  // from. No summarizeNetworkPattern call and no network_pattern_summaries
+  // cache: the network needs an AI rewrite because raw job text would
+  // identify the shop that wrote it, whereas a sibling branch's text is the
+  // same business's own words and is more useful shown verbatim. Grouped by
+  // branch rather than aggregated across them, since which site saw the
+  // fault is the part worth knowing.
+  async getBranchRepairPatterns(make: string, model: string) {
+    const { data, error } = await this.supabase.rpc('branch_repair_patterns', {
+      target_make: make,
+      target_model: model,
+    })
+    if (error) throw error
+    const rows = (data ?? []) as Array<{
+      branch_id: string; branch_name: string; system: string; label: string
+      vehicle_trim: string | null; occurrences: number
+      symptoms: string[] | null; repairs: string[] | null
+    }>
+    return rows.map((row) => ({
+      branchId: row.branch_id,
+      branchName: row.branch_name,
+      system: row.system,
+      label: row.label,
+      trim: row.vehicle_trim,
+      occurrences: row.occurrences,
+      symptoms: row.symptoms ?? [],
+      repairs: row.repairs ?? [],
+    }))
   }
 
   // Shop-scoped, term-matched search across every profile's repair history
