@@ -4136,6 +4136,19 @@ button.settings-toggle-row {
   line-height: 20px;
 }
 
+/* The signed-in profile lists the same facts as read-only settings rows, so
+   it needs the hairline that separates it from the avatar block above -- the
+   two share a surface. */
+.profile-detail-list {
+  border-top: 1px solid #2d2d2d;
+}
+
+/* The shortcut menu shares the list's surface, so without the menu's old top
+   margin the two would run together. */
+.profile-detail-list + .profile-menu {
+  border-top: 1px solid #2d2d2d;
+}
+
 /* A fact that is actually a quick-edit control (e.g. assigned bay) rather
    than plain read-only text -- same tile, but tappable. */
 button.profile-fact {

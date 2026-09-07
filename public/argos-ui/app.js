@@ -4943,25 +4943,21 @@ function calendarSheet() {
 // would be noise. For an owner or admin the pair is the honest answer to "did
 // I leave the front counter tablet on the wrong branch": Registered at is the
 // hardware, Viewing is them, and an override never outlives their own login.
-function branchFacts(factValue) {
+function branchFacts(factRow) {
   if (!isMultiBranch()) return "";
   const registeredId = state.device?.registeredShopId;
   const registered = registeredId
     ? state.branches.find((branch) => branch.id === registeredId)?.name || "Another branch"
     : "";
   const viewing = currentBranch()?.name || state.shop?.name || "Unknown";
-  // Staff get one cell, and on an unregistered device it stays the plain
+  // Staff get one row, and on an unregistered device it stays the plain
   // "Branch" it has always been -- telling a technician their phone is "not set
   // up" invites them to go fix something that is not broken.
   if (!canSwitchBranch()) {
-    return registered
-      ? `<div class="profile-fact"><span class="field-label">Registered at</span>${factValue(registered, true)}</div>`
-      : `<div class="profile-fact"><span class="field-label">Branch</span>${factValue(viewing, true)}</div>`;
+    return registered ? factRow("Registered at", registered) : factRow("Branch", viewing);
   }
-  return `<div class="profile-fact"><span class="field-label">Registered at</span>${
-      registered ? factValue(registered, true) : factValue("Not set up", false)
-    }</div>
-    <div class="profile-fact"><span class="field-label">Viewing</span>${factValue(viewing, true)}</div>`;
+  return `${factRow("Registered at", registered || "Not set up")}
+    ${factRow("Viewing", viewing)}`;
 }
 
 function technicianProfileSheet() {
@@ -4970,21 +4966,22 @@ function technicianProfileSheet() {
   const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
   const bayLabel = assignedBayLabel();
-  const hasBay = bayLabel !== NO_BAY;
-  // An unset fact reads as a placeholder (same weight/colour as the role
-  // line above), not as data worth bolding -- only a real value earns
-  // <strong>.
-  const factValue = (value, hasValue) => hasValue ? `<strong>${escapeHTML(value)}</strong>` : `<span class="profile-fact-empty">${escapeHTML(value)}</span>`;
+  // Same read-only row the branch details block uses: label left, value
+  // right, one per line.
+  const factRow = (title, value) => `<div class="settings-row">
+      <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
+      <span class="settings-row-value">${escapeHTML(value)}</span>
+    </div>`;
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
       </section>
-      <div class="profile-facts" aria-label="Technician work details">
-        ${branchFacts(factValue)}
-        <div class="profile-fact"><span class="field-label">Assigned bay</span>${factValue(bayLabel, hasBay)}</div>
-        <div class="profile-fact"><span class="field-label">Employee ID</span>${factValue(employeeId || "Not registered", Boolean(employeeId))}</div>
+      <div class="settings-list profile-detail-list" role="group" aria-label="Technician work details">
+        ${branchFacts(factRow)}
+        ${factRow("Assigned bay", bayLabel)}
+        ${factRow("Employee ID", employeeId || "Not registered")}
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         ${canSwitchBranch() ? `<button class="profile-menu-button" type="button" data-action="open-branch-switcher">${icon("building")}<span>Switch branch</span>${icon("arrow")}</button>` : ""}
