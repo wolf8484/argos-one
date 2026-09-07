@@ -2887,7 +2887,7 @@ function currentBranchProfileBody() {
 function registrationIdRow(code) {
   if (!code) return "";
   return `<div class="settings-row">
-      <span class="settings-row-text"><strong>Registration ID</strong><small>Enter this on a new device's set-up screen</small></span>
+      <span class="settings-row-text"><strong>Registration ID</strong><small>Enter this on a new device's registration screen</small></span>
       <span class="settings-row-value settings-row-code">${escapeHTML(code)}</span>
     </div>`;
 }

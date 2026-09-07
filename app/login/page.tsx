@@ -216,7 +216,7 @@ export default function LoginPage() {
   }
 
   if (view === 'paired') {
-    return <Shell heading="Registration successful" eyebrow="Device setup">
+    return <Shell heading="Registration successful" eyebrow="Device registration">
       <p className={styles.hint}>
         {pairedBranch
           ? `This device has been registered to ${pairedBranch}. Everyone who signs in here will work in that branch.`
@@ -229,12 +229,12 @@ export default function LoginPage() {
   }
 
   if (view === 'pair') {
-    return <Shell heading="Set up this device" eyebrow="Device setup">
+    return <Shell heading="Register this device" eyebrow="Device registration">
       <form key="pair" onSubmit={pairDevice} className={styles.form}>
         <p className={styles.hint}>
           Enter the Registration ID for this workshop, found on its profile under
-          Workshop &amp; branches. Once set up, anyone who signs in on this device
-          works in that branch without being asked.
+          Workshop &amp; branches. Once registered, anyone who signs in on this
+          device works in that branch without being asked.
         </p>
         {/* The ID is the only input there is. Which branch this device belongs
             to travels with the ID, so there is nothing here for the person
@@ -244,7 +244,7 @@ export default function LoginPage() {
         </label>
         {message && <p className={styles.message} role="status">{message}</p>}
         <div className={styles.actions}>
-          <button className={styles.primary} type="submit" disabled={busy}>{busy ? 'Setting up…' : 'Register device'}</button>
+          <button className={styles.primary} type="submit" disabled={busy}>{busy ? 'Registering…' : 'Register device'}</button>
           <button className={styles.switcher} type="button" onClick={backToSignIn} disabled={busy}>Back to sign in</button>
         </div>
       </form>
@@ -357,10 +357,10 @@ export default function LoginPage() {
         <small>For workshop owners</small>
       </button>
       {/* Last, because it is the rarest path -- and gone entirely once this
-          device is set up, since it is registered once and never again. */}
+          device is registered, since it happens once and never again. */}
       {deviceChecked && deviceBranch === null && (
         <button className={styles.switcher} type="button" onClick={startPairing}>
-          Set up this device
+          Register this device
           <small>For a shared workshop tablet</small>
         </button>
       )}
