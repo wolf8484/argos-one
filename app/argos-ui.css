@@ -6004,6 +6004,28 @@ a.profile-recall:focus-visible {
   color: var(--accent);
 }
 
+/* On a narrow phone the switcher's third column is only as wide as the chevron
+   it normally holds, so "Current" was being clipped mid-word. Drop it onto its
+   own line under the branch name rather than shrinking the type. */
+@media (max-width: 400px) {
+  .profile-menu-button:has(.branch-current-badge) {
+    grid-template-columns: 24px minmax(0, 1fr);
+    align-items: start;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .profile-menu-button > svg:first-child {
+    margin-top: 2px;
+  }
+
+  .profile-menu-button > .branch-current-badge {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 2px;
+  }
+}
+
 .branch-membership {
   display: flex;
   flex-direction: column;

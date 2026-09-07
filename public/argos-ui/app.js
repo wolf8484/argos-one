@@ -1222,7 +1222,10 @@ function checkForUpdate() {
 // consistent full-screen loading treatment, but is driven by the real fetch
 // finishing rather than a fixed timeout: the bar eases toward (never reaches)
 // 85% while waiting, and hideBootOverlay() finishes it off once data arrives.
+let bootOverlayTimer = null;
+
 function showBootOverlay() {
+  if (document.getElementById("boot-overlay")) return;
   const overlay = document.createElement("div");
   overlay.className = "update-overlay is-visible";
   overlay.id = "boot-overlay";
@@ -1234,13 +1237,22 @@ function showBootOverlay() {
   </div>`;
   document.body.appendChild(overlay);
   const fill = overlay.querySelector(".update-overlay-bar-fill");
-  requestAnimationFrame(() => {
-    fill.style.transition = "width 3000ms ease-out";
-    fill.style.width = "85%";
-  });
+  // Creeps rather than easing to a fixed stop. A single long transition to 85%
+  // sits perfectly still for whatever is left of a slow load -- a branch switch
+  // reloads jobs, roster, bays and library and can take five seconds -- and a
+  // motionless bar reads as a hung app. The floor on each step keeps it
+  // visibly moving the whole time; it slows as it approaches 96% but never
+  // stops, and hideBootOverlay() takes it to 100%.
+  let width = 0;
+  fill.style.transition = "width 220ms linear";
+  bootOverlayTimer = setInterval(() => {
+    width += Math.max((96 - width) * 0.06, 0.4);
+    fill.style.width = `${Math.min(width, 96)}%`;
+  }, 200);
 }
 
 function hideBootOverlay() {
+  if (bootOverlayTimer) { clearInterval(bootOverlayTimer); bootOverlayTimer = null; }
   const overlay = document.getElementById("boot-overlay");
   if (!overlay) return;
   const fill = overlay.querySelector(".update-overlay-bar-fill");
@@ -3255,13 +3267,18 @@ async function switchBranch(branchId, { toast = "", fromButton = false } = {}) {
     closeSheet();
     // Everything on screen belongs to the branch we just left, so this is a
     // full reload rather than a patch -- jobs, roster, bays and library all
-    // come from the new one.
+    // come from the new one. That takes seconds, and without cover the old
+    // branch's jobs sit there looking current the whole time. The overlay is
+    // the same one sign-in uses, and loadBackendData() clears it only once the
+    // new branch has actually rendered.
+    showBootOverlay();
     state.settingsPage = null;
     state.settingsTrail = [];
     state.branchDetailId = null;
     await loadBackendData();
     showToast(toast || `Now working in ${branch.name}`);
   } catch (error) {
+    hideBootOverlay();
     sheetLayer.classList.remove("is-busy");
     if (button) resetButtonLoading(button);
     showToast(error.message || "Could not switch branch");
