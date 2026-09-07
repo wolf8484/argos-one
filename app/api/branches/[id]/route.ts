@@ -17,3 +17,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return apiError(error, 'Could not save that branch')
   }
 }
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireWorkshopUser()
+  if ('error' in auth) return auth.error
+  try {
+    const { id } = await params
+    const repository = new WorkshopRepository(auth.supabase, auth.profile)
+    await repository.deleteBranch(id)
+    return NextResponse.json({ deleted: true })
+  } catch (error) {
+    return apiError(error, 'Could not delete that branch')
+  }
+}

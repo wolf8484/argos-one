@@ -71,6 +71,11 @@ const state = {
   branchShareTargets: null,
   // Starts true so nothing prompts before the branch list has loaded.
   sessionPinned: true,
+  // What the hardware says it is, separate from what this person chose on it.
+  // registeredShopId set means an owner registered this device to a branch, so
+  // nobody signing in on it is ever asked -- see device_context (0060).
+  device: { known: false, pinned: false, registeredShopId: null },
+  devices: null,
   settingsTrail: [],
   selectedRepair: "primary",
   vehicle: {
@@ -329,7 +334,6 @@ const icons = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   arrow: '<path d="m9 18 6-6-6-6"/>',
-  refresh: '<path d="M3 12a9 9 0 0 1 15.3-6.4L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.3 6.4L3 16"/><path d="M8 21H3v-5"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
   camera: '<path d="M3 8h4l2-3h6l2 3h4v11H3Z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -406,6 +410,7 @@ function icon(name, label = "") {
 }
 
 const materialIcons = {
+  autorenew: '<path d="M204-318q-22-38-33-78t-11-82q0-134 93-228t227-94h7l-64-64 56-56 160 160-160 160-56-56 64-64h-7q-100 0-170 70.5T240-478q0 26 6 51t18 49l-60 60ZM481-40 321-200l160-160 56 56-64 64h7q100 0 170-70.5T720-482q0-26-6-51t-18-49l60-60q22 38 33 78t11 82q0 134-93 228t-227 94h-7l64 64-56 56Z"/>',
   technicians: '<path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q440-607 440-640t-23.5-56.5Q393-720 360-720t-56.5 23.5Q280-673 280-640t23.5 56.5Q327-560 360-560t56.5-23.5ZM360-240Zm0-400Z"/>',
   resumeJob: '<path d="M358.5-373.23q-93.81 0-159.48-65.67-65.67-65.67-65.67-159.48 0-16.3 2.27-32.34 2.27-16.05 7.96-31.05 3.37-8.23 9.6-12.83 6.24-4.6 14.11-6.67 7.86-2.08 15.71.14 7.84 2.21 14.27 8.75l106.04 105.46 87.46-86.66-105.38-105.77q-6.41-6.35-8.53-14.38-2.13-8.03-.2-15.76t6.37-13.91q4.43-6.18 12.66-9.71 14.81-6.08 30.8-8.66t31.99-2.58q93.93 0 159.96 66.03 66.02 66.03 66.02 159.94 0 25.26-4.77 47.07t-14.31 42.16l217.08 215.81q24.16 24.27 24.16 59.42 0 35.15-24.33 59.3-24.51 24.35-59.21 23.95-34.69-.41-59.04-24.87L447.88-392.31q-21.15 9.16-43 14.12-21.86 4.96-46.38 4.96Zm-.08-55.96q26.09 0 52.07-8.06 25.97-8.06 47.74-24.17l246.46 246.77q7.43 7.61 18.62 7.71 11.19.1 19.11-7.92 7.93-8.02 7.93-19.12 0-11.1-7.93-19.21L495.65-499.35q16.54-21.07 24.7-46.51 8.15-25.45 8.15-52.52 0-66.54-48.75-118.74-48.75-52.19-123.94-49.77l90.42 90.43q10.35 10.34 10.1 24.09t-10.6 24.17L326.69-511.96q-10.5 10.04-24.17 9.79-13.67-.25-23.71-10.29L191-600.27q-1.46 78.92 50.86 125 52.33 46.08 116.56 46.08Zm110.23-60.62Z"/>',
 };
@@ -671,7 +676,7 @@ function renderUpdateBanner() {
   host.hidden = false;
   host.innerHTML = `<button class="settings-update-banner" type="button" data-action="reload-app">
     <span class="settings-update-banner-text">A new version of Argos One is available, tap here to update.</span>
-    <span class="settings-update-banner-arrow" aria-hidden="true">${icon("refresh")}</span>
+    <span class="settings-update-banner-arrow" aria-hidden="true">${materialIcon("autorenew")}</span>
   </button>`;
   hydrateIcons(host);
 }
@@ -731,6 +736,7 @@ async function loadWorkshopRoster() {
     state.branches = branchData?.branches || [];
     state.business = branchData?.business || null;
     state.sessionPinned = branchData ? branchData.sessionPinned !== false : true;
+    state.device = branchData?.device || { known: false, pinned: false, registeredShopId: null };
   } catch (_) {
     state.bays = [];
     state.technicians = [];
@@ -1310,17 +1316,14 @@ function resetButtonLoading(button) {
   delete button.dataset.originalHtml;
 }
 
+// Parked, not deleted: the bottom-right corner may become a FAB instead, and
+// the "more content below" logic below is worth keeping intact for that or
+// for bringing this back. #scroll-cue and its CSS stay in place too.
 function updateScrollCue() {
   if (!scrollCue) return;
-  const remaining = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
-  const terminalActions = app.querySelector(".action-dock, .result-actions");
-  const terminalActionsVisible = terminalActions
-    ? terminalActions.getBoundingClientRect().top < window.innerHeight - 72
-    : false;
-  const hasMoreContent = remaining > 72 && !terminalActionsVisible;
-  scrollCue.classList.toggle("is-visible", hasMoreContent);
-  scrollCue.setAttribute("aria-hidden", String(!hasMoreContent));
-  scrollCue.tabIndex = hasMoreContent ? 0 : -1;
+  scrollCue.classList.remove("is-visible");
+  scrollCue.setAttribute("aria-hidden", "true");
+  scrollCue.tabIndex = -1;
 }
 
 function updateStickyJourney() {
@@ -2408,6 +2411,7 @@ function openAddNoteModal() {
     <form class="profile-note-form" id="profile-note-form" autocomplete="off">
       <textarea class="textarea" id="profile-note-input" name="body" rows="5" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
       <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
         <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
         <button class="primary-button" type="submit">${icon("save")} Save note</button>
       </div>
@@ -2809,27 +2813,43 @@ function renderWorkshopProfilePage() {
 // Rendered only on the head workshop, which is the site the business row
 // opens. Everywhere else the business name is not editable, because everywhere
 // else it is not this site's name.
-function businessNameRow(shopId) {
-  if (!state.business || state.business.primary_shop_id !== shopId) return "";
-  return `<span class="settings-group-label">Business</span>
-    <div class="settings-list">
-      <button class="settings-row" type="button" data-action="edit-business-field" data-field="name" data-title="Business name" data-optional="false">
-        <span class="settings-row-text"><strong>Business name</strong><small>What groups these sites together</small></span>
-        <span class="settings-row-value">${escapeHTML(state.business.name || "Not set")}</span>
+// Rendered as one editable row, folded into whichever "details" block is
+// showing (see renderBranchDetailPage and currentBranchProfileBody) rather
+// than as its own separate section -- a standalone "Business" block sitting
+// above "Branch details" read as two records for one site, which is exactly
+// the duplication this shape used to cause.
+function businessNameField(editable = true) {
+  if (!state.business) return "";
+  const value = escapeHTML(state.business.name || "Not set");
+  return editable
+    ? `<button class="settings-row" type="button" data-action="edit-business-field" data-field="name" data-title="Business name" data-optional="false">
+        <span class="settings-row-text"><strong>Business name</strong></span>
+        <span class="settings-row-value">${value}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>
-    </div>`;
+      </button>`
+    : `<div class="settings-row"><span class="settings-row-text"><strong>Business name</strong></span><span class="settings-row-value">${value}</span></div>`;
+}
+
+// Whether the given shop is the one the business's own name and identity are
+// attached to -- the fact that decides whether its details page talks about
+// "the business" or just "this branch".
+function isHeadShop(shopId) {
+  return Boolean(state.business) && state.business.primary_shop_id === shopId;
 }
 
 function currentBranchProfileBody() {
   const shop = state.shop || {};
-  const business = businessNameRow(shop.id);
-  return `${business}
-    <span class="settings-group-label${business ? " settings-group-label-spaced" : ""}">${isMultiBranch() ? "Branch details" : "Workshop details"}</span>
+  const isHead = isHeadShop(shop.id);
+  // The head shop's own name is never shown or edited separately from the
+  // business's -- one name field, not two that can drift apart. updateBusiness
+  // keeps shops.name in step with it server-side (see the note there), so
+  // nothing that reads shop.name (the branch bar, list rows) needs to change
+  // to match a rename made here.
+  return `<span class="settings-group-label">${isHead ? "Business details" : (isMultiBranch() ? "Branch details" : "Workshop details")}</span>
     <div class="settings-list">
-      ${settingsEditRow({ title: isMultiBranch() ? "Branch name" : "Workshop name", value: shop.name || "Not set", field: "name" })}
-      ${settingsEditRow({ title: isMultiBranch() ? "Branch phone" : "Workshop phone", value: shop.phone || "Not set", field: "phone", optional: true })}
-      ${settingsEditRow({ title: isMultiBranch() ? "Branch email" : "Workshop email", value: shop.email || "Not set", field: "email", optional: true })}
+      ${isHead ? businessNameField() : settingsEditRow({ title: isMultiBranch() ? "Branch name" : "Workshop name", value: shop.name || "Not set", field: "name" })}
+      ${settingsEditRow({ title: isHead ? "Business phone" : (isMultiBranch() ? "Branch phone" : "Workshop phone"), value: shop.phone || "Not set", field: "phone", optional: true })}
+      ${settingsEditRow({ title: isHead ? "Business email" : (isMultiBranch() ? "Branch email" : "Workshop email"), value: shop.email || "Not set", field: "email", optional: true })}
       ${settingsEditRow({ title: "ABN", value: shop.abn || "Not set", field: "abn", optional: true })}
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
@@ -2840,17 +2860,7 @@ function currentBranchProfileBody() {
       ${settingsEditRow({ title: "Supplier region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Preferred supplier", value: shop.preferred_supplier || "Not set", field: "preferredSupplier", optional: true })}
     </div>
-    <p class="settings-detail-intro">Supplier region helps show relevant parts, pricing and availability.</p>
-    ${!isMultiBranch() ? "" : `<span class="settings-group-label settings-group-label-spaced">Demonstration</span>
-    <div class="settings-list">
-      ${settingsSwitchRow({
-        title: "This branch holds demo data",
-        description: "Labels every screen so it is never mistaken for a real workshop",
-        checked: Boolean(shop.is_demo),
-        action: "toggle-branch-demo",
-        extraAttrs: ` data-branch-id="${escapeHTML(shop.id || "")}"`,
-      })}
-    </div>`}`;
+    <p class="settings-detail-intro">Supplier region helps show relevant parts, pricing and availability.</p>`;
 }
 
 // Every site gets the same row and opens the same profile, head workshop
@@ -2873,19 +2883,96 @@ function renderBranchesPage() {
   const others = state.branches.filter((branch) => branch.id !== head?.id);
 
   return `${settingsPageHeader("Workshop & branches", "Profile & management")}
-    <p class="settings-detail-intro settings-detail-intro-lead">A branch is a separate site trading under one business. Each keeps its own jobs, bays, staff and repair library, and nothing moves between them on its own \u2014 a vehicle booked into one branch is invisible from another.</p>
-    <p class="settings-detail-intro">One person can hold a place at several branches on a single login, and can be switched off at one without losing the others. Cross-shop repair sharing is set per branch, so turning it on here says nothing about anywhere else.</p>
     ${head ? `<span class="settings-group-label">Business</span>
     <div class="settings-list">${branchRow(head, { title: state.business?.name || head.name })}</div>` : ""}
-    ${others.length ? `<span class="settings-group-label settings-group-label-spaced">Branches</span>
-    <div class="settings-list">${others.map((branch) => branchRow(branch)).join("")}</div>` : ""}
-    ${isOrgOwner() ? `<div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}
-    <p class="settings-detail-intro">Switching branch changes what this device shows. Anywhere else you're signed in stays where it is, so a phone and a workshop tablet can sit in different branches at the same time.</p>`;
+    <span class="settings-group-label${head ? " settings-group-label-spaced" : ""}">Branches</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">A branch is a separate site trading under one business. <button class="text-link" type="button" data-action="explain-branches">Learn more</button></p>
+    ${others.length ? `<div class="settings-list">${others.map((branch) => branchRow(branch)).join("")}</div>` : ""}
+    ${isOrgOwner() ? `<div class="settings-page-action${others.length ? "" : " settings-page-action-tight"}"><button class="primary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}
+    ${state.branches.some((branch) => branch.canEdit) ? `<span class="settings-group-label settings-group-label-spaced">Devices</span>
+    <div class="settings-list">
+      <button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="devices">
+        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-text"><strong>Workshop devices</strong><small>Tablets set up to a branch</small></span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>
+    </div>` : ""}`;
+}
+
+async function loadDevices() {
+  if (state.devices !== null) return;
+  try {
+    const { devices } = await apiRequest("/api/devices");
+    state.devices = devices || [];
+  } catch (_) {
+    state.devices = [];
+  }
+  if (state.route === "settings" && state.settingsPage === "devices") render();
+}
+
+// Registered hardware, grouped the way an owner thinks about it: which tablet
+// sits at which site. "Last seen" is the only way to tell a device still in
+// daily use from one that was replaced or wiped months ago and is quietly
+// still registered.
+function renderDevicesPage() {
+  const devices = state.devices;
+  const manageable = state.branches.filter((branch) => branch.canEdit);
+  const rows = devices === null
+    ? `<div class="settings-row"><span class="settings-row-text"><strong>Loading…</strong></span></div>`
+    : devices.length
+      ? devices.map((device) => {
+          const seen = device.last_seen_at ? `Last used ${mediumDate(device.last_seen_at)}` : "Never used";
+          return `<div class="settings-row">
+            <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+            <span class="settings-row-text"><strong>${escapeHTML(device.label || device.shop_name)}</strong><small>${escapeHTML(device.shop_name)} · ${escapeHTML(seen)}${device.is_this_device ? " · This device" : ""}</small></span>
+            <button class="text-link" type="button" data-action="revoke-device" data-device-id="${device.id}">Remove</button>
+          </div>`;
+        }).join("")
+      : `<div class="settings-row"><span class="settings-row-text"><strong>No devices set up</strong><small>Everyone signing in falls back to their own home branch</small></span></div>`;
+
+  return `${settingsPageHeader("Workshop devices", "Workshop & branches")}
+    <p class="settings-detail-intro settings-detail-intro-tight">A registered device shows the same branch to everyone who signs in on it, so nobody has to pick — and nobody can file a job into the wrong site. Personal phones do not need this.</p>
+    <span class="settings-group-label">Registered</span>
+    <div class="settings-list">${rows}</div>
+    ${manageable.length ? `<span class="settings-group-label settings-group-label-spaced">Set up a device</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Get a code, then read it to whoever is holding the tablet. You do not have to be at that branch.</p>
+    <div class="settings-list">${manageable.map((branch) => `<button class="settings-row" type="button" data-action="pair-device" data-branch-id="${branch.id}">
+        <span class="settings-row-icon" aria-hidden="true">${icon("plus")}</span>
+        <span class="settings-row-text"><strong>${escapeHTML(branch.name)}</strong><small>Create a pairing code</small></span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>`).join("")}</div>` : ""}`;
+}
+
+async function revokeDevice(deviceId, button) {
+  if (button?.disabled) return;
+  if (button) setButtonLoading(button, "Removing…");
+  try {
+    await apiRequest(`/api/devices/${deviceId}`, { method: "DELETE" });
+    state.devices = null;
+    await loadDevices();
+    render();
+    showToast("Device removed");
+  } catch (error) {
+    if (button) resetButtonLoading(button);
+    showToast(error.message || "Could not remove that device");
+  }
+}
+
+// Everything the page used to state up front and again at the bottom. It is
+// onboarding copy: true, worth reading once, and not worth the vertical space
+// on every visit after that.
+function branchesExplainerSheet() {
+  openSheet(`<div class="sheet-head"><div><h2>About branches</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <p class="settings-detail-intro">A branch is a separate site trading under one business. Each keeps its own jobs, bays, staff and repair library, and nothing moves between them on its own. A vehicle booked into one branch is invisible from another.</p>
+      <p class="settings-detail-intro">One person can hold a place at several branches on a single login, and can be switched off at one without losing the others.</p>
+      <p class="settings-detail-intro">Repair sharing is set per branch, so turning it on at one site says nothing about anywhere else.</p>
+      <p class="settings-detail-intro">Switching branch changes what this device shows. Anywhere else you're signed in stays where it is, so a phone and a workshop tablet can sit in different branches at the same time.</p>
+    </div>`, { ariaLabel: "About branches" });
 }
 
 function branchSubtitle(branch) {
-  const staff = `${branch.staffCount} ${branch.staffCount === 1 ? "person" : "people"}`;
-  return branch.region ? `${branch.region} \u00b7 ${staff}` : staff;
+  return `${branch.staffCount} ${branch.staffCount === 1 ? "person" : "people"}`;
 }
 
 // Read-only first, edit second -- the same two-step the staff directory uses.
@@ -2908,25 +2995,22 @@ function renderBranchDetailPage() {
       </button>`
     : `<div class="settings-row"><span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span><span class="settings-row-value">${escapeHTML(value || "Not set")}</span></div>`;
 
-  const business = businessNameRow(branch.id);
+  const isHead = isHeadShop(branch.id);
   return `${settingsPageHeader(branch.name, "Workshop & branches")}
-    ${business}
-    <span class="settings-group-label${business ? " settings-group-label-spaced" : ""}">Branch details</span>
+    <span class="settings-group-label">${isHead ? "Business details" : "Branch details"}</span>
     <div class="settings-list">
-      ${row("Branch name", branch.name, "name")}
-      ${row("Branch phone", branch.phone, "phone", true)}
-      ${row("Branch email", branch.email, "email", true)}
+      ${isHead ? businessNameField() : row("Branch name", branch.name, "name")}
+      ${row(isHead ? "Business phone" : "Branch phone", branch.phone, "phone", true)}
+      ${row(isHead ? "Business email" : "Branch email", branch.email, "email", true)}
       ${row("ABN", branch.abn, "abn", true)}
       ${row("Business / branch ID", branch.branch_id, "branchId", true)}
       ${row("Region", branch.region, "region")}
       ${row("Timezone", branch.timezone, "timezone")}
     </div>
-    <span class="settings-group-label settings-group-label-spaced">Staff</span>
-    <div class="settings-list">
-      <div class="settings-row"><span class="settings-row-text"><strong>Active staff</strong><small>Managed from inside this branch</small></span><span class="settings-row-value">${branch.staffCount}</span></div>
-    </div>
-    <div class="settings-page-action"><button class="primary-button full" type="button" data-action="switch-branch" data-branch-id="${branch.id}">${icon("arrow")} Switch to this branch</button></div>
-    <p class="settings-detail-intro">Bays, job defaults and suppliers are set up from inside a branch. Switch to it to change those.</p>`;
+    <div class="settings-page-action"><button class="primary-button full" type="button" data-action="switch-branch" data-branch-id="${branch.id}">${icon("arrow")} Switch to this ${isHead ? "business" : "branch"}</button></div>
+    ${isOrgOwner() && !isHead ? `<span class="settings-group-label settings-group-label-spaced">Danger zone</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Deleting a branch removes its jobs, customers, vehicles and bays for good.</p>
+    <div class="settings-page-action settings-page-action-tight"><button class="danger-outline-button full" type="button" data-action="delete-branch" data-branch-id="${branch.id}">${icon("trash")} Delete this branch</button></div>` : ""}`;
 }
 
 // One row that opens a prompt-style editor for a single shop field. Kept as a
@@ -3153,7 +3237,7 @@ function openAddBranchModal() {
           <button class="primary-button" type="submit">${icon("plus")} Create and open</button>
         </div>
       </form>
-    </div>`, { ariaLabel: "Add branch", dismissible: false });
+    </div>`, { ariaLabel: "Add branch" });
   setTimeout(() => document.querySelector('#branch-form [name="name"]')?.focus(), 50);
 }
 
@@ -3166,7 +3250,7 @@ async function createBranch(form) {
   setButtonLoading(submitButton, "Creating\u2026");
   sheetLayer.classList.add("is-busy");
   try {
-    const { branch } = await apiRequest("/api/branches", {
+    const { branch, pairing } = await apiRequest("/api/branches", {
       method: "POST",
       body: JSON.stringify({
         name,
@@ -3182,10 +3266,49 @@ async function createBranch(form) {
     // Straight into it: an owner adding a branch is starting its setup, and
     // landing back on a list they then have to tap through is a wasted step.
     await switchBranch(branch.id, { toast: `Now working in ${branch.name}` });
+    // The new site's tablet is almost never in the room, so the code that lets
+    // whoever is holding it register the thing comes up now rather than making
+    // the owner go and find where codes are issued from.
+    if (pairing) openPairingCodeSheet(pairing);
   } catch (error) {
     sheetLayer.classList.remove("is-busy");
     resetButtonLoading(submitButton);
     showToast(error.message || "Could not create that branch");
+  }
+}
+
+// Six characters, read down a phone line to whoever is standing next to the
+// tablet. Shown big and spaced because it will be dictated, not copied, and
+// often from a workshop floor.
+function openPairingCodeSheet(pairing) {
+  const expires = pairing.expiresAt ? new Date(pairing.expiresAt) : null;
+  const expiryLabel = expires
+    ? expires.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : "";
+  openSheet(`<div class="sheet-head"><div><span class="field-label">${escapeHTML(pairing.branchName || "New branch")}</span><h2>Set up a device</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <p class="sheet-intro">Read this code to whoever has the tablet at ${escapeHTML(pairing.branchName || "that branch")}. On its sign-in screen they tap <strong>Set up this device</strong> and enter it.</p>
+      <p class="pairing-code" aria-label="Pairing code">${escapeHTML(pairing.code)}</p>
+      <p class="sheet-intro">${expiryLabel ? `Expires at ${escapeHTML(expiryLabel)}. ` : ""}It works once, and it only registers the device — nobody sees any jobs until they sign in with an account that works at that branch.</p>
+      <div class="profile-note-actions">
+        <button class="primary-button full" type="button" data-action="close-sheet">Done</button>
+      </div>
+    </div>`, { ariaLabel: "Device pairing code" });
+}
+
+async function requestPairingCode(shopId, button) {
+  if (button?.disabled) return;
+  if (button) setButtonLoading(button, "Creating…");
+  try {
+    const { pairing } = await apiRequest("/api/devices", {
+      method: "POST",
+      body: JSON.stringify({ shopId }),
+    });
+    if (button) resetButtonLoading(button);
+    openPairingCodeSheet(pairing);
+  } catch (error) {
+    if (button) resetButtonLoading(button);
+    showToast(error.message || "Could not create a pairing code");
   }
 }
 
@@ -3248,10 +3371,11 @@ function openBranchSwitcherSheet() {
     </div>`, { ariaLabel: "Switch branch" });
 }
 
-// Asked once per device, and only of someone who holds more than one branch.
-// Without it their session rides on whichever branch they were last at, which
-// for a mechanic covering two sites is a coin toss -- and filing a job into
-// the wrong branch is not something they would notice until much later.
+// Asked once per device -- genuinely once now, not once per sign-in -- and only
+// of someone who holds more than one branch on hardware nobody has registered.
+// A workshop tablet that has been set up never reaches this, whoever signs in
+// on it. What is left is a personal phone belonging to somebody who covers two
+// sites, where the app really cannot know which one they are standing in.
 function promptForBranchIfNeeded() {
   if (state.sessionPinned !== false || !isMultiBranch()) return;
   const rows = state.branches.map((branch) => `<button class="profile-menu-button" type="button" data-action="pick-branch" data-branch-id="${branch.id}">
@@ -3259,9 +3383,9 @@ function promptForBranchIfNeeded() {
     </button>`).join("");
   openSheet(`<div class="sheet-head"><div><span class="field-label">${escapeHTML(state.business?.name || "This business")}</span><h2>Which branch are you at?</h2></div></div>
     <div class="sheet-body">
-      <p class="sheet-intro">This device will stay on the branch you pick. You'll only be asked again if you sign in somewhere new.</p>
+      <p class="sheet-intro">This device stays on the branch you pick, even after you sign out. You won't be asked again on it.</p>
       <nav class="profile-menu" aria-label="Choose a branch">${rows}</nav>
-    </div>`, { ariaLabel: "Choose your branch", dismissible: false });
+    </div>`, { ariaLabel: "Choose your branch" });
 }
 
 function openBayModal(bay) {
@@ -3492,6 +3616,48 @@ function deleteTechnicianConfirmation(technician) {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm staff removal" });
 }
 
+function deleteBranchConfirmation(branch) {
+  if (!branch) return;
+  openSheet(`<div class="confirmation-content">
+    <h2>Delete ${escapeHTML(branch.name)}?</h2>
+    <p>Every job, customer, vehicle and bay recorded at this branch is removed with it, and none of it can be recovered. Staff who also work at another branch keep that access; anyone who only worked here loses theirs.</p>
+    <form class="settings-edit-form" id="delete-branch-form" data-branch-id="${branch.id}" autocomplete="off">
+      <label class="form-field">
+        <div class="field-header"><span class="field-label">Type DELETE to confirm</span></div>
+        <input class="input" name="confirm" placeholder="DELETE" autocapitalize="characters" autocorrect="off" spellcheck="false" required />
+      </label>
+      <div class="confirmation-actions">
+        <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
+        <button class="danger-button full" type="submit">${icon("trash")} Delete</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm branch deletion" });
+}
+
+async function deleteBranch(form) {
+  const typed = String(new FormData(form).get("confirm") || "").trim().toUpperCase();
+  if (typed !== "DELETE") return showToast("Type DELETE to confirm this deletion");
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  if (submitButton) submitButton.disabled = true;
+  const branchId = form.dataset.branchId;
+  try {
+    await apiRequest(`/api/branches/${branchId}`, { method: "DELETE" });
+    state.branches = state.branches.filter((item) => item.id !== branchId);
+    state.branchDetailId = null;
+    closeSheet();
+    // Back to the list rather than settingsOpenPage("branches"), which would
+    // push the branch-detail page onto the trail -- and that page now
+    // describes a branch that no longer exists.
+    settingsGoBack();
+    render();
+    showToast("Branch deleted");
+  } catch (error) {
+    if (submitButton) submitButton.disabled = false;
+    showToast(error.message || "Could not delete that branch");
+  }
+}
+
 async function deleteTechnician(form) {
   const typed = String(new FormData(form).get("confirm") || "").trim().toUpperCase();
   if (typed !== "DELETE") return showToast("Type DELETE to confirm this removal");
@@ -3550,7 +3716,7 @@ function openTechnicianEditModal(technician) {
         <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
-    </div>`, { ariaLabel: "Edit staff", dismissible: false });
+    </div>`, { ariaLabel: "Edit staff" });
 }
 
 // Default bay / default technician are a pick-one-from-the-roster choice, so
@@ -3569,6 +3735,7 @@ function openDefaultPickerModal({ title, options, selectedId, action, extraAttrs
       </button>
       ${rows}
     </div>
+    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
 }
 
@@ -3585,6 +3752,7 @@ function openReassignJobModal(job) {
   openSheet(`<div class="confirmation-content">
     <h2>Reassign job</h2>
     <div class="settings-list">${rows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
+    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign job" });
 }
 
@@ -3610,7 +3778,17 @@ async function saveShopField(form) {
   try {
     if (isBusiness) {
       const { business } = await apiRequest("/api/business", { method: "PATCH", body: JSON.stringify({ [field]: value || null }) });
-      state.business = business;
+      state.business = { ...state.business, ...business };
+      // The server keeps the head shop's own name in step with the business's
+      // (see updateBusiness) precisely so this page shows one name field, not
+      // two -- but that means a rename here also has to reach state.shop and
+      // state.branches locally, or the header and branch list would show the
+      // old name until the next full reload.
+      if (field === "name" && state.business.primary_shop_id) {
+        const headId = state.business.primary_shop_id;
+        if (state.shop?.id === headId) state.shop = { ...state.shop, name: business.name };
+        state.branches = state.branches.map((item) => item.id === headId ? { ...item, name: business.name } : item);
+      }
     } else if (branchId) {
       const { branch } = await apiRequest(`/api/branches/${branchId}`, { method: "PATCH", body: JSON.stringify({ [field]: value || null }) });
       state.branches = state.branches.map((item) => item.id === branch.id ? { ...item, ...branch } : item);
@@ -3800,6 +3978,7 @@ const SETTINGS_PAGES = {
   "workshop-profile": renderWorkshopProfilePage,
   branches: renderBranchesPage,
   "branch-detail": renderBranchDetailPage,
+  devices: renderDevicesPage,
   bays: renderBaysPage,
   technicians: renderTechniciansPage,
   units: renderUnitsPage,
@@ -3826,7 +4005,7 @@ function updateMicPermissionLabel() {
 
 // "technicians" is deliberately not in this set: a technician can open the
 // staff directory, just as a read-only list -- see renderTechniciansPage.
-const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays", "job-defaults"]);
+const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays", "job-defaults", "devices"]);
 
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
@@ -3841,6 +4020,7 @@ function renderSettings() {
   app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
   if (state.settingsPage === "voice-dictation") updateMicPermissionLabel();
   if (state.settingsPage === "network-sharing") loadBranchShareTargets();
+  if (state.settingsPage === "devices") loadDevices();
 }
 
 function renderVehicle() {
@@ -4427,11 +4607,13 @@ function setStep(step) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// dismissible:false is for a sheet whose only exits are its own buttons --
-// an edit form mid-change, or any sheet with a save in flight. It suppresses
-// the backdrop tap and Escape so a stray tap outside can't silently discard
-// what was typed; such a sheet must supply its own Cancel.
-function openSheet(content, { sheetClass = "", ariaLabel = "", dismissible = true } = {}) {
+// A sheet only ever closes through one of its own buttons -- a close icon, a
+// Cancel, or (for a picker) any row -- never by tapping the backdrop or
+// pressing Escape. Those used to be a shortcut out of every sheet and made it
+// too easy to lose a half-filled form or, worse, back out of a destructive
+// confirmation without meaning to. Every openSheet call must supply its own
+// way out; there is no longer a per-call opt-out for this.
+function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
   clearTimeout(sheetCloseTimer);
   const isRefreshing = !sheetLayer.hidden && sheetLayer.classList.contains("is-open");
   const previousScrollTop = sheetLayer.querySelector(".bottom-sheet")?.scrollTop || 0;
@@ -4449,7 +4631,6 @@ function openSheet(content, { sheetClass = "", ariaLabel = "", dismissible = tru
   document.documentElement.classList.add("sheet-open");
   document.body.classList.add("sheet-open");
   sheetLayer.classList.toggle("is-confirmation-modal", sheetClass.split(/\s+/).includes("confirmation-sheet"));
-  sheetLayer.dataset.dismissible = dismissible ? "true" : "false";
   sheetLayer.classList.remove("is-busy");
   if (!isRefreshing) sheetLayer.classList.remove("is-open");
   sheetLayer.innerHTML = `<section class="bottom-sheet${sheetClass ? ` ${sheetClass}` : ""}" role="dialog" aria-modal="true"${ariaLabel ? ` aria-label="${escapeHTML(ariaLabel)}"` : ""}>${content}</section>`;
@@ -4833,6 +5014,33 @@ function calendarSheet() {
     </div>`);
 }
 
+// Where the device is registered, and -- for the two roles who can move off it
+// -- where they are actually looking right now. Staff see only the first,
+// because they cannot switch and a second cell that always matched the first
+// would be noise. For an owner or admin the pair is the honest answer to "did
+// I leave the front counter tablet on the wrong branch": Registered at is the
+// hardware, Viewing is them, and an override never outlives their own login.
+function branchFacts(factValue) {
+  if (!isMultiBranch()) return "";
+  const registeredId = state.device?.registeredShopId;
+  const registered = registeredId
+    ? state.branches.find((branch) => branch.id === registeredId)?.name || "Another branch"
+    : "";
+  const viewing = currentBranch()?.name || state.shop?.name || "Unknown";
+  // Staff get one cell, and on an unregistered device it stays the plain
+  // "Branch" it has always been -- telling a technician their phone is "not set
+  // up" invites them to go fix something that is not broken.
+  if (!canSwitchBranch()) {
+    return registered
+      ? `<div class="profile-fact"><span class="field-label">Registered at</span>${factValue(registered, true)}</div>`
+      : `<div class="profile-fact"><span class="field-label">Branch</span>${factValue(viewing, true)}</div>`;
+  }
+  return `<div class="profile-fact"><span class="field-label">Registered at</span>${
+      registered ? factValue(registered, true) : factValue("Not set up", false)
+    }</div>
+    <div class="profile-fact"><span class="field-label">Viewing</span>${factValue(viewing, true)}</div>`;
+}
+
 function technicianProfileSheet() {
   const fullName = state.profile?.full_name || "Diego Martins";
   const initials = initialsFor(fullName, currentTechnician()?.initials);
@@ -4851,7 +5059,7 @@ function technicianProfileSheet() {
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
       </section>
       <div class="profile-facts" aria-label="Technician work details">
-        ${isMultiBranch() ? `<div class="profile-fact"><span class="field-label">Branch</span>${factValue(currentBranch()?.name || state.shop?.name || "Unknown", true)}</div>` : ""}
+        ${branchFacts(factValue)}
         <div class="profile-fact"><span class="field-label">Assigned bay</span>${factValue(bayLabel, hasBay)}</div>
         <div class="profile-fact"><span class="field-label">Employee ID</span>${factValue(employeeId || "Not registered", Boolean(employeeId))}</div>
       </div>
@@ -5254,18 +5462,13 @@ document.addEventListener("click", (event) => {
         business: true,
       });
     }
-    if (action === "toggle-branch-demo") {
-      const next = !(state.shop?.is_demo);
-      return apiRequest(`/api/branches/${actionButton.dataset.branchId}`, { method: "PATCH", body: JSON.stringify({ isDemo: next }) })
-        .then(({ branch }) => {
-          state.shop = { ...state.shop, ...branch };
-          state.branches = state.branches.map((item) => item.id === branch.id ? { ...item, ...branch } : item);
-          render();
-          showToast(next ? "Marked as a demo branch" : "No longer a demo branch");
-        })
-        .catch((error) => showToast(error.message || "Could not change that setting"));
-    }
     if (action === "add-branch") return openAddBranchModal();
+    if (action === "explain-branches") return branchesExplainerSheet();
+    if (action === "pair-device") return requestPairingCode(actionButton.dataset.branchId, actionButton);
+    if (action === "revoke-device") return revokeDevice(actionButton.dataset.deviceId, actionButton);
+    if (action === "delete-branch") {
+      return deleteBranchConfirmation(state.branches.find((item) => item.id === actionButton.dataset.branchId));
+    }
     if (action === "add-technician-branch") {
       const technicianId = actionButton.dataset.technicianId;
       return apiRequest(`/api/shop/technicians/${technicianId}/branches`)
@@ -5913,6 +6116,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "bay-form") return saveBay(event.target);
   if (event.target.id === "technician-form") return saveTechnician(event.target);
   if (event.target.id === "delete-technician-form") return deleteTechnician(event.target);
+  if (event.target.id === "delete-branch-form") return deleteBranch(event.target);
   if (event.target.id === "invite-staff-form") return saveStaffInvite(event.target);
   if (event.target.id === "vehicle-form") {
     syncVehicle(event.target);
@@ -6047,17 +6251,12 @@ vinCameraInput.addEventListener("change", async () => {
   showToast("No VIN barcode was detected. Enter the 17-character VIN to decode the vehicle.");
 });
 
-sheetLayer.addEventListener("click", (event) => {
-  if (event.target === sheetLayer && sheetLayer.dataset.dismissible !== "false") closeSheet();
-});
 sheetLayer.addEventListener("pointerdown", beginPhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointermove", movePhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointerup", endPhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointercancel", endPhotoGesture, { passive: false });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !sheetLayer.hidden && sheetLayer.dataset.dismissible !== "false") closeSheet();
-});
+
 
 window.addEventListener("scroll", () => {
   updateScrollCue();

@@ -39,6 +39,27 @@ export async function requireWorkshopUser() {
   // who was removed from the business, the other is somebody switched off at a
   // branch they can be switched back on at.
   if (!shopId) {
+    // Devices (0060) added a third way to land here, and it is not a
+    // deactivation: signing in on a tablet registered to a branch this person
+    // holds no roster row in. Telling them their access was revoked would send
+    // them chasing a problem that does not exist -- they are simply standing in
+    // the wrong workshop.
+    const { data: device } = await supabase.rpc('device_context')
+    const registeredShopId = (device as { registeredShopId?: string } | null)?.registeredShopId
+    if (registeredShopId && registeredShopId !== profile.shop_id) {
+      const branchName = (device as { registeredShopName?: string } | null)?.registeredShopName
+      return {
+        error: NextResponse.json(
+          {
+            error: branchName
+              ? `This device is set up for ${branchName}. You're not assigned to that branch -- ask a manager to add you.`
+              : "This device is set up for a branch you're not assigned to. Ask a manager to add you.",
+            code: 'wrong_branch',
+          },
+          { status: 403 },
+        ),
+      }
+    }
     const message = profile.shop_id
       ? 'Your access to this workshop has been deactivated. Contact your manager for more information.'
       : 'You are not a member of this workshop. Contact your manager for more information.'

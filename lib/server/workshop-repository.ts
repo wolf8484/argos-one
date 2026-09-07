@@ -539,6 +539,14 @@ export class WorkshopRepository {
   // shops update policy lets any role edit their own shop -- correct for the
   // network toggle, which every role can flip -- so routing this one through
   // a definer function is what keeps it owner/admin only.
+  // The guards (Owner only, not the head workshop, not the branch you are
+  // standing in) and the profile re-pointing all live in the SQL function --
+  // see 0059 for why the re-pointing is not optional.
+  async deleteBranch(branchId: string) {
+    const { error } = await this.supabase.rpc('delete_branch', { target_shop: branchId })
+    if (error) throw error
+  }
+
   async setBranchSharing(enabled: boolean) {
     const { error } = await this.supabase.rpc('set_branch_sharing', { p_enabled: enabled })
     if (error) throw error
@@ -623,11 +631,20 @@ export class WorkshopRepository {
   private static readonly BRANCH_COLUMNS = 'id,name,phone,email,region,timezone,branch_id,org_id,auto_assign_jobs,is_demo,abn'
 
   /**
-   * Set by listBranches: whether this device has been told which branch it is
-   * at, as opposed to falling back to profiles.shop_id. Only interesting for
-   * someone who holds more than one -- see has_session_branch (0050).
+   * Set by listBranches. `pinned` is whether this person has answered on this
+   * device; `registeredShopId` is what the hardware itself says it is. The
+   * branch prompt fires only when neither is true -- see device_context (0060).
    */
-  sessionPinned = false
+  deviceContext: { known: boolean; pinned: boolean; registeredShopId: string | null } = {
+    known: false,
+    pinned: false,
+    registeredShopId: null,
+  }
+
+  /** Kept for the client payload's existing shape: does this device know where it is. */
+  get sessionPinned() {
+    return this.deviceContext.pinned || Boolean(this.deviceContext.registeredShopId)
+  }
 
   /**
    * Every branch this login holds an active place in -- which is what the
@@ -640,15 +657,25 @@ export class WorkshopRepository {
    * which decides whether they may edit that branch at all.
    */
   async listBranches() {
-    const [{ data: shops, error: shopsError }, { data: roster, error: rosterError }, { data: pinned }] =
+    const [{ data: shops, error: shopsError }, { data: roster, error: rosterError }, { data: device }] =
       await Promise.all([
         this.supabase.from('shops').select(WorkshopRepository.BRANCH_COLUMNS).order('name'),
         this.supabase.from('shop_technicians').select('shop_id,profile_id,role,active'),
-        this.supabase.rpc('has_session_branch'),
+        this.supabase.rpc('device_context'),
+        // In the same round trip rather than fired afterwards: a PostgREST
+        // builder only runs when it is awaited, and an un-awaited one can also
+        // be cut off when the serverless response returns. Matches no rows on
+        // an unregistered device, so it costs nothing to always ask.
+        this.supabase.rpc('touch_current_device'),
       ])
     if (shopsError) throw shopsError
     if (rosterError) throw rosterError
-    this.sessionPinned = pinned === true
+    const context = (device ?? {}) as Partial<WorkshopRepository['deviceContext']>
+    this.deviceContext = {
+      known: context.known === true,
+      pinned: context.pinned === true,
+      registeredShopId: context.registeredShopId ?? null,
+    }
 
     return (shops ?? []).map((shop) => {
       const rows = (roster ?? []).filter((row) => row.shop_id === shop.id)
@@ -688,12 +715,21 @@ export class WorkshopRepository {
       .from('organisations')
       .update({ name: input.name })
       .eq('id', business.id)
-      .select('id,name')
+      .select('id,name,primary_shop_id')
       .single()
     if (error) throw error
     // Only an Owner may write it (org_update policy); RLS returns no row
     // rather than an error when an Admin tries.
     if (!data) throw new ApiError('Only an Owner can change the business details.', 403)
+
+    // The head shop's own name is never shown or edited separately from the
+    // business's -- one settings row, "Business name", not two that can
+    // silently drift apart. But the branch bar and every branch-list row read
+    // shops.name, not organisations.name, so a rename here has to reach the
+    // head shop's row too or those would keep showing the old name forever.
+    if (business.primary_shop_id) {
+      await this.supabase.from('shops').update({ name: input.name }).eq('id', business.primary_shop_id)
+    }
     return data
   }
 
@@ -734,13 +770,14 @@ export class WorkshopRepository {
   }
 
   /**
-   * Per-session, not per-login: set_session_branch keys the choice on the
-   * access token's session_id, so switching on a phone leaves the workshop
-   * tablet where it was. It re-checks the grant itself, which is why no
-   * membership test happens here.
+   * Per-device and per-person, not per-session: set_device_branch keys the
+   * choice on the device cookie, so it survives sign-out, and on the caller's
+   * own id, so an owner peeking at another branch on the workshop tablet does
+   * not leave it pointing there for the next technician. It re-checks the grant
+   * itself, which is why no membership test happens here.
    */
   async switchBranch(shopId: string) {
-    const { error } = await this.supabase.rpc('set_session_branch', { target_shop: shopId })
+    const { error } = await this.supabase.rpc('set_device_branch', { target_shop: shopId })
     if (error) throw error
     const { data, error: readError } = await this.supabase
       .from('shops')
@@ -749,6 +786,39 @@ export class WorkshopRepository {
       .single()
     if (readError) throw readError
     return data
+  }
+
+  // ---------------------------------------------------------------------
+  // Devices
+  // ---------------------------------------------------------------------
+
+  /**
+   * A code to read down the phone to whoever is holding the tablet, which is
+   * the only way a branch the owner is not standing in gets its hardware set
+   * up. Weak on purpose -- redeeming it registers a device and grants no
+   * access to anything, because current_shop_id() still demands a roster row.
+   */
+  async createPairingCode(shopId: string) {
+    const { data, error } = await this.supabase.rpc('create_pairing_code', { target_shop: shopId })
+    if (error) throw error
+    return data as { code: string; expiresAt: string; branchName: string }
+  }
+
+  async listDevices() {
+    const { data, error } = await this.supabase.rpc('list_shop_devices')
+    if (error) throw error
+    return data ?? []
+  }
+
+  async revokeDevice(deviceId: string) {
+    const { error } = await this.supabase.rpc('revoke_shop_device', { device_id: deviceId })
+    if (error) throw error
+  }
+
+  /** Drop a personal override and fall back to whatever the hardware says. */
+  async clearDeviceBranch() {
+    const { error } = await this.supabase.rpc('clear_device_branch')
+    if (error) throw error
   }
 
   /**
@@ -764,11 +834,9 @@ export class WorkshopRepository {
     region?: string
     timezone?: string
     branchId?: string | null
-    isDemo?: boolean
     abn?: string | null
   }) {
     const patch: Record<string, unknown> = {}
-    if (input.isDemo !== undefined) patch.is_demo = input.isDemo
     if (input.abn !== undefined) patch.abn = input.abn
     if (input.name !== undefined) patch.name = input.name
     if (input.phone !== undefined) patch.phone = input.phone

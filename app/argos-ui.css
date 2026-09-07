@@ -343,9 +343,8 @@ main:focus {
 }
 
 .screen {
-  width: min(100%, var(--content));
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 16px 16px;
 }
 
 .screen.screen-enter {
@@ -1350,11 +1349,9 @@ main:focus {
 
 .task-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  min-height: 76px;
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
 .task-header.has-back {
@@ -3037,7 +3034,7 @@ button.journey-item:active {
 
 /* Settings */
 .settings-shell {
-  padding-bottom: 72px;
+  padding-bottom: 16px;
 }
 
 .settings-group + .settings-group {
@@ -3243,6 +3240,21 @@ button.settings-row:focus-visible {
   line-height: 22px;
 }
 
+/* Dictated down a phone line to someone standing at another branch, so it is
+   sized to be read out loud rather than copied, and spaced so O/0 confusion
+   cannot survive -- though the alphabet in create_pairing_code excludes both. */
+.pairing-code {
+  margin-bottom: 20px;
+  padding: 24px 16px;
+  background: var(--surface-2);
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.16em;
+  text-align: center;
+  user-select: all;
+}
+
 /* This block is the only place the invite code is ever shown -- nothing is
    emailed or texted -- so it is sized to be read across a workbench. */
 .invite-code-block {
@@ -3344,10 +3356,17 @@ button.settings-toggle-row {
 }
 
 .settings-detail-intro {
-  margin: 0 0 20px;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   line-height: 1.5;
+  margin-top: 16px;
+}
+
+/* The trade-off with margin-top-only spacing: the first thing in a sheet or
+   page now needs its own top gap zeroed, or it inherits one meant for
+   separating it from a previous element that, being first, it doesn't have. */
+.settings-detail-intro:first-child {
+  margin-top: 0;
 }
 
 .settings-check-list {
@@ -3522,7 +3541,7 @@ button.settings-toggle-row {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px var(--gutter) 18px;
+  padding: 16px var(--gutter) 0px;
   background: var(--sheet-surface);
 }
 
@@ -4590,6 +4609,8 @@ button.profile-fact:focus-visible {
 }
 
 .settings-update-banner-arrow svg {
+  width: 20px;
+  height: 20px;
   color: #111111;
 }
 
@@ -6147,4 +6168,31 @@ a.profile-recall:focus-visible {
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.5;
+}
+
+/* An inline link inside a paragraph, not a control in its own right. Reuses
+   the accent the rest of the app uses for "this does something" and stays on
+   the text baseline, so the sentence still reads as one sentence. */
+.text-link {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* The intro sentence sits between a group label and the button under it, so
+   it needs less air than an intro that opens a page. */
+.settings-detail-intro.settings-detail-intro-tight {
+  margin: 0 0 16px;
+}
+
+.settings-page-action.settings-page-action-tight {
+  margin-top: 0;
+  margin-bottom: 24px;
 }

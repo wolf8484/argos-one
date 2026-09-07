@@ -30,7 +30,11 @@ export default function LoginPage() {
   const router = useRouter()
   // 'signin' is the only screen anyone sees twice; creating a workshop is a
   // one-time path, so it is broken into steps rather than one long form.
-  const [view, setView] = useState<'signin' | 'create' | 'created'>('signin')
+  const [view, setView] = useState<'signin' | 'create' | 'created' | 'pair' | 'paired'>('signin')
+  // Set by the pairing screen so the success page can name the branch back to
+  // whoever just typed the code -- "registered to Blacktown" is the only
+  // confirmation they get that they were read the right one.
+  const [pairedBranch, setPairedBranch] = useState('')
   const [step, setStep] = useState(1)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
   // Set by the dashboard when it signs a revoked session out and sends it
@@ -56,6 +60,44 @@ export default function LoginPage() {
   function backToSignIn() {
     setMessage('')
     setView('signin')
+  }
+
+  function startPairing() {
+    setMessage('')
+    setView('pair')
+  }
+
+  /**
+   * Registering the tablet itself, before anyone signs in on it.
+   *
+   * Deliberately reachable signed out: a branch that has just been created may
+   * have no accounts at all, so the hardware has to be able to say where it is
+   * without a human authenticating first. It grants nothing on its own -- the
+   * next person still needs a login that works at that branch.
+   */
+  async function pairDevice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    setMessage('')
+    const form = new FormData(event.currentTarget)
+    try {
+      const response = await fetch('/api/devices/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: String(form.get('code') || ''),
+          label: String(form.get('label') || '').trim() || null,
+        }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Could not set up this device')
+      setBusy(false)
+      setPairedBranch(payload.device?.branchName || '')
+      setView('paired')
+    } catch (error) {
+      setBusy(false)
+      setMessage((error as Error).message)
+    }
   }
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
@@ -155,6 +197,39 @@ export default function LoginPage() {
     }
     setBusy(false)
     setView('created')
+  }
+
+  if (view === 'paired') {
+    return <Shell heading="Registration successful" eyebrow="Device setup">
+      <p className={styles.hint}>
+        {pairedBranch
+          ? `This device has been registered to ${pairedBranch}. Everyone who signs in here will work in that branch.`
+          : 'This device has been registered. Everyone who signs in here will work in that branch.'}
+      </p>
+      <div className={styles.actions}>
+        <button className={styles.primary} type="button" onClick={backToSignIn}>Continue to sign in</button>
+      </div>
+    </Shell>
+  }
+
+  if (view === 'pair') {
+    return <Shell heading="Set up this device" eyebrow="Device setup">
+      <form key="pair" onSubmit={pairDevice} className={styles.form}>
+        <p className={styles.hint}>
+          Ask the owner for a pairing code for this workshop. Once set up, anyone
+          who signs in on this device works in that branch without being asked.
+        </p>
+        <label>Pairing code
+          <input name="code" type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" placeholder="e.g. K4M7QP" required />
+        </label>
+        <label><span className={styles.labelText}>Name this device <span className={styles.optional}>(optional)</span></span><input name="label" type="text" placeholder="e.g. Front counter tablet" /></label>
+        {message && <p className={styles.message} role="status">{message}</p>}
+        <div className={styles.actions}>
+          <button className={styles.primary} type="submit" disabled={busy}>{busy ? 'Setting up…' : 'Register device'}</button>
+          <button className={styles.switcher} type="button" onClick={backToSignIn} disabled={busy}>Back to sign in</button>
+        </div>
+      </form>
+    </Shell>
   }
 
   if (view === 'created') {
@@ -261,6 +336,12 @@ export default function LoginPage() {
       <button className={styles.switcher} type="button" onClick={startCreate}>
         Create a workshop
         <small>For workshop owners</small>
+      </button>
+      {/* Last, and phrased as a question, because it is the rarest path: a
+          shared tablet is registered once and then never touches this again. */}
+      <button className={styles.switcher} type="button" onClick={startPairing}>
+        Set up this device
+        <small>For a shared workshop tablet</small>
       </button>
     </div>
   </Shell>
