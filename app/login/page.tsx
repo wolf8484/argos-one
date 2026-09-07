@@ -30,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter()
   // 'signin' is the only screen anyone sees twice; creating a workshop is a
   // one-time path, so it is broken into steps rather than one long form.
-  const [view, setView] = useState<'signin' | 'create' | 'created' | 'pair' | 'paired'>('signin')
+  const [view, setView] = useState<'signin' | 'create' | 'created' | 'register' | 'pair' | 'paired'>('signin')
   // Set by the pairing screen so the success page can name the branch back to
   // whoever just typed the code -- "registered to Blacktown" is the only
   // confirmation they get that they were read the right one.
@@ -40,6 +40,9 @@ export default function LoginPage() {
   // being repointed to another branch by whoever is holding it.
   const [deviceBranch, setDeviceBranch] = useState<string | null>(null)
   const [deviceChecked, setDeviceChecked] = useState(false)
+  // The workshop just created, held only long enough to offer registering the
+  // device it was created on. Null whenever there is nothing to offer.
+  const [registerOffer, setRegisterOffer] = useState<{ name: string; code: string } | null>(null)
 
   const [step, setStep] = useState(1)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
@@ -211,8 +214,64 @@ export default function LoginPage() {
         body: JSON.stringify({ phone: draft.ownerPhone }),
       }).catch(() => {})
     }
+    // The workshop carries a Registration ID from the moment its row exists, so
+    // this is the one moment the owner has it in hand without signing out to
+    // reach the registration screen. Offer it here; a failed lookup just skips
+    // the offer, since registering is optional and recoverable either way.
+    const offer = await fetch('/api/branches')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        const shops: { name?: string; registration_code?: string | null; isCurrent?: boolean }[] = payload?.branches ?? []
+        const shop = shops.find((branch) => branch.isCurrent) ?? shops[0]
+        return shop?.registration_code && shop.name
+          ? { name: shop.name, code: shop.registration_code }
+          : null
+      })
+      .catch(() => null)
     setBusy(false)
+    if (offer) {
+      setRegisterOffer(offer)
+      return setView('register')
+    }
     setView('created')
+  }
+
+  /** The same registration as the signed-out screen, with the code filled in. */
+  async function registerNewWorkshop() {
+    if (!registerOffer) return
+    setBusy(true)
+    setMessage('')
+    try {
+      const response = await fetch('/api/devices/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: registerOffer.code }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Could not register this device')
+      setBusy(false)
+      setDeviceBranch(payload.device?.branchName || registerOffer.name)
+      setView('created')
+    } catch (error) {
+      setBusy(false)
+      setMessage((error as Error).message)
+    }
+  }
+
+  if (view === 'register' && registerOffer) {
+    return <Shell heading={`Register this device to ${registerOffer.name}?`} eyebrow="Device registration">
+      <p className={styles.hint}>
+        Registering pins this device to this workshop, so anyone signing in here
+        lands in it. Skip it if this is your own phone or laptop &mdash; you can
+        register the workshop&apos;s tablet later with the Registration ID in
+        Business details.
+      </p>
+      {message && <p className={styles.message} role="status">{message}</p>}
+      <div className={styles.actions}>
+        <button className={styles.primary} type="button" onClick={registerNewWorkshop} disabled={busy}>{busy ? 'Registering…' : 'Register this device'}</button>
+        <button className={styles.switcher} type="button" onClick={() => { setMessage(''); setView('created') }} disabled={busy}>Not now</button>
+      </div>
+    </Shell>
   }
 
   if (view === 'paired') {
@@ -261,6 +320,7 @@ export default function LoginPage() {
         <ReviewRow label="Workshop" value={draft.shopName} />
         <ReviewRow label="Owner" value={`${draft.firstName} ${draft.lastName}`.trim()} />
         <ReviewRow label="Email" value={draft.ownerEmail} />
+        {deviceBranch && <ReviewRow label="This device" value={`Registered to ${deviceBranch}`} />}
       </div>
       <div className={styles.actions}>
         {confirmationPending
