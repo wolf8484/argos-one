@@ -34,13 +34,9 @@ export async function POST(request: NextRequest) {
   try {
     const input = createBranchSchema.parse(await request.json())
     const repository = new WorkshopRepository(auth.supabase, auth.profile)
-    const branch = await repository.createBranch(input) as { id: string }
-    // A new branch is the one moment we know for certain a device there needs
-    // setting up and the owner almost certainly is not standing next to it, so
-    // the code comes back with the branch rather than making them go and ask
-    // for one. Losing it is harmless -- they can issue another any time.
-    const pairing = await repository.createPairingCode(branch.id).catch(() => null)
-    return NextResponse.json({ branch, pairing }, { status: 201 })
+    // The branch carries its own Registration ID from the moment it exists
+    // (0061), shown on its profile, so there is nothing to hand back here.
+    return NextResponse.json({ branch: await repository.createBranch(input) }, { status: 201 })
   } catch (error) {
     return apiError(error, 'Could not create that branch')
   }

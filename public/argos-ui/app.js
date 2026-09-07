@@ -2853,6 +2853,7 @@ function currentBranchProfileBody() {
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
+      ${registrationIdRow(shop.registration_code)}
     </div>
     <span class="settings-group-label settings-group-label-spaced">Parts &amp; suppliers</span>
     <div class="settings-list">
@@ -2866,6 +2867,19 @@ function currentBranchProfileBody() {
 // included. The head workshop is titled with the business name because for a
 // single-site business those are the same thing -- which is exactly why
 // showing them as two separate records read as a duplicate.
+// The one value a new device needs, and the reason it lives on the branch's own
+// profile rather than behind an issuing flow: an owner setting up a tablet
+// looks up the branch, reads the ID off it, and that is the whole procedure.
+// Read-only -- it is an identity, not a setting, and rotating it would strand
+// every device already registered with it.
+function registrationIdRow(code) {
+  if (!code) return "";
+  return `<div class="settings-row">
+      <span class="settings-row-text"><strong>Registration ID</strong><small>Enter this on a new device's set-up screen</small></span>
+      <span class="settings-row-value settings-row-code">${escapeHTML(code)}</span>
+    </div>`;
+}
+
 function branchRow(branch, { title = "", subtitle = "" } = {}) {
   const current = branch.isCurrent;
   return `<button class="settings-row" type="button" data-action="${current ? "open-settings-page" : "open-branch"}" ${current ? `data-settings-page="workshop-profile"` : `data-branch-id="${branch.id}"`}>
@@ -2938,6 +2952,7 @@ function renderBranchDetailPage() {
       ${row("Business / branch ID", branch.branch_id, "branchId", true)}
       ${row("Region", branch.region, "region")}
       ${row("Timezone", branch.timezone, "timezone")}
+      ${registrationIdRow(branch.registration_code)}
     </div>
     <div class="settings-page-action"><button class="primary-button full" type="button" data-action="switch-branch" data-branch-id="${branch.id}">${icon("arrow")} Switch to this ${isHead ? "business" : "branch"}</button></div>
     ${isOrgOwner() && !isHead ? `<span class="settings-group-label settings-group-label-spaced">Danger zone</span>
@@ -3182,7 +3197,7 @@ async function createBranch(form) {
   setButtonLoading(submitButton, "Creating\u2026");
   sheetLayer.classList.add("is-busy");
   try {
-    const { branch, pairing } = await apiRequest("/api/branches", {
+    const { branch } = await apiRequest("/api/branches", {
       method: "POST",
       body: JSON.stringify({
         name,
@@ -3198,34 +3213,11 @@ async function createBranch(form) {
     // Straight into it: an owner adding a branch is starting its setup, and
     // landing back on a list they then have to tap through is a wasted step.
     await switchBranch(branch.id, { toast: `Now working in ${branch.name}` });
-    // The new site's tablet is almost never in the room, so the code that lets
-    // whoever is holding it register the thing comes up now rather than making
-    // the owner go and find where codes are issued from.
-    if (pairing) openPairingCodeSheet(pairing);
   } catch (error) {
     sheetLayer.classList.remove("is-busy");
     resetButtonLoading(submitButton);
     showToast(error.message || "Could not create that branch");
   }
-}
-
-// Six characters, read down a phone line to whoever is standing next to the
-// tablet. Shown big and spaced because it will be dictated, not copied, and
-// often from a workshop floor.
-function openPairingCodeSheet(pairing) {
-  const expires = pairing.expiresAt ? new Date(pairing.expiresAt) : null;
-  const expiryLabel = expires
-    ? expires.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-    : "";
-  openSheet(`<div class="sheet-head"><div><span class="field-label">${escapeHTML(pairing.branchName || "New branch")}</span><h2>Set up a device</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
-    <div class="sheet-body">
-      <p class="sheet-intro">Read this code to whoever has the tablet at ${escapeHTML(pairing.branchName || "that branch")}. On its sign-in screen they tap <strong>Set up this device</strong> and enter it.</p>
-      <p class="pairing-code" aria-label="Pairing code">${escapeHTML(pairing.code)}</p>
-      <p class="sheet-intro">${expiryLabel ? `Expires at ${escapeHTML(expiryLabel)}. ` : ""}It works once, and it only registers the device — nobody sees any jobs until they sign in with an account that works at that branch.</p>
-      <div class="profile-note-actions">
-        <button class="primary-button full" type="button" data-action="close-sheet">Done</button>
-      </div>
-    </div>`, { ariaLabel: "Device pairing code" });
 }
 
 // Switching redraws every list on screen from a different site's data, so it

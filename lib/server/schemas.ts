@@ -222,11 +222,11 @@ export const switchBranchSchema = z.object({
   shopId: z.string().uuid(),
 })
 
-// Read down a phone line, so it arrives however the person on the other end
-// typed it -- spaces, lower case, a stray dash. Normalise here rather than
-// making them get it exactly right on a greasy touchscreen.
-export const redeemPairingSchema = z.object({
-  code: z.string().trim().min(4).max(16).transform((value) => value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()),
+// Read off a branch profile and typed on a workshop floor, so it arrives
+// however the person entered it -- spaces, lower case, a stray dash. Normalise
+// here rather than making them get it exactly right on a greasy touchscreen.
+export const registerDeviceSchema = z.object({
+  code: z.string().trim().min(4).max(24).transform((value) => value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()),
 })
 
 // A business is a name that groups sites; every other detail belongs to a

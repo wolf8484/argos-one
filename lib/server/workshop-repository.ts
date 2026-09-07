@@ -573,7 +573,7 @@ export class WorkshopRepository {
   }
 
   private static readonly SHOP_COLUMNS =
-    'id,org_id,name,phone,email,timezone,shares_repair_data,shares_with_branches,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs,is_demo,abn'
+    'id,org_id,name,phone,email,timezone,shares_repair_data,shares_with_branches,network_read_exempt,branch_id,region,preferred_supplier,default_bay_id,default_technician_id,auto_assign_jobs,is_demo,abn,registration_code'
 
   async getShop() {
     const { data, error } = await this.supabase
@@ -628,7 +628,7 @@ export class WorkshopRepository {
   // Branches
   // ---------------------------------------------------------------------
 
-  private static readonly BRANCH_COLUMNS = 'id,name,phone,email,region,timezone,branch_id,org_id,auto_assign_jobs,is_demo,abn'
+  private static readonly BRANCH_COLUMNS = 'id,name,phone,email,region,timezone,branch_id,org_id,auto_assign_jobs,is_demo,abn,registration_code'
 
   /**
    * Set by listBranches. `pinned` is whether this person has answered on this
@@ -680,12 +680,17 @@ export class WorkshopRepository {
     return (shops ?? []).map((shop) => {
       const rows = (roster ?? []).filter((row) => row.shop_id === shop.id)
       const mine = rows.find((row) => row.profile_id === this.profile.id && row.active)
+      const canEdit = mine?.role === 'owner' || mine?.role === 'admin'
       return {
         ...shop,
+        // Stripped for technicians: they cannot open a branch profile anyway,
+        // and the payload should not hand out the one value that lets a device
+        // claim a branch to someone with no reason to have it.
+        registration_code: canEdit ? shop.registration_code : null,
         staffCount: rows.filter((row) => row.active).length,
         myRole: mine?.role ?? null,
         isCurrent: shop.id === this.profile.shop_id,
-        canEdit: mine?.role === 'owner' || mine?.role === 'admin',
+        canEdit,
       }
     })
   }
@@ -791,18 +796,6 @@ export class WorkshopRepository {
   // ---------------------------------------------------------------------
   // Devices
   // ---------------------------------------------------------------------
-
-  /**
-   * A code to read down the phone to whoever is holding the tablet, which is
-   * the only way a branch the owner is not standing in gets its hardware set
-   * up. Weak on purpose -- redeeming it registers a device and grants no
-   * access to anything, because current_shop_id() still demands a roster row.
-   */
-  async createPairingCode(shopId: string) {
-    const { data, error } = await this.supabase.rpc('create_pairing_code', { target_shop: shopId })
-    if (error) throw error
-    return data as { code: string; expiresAt: string; branchName: string }
-  }
 
 
   /**

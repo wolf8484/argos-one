@@ -3240,18 +3240,12 @@ button.settings-row:focus-visible {
   line-height: 22px;
 }
 
-/* Dictated down a phone line to someone standing at another branch, so it is
-   sized to be read out loud rather than copied, and spaced so O/0 confusion
-   cannot survive -- though the alphabet in create_pairing_code excludes both. */
-.pairing-code {
-  margin-bottom: 20px;
-  padding: 24px 16px;
-  background: var(--surface-2);
-  font-size: 40px;
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: 0.16em;
-  text-align: center;
+/* A branch's Registration ID, sitting in its details block. Tracked wider and
+   selectable because it gets read aloud to whoever is holding the tablet, or
+   copied straight out of the row. */
+.settings-row-code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
   user-select: all;
 }
 

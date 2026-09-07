@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 import { normalizePhone } from '@/lib/identity'
@@ -35,6 +35,12 @@ export default function LoginPage() {
   // whoever just typed the code -- "registered to Blacktown" is the only
   // confirmation they get that they were read the right one.
   const [pairedBranch, setPairedBranch] = useState('')
+  // Null until checked. Once a device is registered the setup entry disappears
+  // entirely -- with no unpair flow yet, that is what stops a workshop tablet
+  // being repointed to another branch by whoever is holding it.
+  const [deviceBranch, setDeviceBranch] = useState<string | null>(null)
+  const [deviceChecked, setDeviceChecked] = useState(false)
+
   const [step, setStep] = useState(1)
   const [draft, setDraft] = useState<Draft>(emptyDraft)
   // Set by the dashboard when it signs a revoked session out and sends it
@@ -44,6 +50,19 @@ export default function LoginPage() {
       ? 'Your access to this workshop has been deactivated. Contact your manager for more information.'
       : '')
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/devices/pair')
+      .then((response) => response.json())
+      .then((payload) => {
+        if (cancelled) return
+        setDeviceBranch(payload?.registered ? (payload.branchName ?? '') : null)
+        setDeviceChecked(true)
+      })
+      .catch(() => { if (!cancelled) setDeviceChecked(true) })
+    return () => { cancelled = true }
+  }, [])
 
   function goToStep(next: number) {
     setMessage('')
@@ -213,14 +232,15 @@ export default function LoginPage() {
     return <Shell heading="Set up this device" eyebrow="Device setup">
       <form key="pair" onSubmit={pairDevice} className={styles.form}>
         <p className={styles.hint}>
-          Ask the owner for a pairing code for this workshop. Once set up, anyone
-          who signs in on this device works in that branch without being asked.
+          Enter the Registration ID for this workshop, found on its profile under
+          Workshop &amp; branches. Once set up, anyone who signs in on this device
+          works in that branch without being asked.
         </p>
-        {/* The code is the only input there is. Which branch this device
-            belongs to travels with the code, so there is nothing here for the
-            person holding the tablet to get wrong or to contradict. */}
-        <label>Pairing code
-          <input name="code" type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" placeholder="e.g. K4M7QP" required />
+        {/* The ID is the only input there is. Which branch this device belongs
+            to travels with the ID, so there is nothing here for the person
+            holding the tablet to get wrong or to contradict. */}
+        <label>Registration ID
+          <input name="code" type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" placeholder="e.g. K4M7QP2X" required />
         </label>
         {message && <p className={styles.message} role="status">{message}</p>}
         <div className={styles.actions}>
@@ -336,12 +356,14 @@ export default function LoginPage() {
         Create a workshop
         <small>For workshop owners</small>
       </button>
-      {/* Last, and phrased as a question, because it is the rarest path: a
-          shared tablet is registered once and then never touches this again. */}
-      <button className={styles.switcher} type="button" onClick={startPairing}>
-        Set up this device
-        <small>For a shared workshop tablet</small>
-      </button>
+      {/* Last, because it is the rarest path -- and gone entirely once this
+          device is set up, since it is registered once and never again. */}
+      {deviceChecked && deviceBranch === null && (
+        <button className={styles.switcher} type="button" onClick={startPairing}>
+          Set up this device
+          <small>For a shared workshop tablet</small>
+        </button>
+      )}
     </div>
   </Shell>
 }
