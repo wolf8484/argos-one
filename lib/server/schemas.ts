@@ -227,11 +227,6 @@ export const switchBranchSchema = z.object({
 // making them get it exactly right on a greasy touchscreen.
 export const redeemPairingSchema = z.object({
   code: z.string().trim().min(4).max(16).transform((value) => value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()),
-  label: z.string().trim().max(80).nullable().optional(),
-})
-
-export const pairingCodeSchema = z.object({
-  shopId: z.string().uuid(),
 })
 
 // A business is a name that groups sites; every other detail belongs to a

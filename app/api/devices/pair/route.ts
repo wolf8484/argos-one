@@ -25,7 +25,7 @@ import { redeemPairingSchema } from '@/lib/server/schemas'
 export async function POST(request: NextRequest) {
   try {
     enforceRateLimit(clientKey(request, 'device-pair'), { limit: 8, windowMs: 60_000 })
-    const { code, label } = redeemPairingSchema.parse(await request.json())
+    const { code } = redeemPairingSchema.parse(await request.json())
 
     const token = (await cookies()).get(DEVICE_COOKIE)?.value
     if (!token) throw new ApiError('This device could not be identified. Reload the page and try again.', 400)
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.rpc('redeem_pairing_code', {
       p_code: code,
       p_token_hash: hashDeviceToken(token),
-      p_label: label ?? null,
+      p_label: null,
     })
     if (error) throw new ApiError(error.message, 400)
 

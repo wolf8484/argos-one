@@ -84,10 +84,7 @@ export default function LoginPage() {
       const response = await fetch('/api/devices/pair', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: String(form.get('code') || ''),
-          label: String(form.get('label') || '').trim() || null,
-        }),
+        body: JSON.stringify({ code: String(form.get('code') || '') }),
       })
       const payload = await response.json()
       if (!response.ok) throw new Error(payload.error || 'Could not set up this device')
@@ -219,10 +216,12 @@ export default function LoginPage() {
           Ask the owner for a pairing code for this workshop. Once set up, anyone
           who signs in on this device works in that branch without being asked.
         </p>
+        {/* The code is the only input there is. Which branch this device
+            belongs to travels with the code, so there is nothing here for the
+            person holding the tablet to get wrong or to contradict. */}
         <label>Pairing code
           <input name="code" type="text" inputMode="text" autoCapitalize="characters" autoComplete="off" placeholder="e.g. K4M7QP" required />
         </label>
-        <label><span className={styles.labelText}>Name this device <span className={styles.optional}>(optional)</span></span><input name="label" type="text" placeholder="e.g. Front counter tablet" /></label>
         {message && <p className={styles.message} role="status">{message}</p>}
         <div className={styles.actions}>
           <button className={styles.primary} type="submit" disabled={busy}>{busy ? 'Setting up…' : 'Register device'}</button>

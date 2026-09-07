@@ -75,7 +75,6 @@ const state = {
   // registeredShopId set means an owner registered this device to a branch, so
   // nobody signing in on it is ever asked -- see device_context (0060).
   device: { known: false, pinned: false, registeredShopId: null },
-  devices: null,
   settingsTrail: [],
   selectedRepair: "primary",
   vehicle: {
@@ -2888,74 +2887,7 @@ function renderBranchesPage() {
     <span class="settings-group-label${head ? " settings-group-label-spaced" : ""}">Branches</span>
     <p class="settings-detail-intro settings-detail-intro-tight">A branch is a separate site trading under one business. <button class="text-link" type="button" data-action="explain-branches">Learn more</button></p>
     ${others.length ? `<div class="settings-list">${others.map((branch) => branchRow(branch)).join("")}</div>` : ""}
-    ${isOrgOwner() ? `<div class="settings-page-action${others.length ? "" : " settings-page-action-tight"}"><button class="primary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}
-    ${state.branches.some((branch) => branch.canEdit) ? `<span class="settings-group-label settings-group-label-spaced">Devices</span>
-    <div class="settings-list">
-      <button class="settings-row" type="button" data-action="open-settings-page" data-settings-page="devices">
-        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
-        <span class="settings-row-text"><strong>Workshop devices</strong><small>Tablets set up to a branch</small></span>
-        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>
-    </div>` : ""}`;
-}
-
-async function loadDevices() {
-  if (state.devices !== null) return;
-  try {
-    const { devices } = await apiRequest("/api/devices");
-    state.devices = devices || [];
-  } catch (_) {
-    state.devices = [];
-  }
-  if (state.route === "settings" && state.settingsPage === "devices") render();
-}
-
-// Registered hardware, grouped the way an owner thinks about it: which tablet
-// sits at which site. "Last seen" is the only way to tell a device still in
-// daily use from one that was replaced or wiped months ago and is quietly
-// still registered.
-function renderDevicesPage() {
-  const devices = state.devices;
-  const manageable = state.branches.filter((branch) => branch.canEdit);
-  const rows = devices === null
-    ? `<div class="settings-row"><span class="settings-row-text"><strong>Loading…</strong></span></div>`
-    : devices.length
-      ? devices.map((device) => {
-          const seen = device.last_seen_at ? `Last used ${mediumDate(device.last_seen_at)}` : "Never used";
-          return `<div class="settings-row">
-            <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
-            <span class="settings-row-text"><strong>${escapeHTML(device.label || device.shop_name)}</strong><small>${escapeHTML(device.shop_name)} · ${escapeHTML(seen)}${device.is_this_device ? " · This device" : ""}</small></span>
-            <button class="text-link" type="button" data-action="revoke-device" data-device-id="${device.id}">Remove</button>
-          </div>`;
-        }).join("")
-      : `<div class="settings-row"><span class="settings-row-text"><strong>No devices set up</strong><small>Everyone signing in falls back to their own home branch</small></span></div>`;
-
-  return `${settingsPageHeader("Workshop devices", "Workshop & branches")}
-    <p class="settings-detail-intro settings-detail-intro-tight">A registered device shows the same branch to everyone who signs in on it, so nobody has to pick — and nobody can file a job into the wrong site. Personal phones do not need this.</p>
-    <span class="settings-group-label">Registered</span>
-    <div class="settings-list">${rows}</div>
-    ${manageable.length ? `<span class="settings-group-label settings-group-label-spaced">Set up a device</span>
-    <p class="settings-detail-intro settings-detail-intro-tight">Get a code, then read it to whoever is holding the tablet. You do not have to be at that branch.</p>
-    <div class="settings-list">${manageable.map((branch) => `<button class="settings-row" type="button" data-action="pair-device" data-branch-id="${branch.id}">
-        <span class="settings-row-icon" aria-hidden="true">${icon("plus")}</span>
-        <span class="settings-row-text"><strong>${escapeHTML(branch.name)}</strong><small>Create a pairing code</small></span>
-        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>`).join("")}</div>` : ""}`;
-}
-
-async function revokeDevice(deviceId, button) {
-  if (button?.disabled) return;
-  if (button) setButtonLoading(button, "Removing…");
-  try {
-    await apiRequest(`/api/devices/${deviceId}`, { method: "DELETE" });
-    state.devices = null;
-    await loadDevices();
-    render();
-    showToast("Device removed");
-  } catch (error) {
-    if (button) resetButtonLoading(button);
-    showToast(error.message || "Could not remove that device");
-  }
+    ${isOrgOwner() ? `<div class="settings-page-action${others.length ? "" : " settings-page-action-tight"}"><button class="primary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}`;
 }
 
 // Everything the page used to state up front and again at the bottom. It is
@@ -3294,22 +3226,6 @@ function openPairingCodeSheet(pairing) {
         <button class="primary-button full" type="button" data-action="close-sheet">Done</button>
       </div>
     </div>`, { ariaLabel: "Device pairing code" });
-}
-
-async function requestPairingCode(shopId, button) {
-  if (button?.disabled) return;
-  if (button) setButtonLoading(button, "Creating…");
-  try {
-    const { pairing } = await apiRequest("/api/devices", {
-      method: "POST",
-      body: JSON.stringify({ shopId }),
-    });
-    if (button) resetButtonLoading(button);
-    openPairingCodeSheet(pairing);
-  } catch (error) {
-    if (button) resetButtonLoading(button);
-    showToast(error.message || "Could not create a pairing code");
-  }
 }
 
 // Switching redraws every list on screen from a different site's data, so it
@@ -3978,7 +3894,6 @@ const SETTINGS_PAGES = {
   "workshop-profile": renderWorkshopProfilePage,
   branches: renderBranchesPage,
   "branch-detail": renderBranchDetailPage,
-  devices: renderDevicesPage,
   bays: renderBaysPage,
   technicians: renderTechniciansPage,
   units: renderUnitsPage,
@@ -4005,7 +3920,7 @@ function updateMicPermissionLabel() {
 
 // "technicians" is deliberately not in this set: a technician can open the
 // staff directory, just as a read-only list -- see renderTechniciansPage.
-const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays", "job-defaults", "devices"]);
+const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays", "job-defaults"]);
 
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
@@ -4020,7 +3935,6 @@ function renderSettings() {
   app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
   if (state.settingsPage === "voice-dictation") updateMicPermissionLabel();
   if (state.settingsPage === "network-sharing") loadBranchShareTargets();
-  if (state.settingsPage === "devices") loadDevices();
 }
 
 function renderVehicle() {
@@ -5464,8 +5378,6 @@ document.addEventListener("click", (event) => {
     }
     if (action === "add-branch") return openAddBranchModal();
     if (action === "explain-branches") return branchesExplainerSheet();
-    if (action === "pair-device") return requestPairingCode(actionButton.dataset.branchId, actionButton);
-    if (action === "revoke-device") return revokeDevice(actionButton.dataset.deviceId, actionButton);
     if (action === "delete-branch") {
       return deleteBranchConfirmation(state.branches.find((item) => item.id === actionButton.dataset.branchId));
     }

@@ -804,22 +804,6 @@ export class WorkshopRepository {
     return data as { code: string; expiresAt: string; branchName: string }
   }
 
-  async listDevices() {
-    const { data, error } = await this.supabase.rpc('list_shop_devices')
-    if (error) throw error
-    return data ?? []
-  }
-
-  async revokeDevice(deviceId: string) {
-    const { error } = await this.supabase.rpc('revoke_shop_device', { device_id: deviceId })
-    if (error) throw error
-  }
-
-  /** Drop a personal override and fall back to whatever the hardware says. */
-  async clearDeviceBranch() {
-    const { error } = await this.supabase.rpc('clear_device_branch')
-    if (error) throw error
-  }
 
   /**
    * Editing a branch you are not standing in. The shop_update policy requires
