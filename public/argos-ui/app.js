@@ -2897,7 +2897,7 @@ function branchRow(branch, { title = "", subtitle = "" } = {}) {
   return `<button class="settings-row" type="button" data-action="${current ? "open-settings-page" : "open-branch"}" ${current ? `data-settings-page="workshop-profile"` : `data-branch-id="${branch.id}"`}>
       <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
       <span class="settings-row-text"><strong>${escapeHTML(title || branch.name)}</strong><small>${escapeHTML(subtitle || branchSubtitle(branch))}</small></span>
-      ${current ? `<span class="settings-row-value branch-current-badge">Current</span>` : ""}
+      ${current ? `<span class="settings-row-value branch-current-badge">Selected</span>` : ""}
       <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
     </button>`;
 }
@@ -3287,7 +3287,7 @@ async function switchBranch(branchId, { toast = "", fromButton = false } = {}) {
 
 function openBranchSwitcherSheet() {
   const rows = state.branches.map((branch) => `<button class="profile-menu-button" type="button" ${branch.isCurrent ? "disabled" : `data-action="pick-branch" data-branch-id="${branch.id}"`}>
-      ${icon("building")}<span>${escapeHTML(branch.name)}</span>${branch.isCurrent ? `<span class="settings-row-value branch-current-badge">Current</span>` : icon("arrow")}
+      ${icon("building")}<span>${escapeHTML(branch.name)}</span>${branch.isCurrent ? `<span class="settings-row-value branch-current-badge">Selected</span>` : icon("arrow")}
     </button>`).join("");
   openSheet(`<div class="sheet-head"><div><span class="field-label">${escapeHTML(state.business?.name || "This business")}</span><h2>Switch branch</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">

@@ -6022,7 +6022,7 @@ a.profile-recall:focus-visible {
   .profile-menu-button > .branch-current-badge {
     grid-column: 2;
     justify-self: start;
-    margin-top: 2px;
+    margin-top: -6px;
   }
 }
 
@@ -6063,10 +6063,10 @@ a.profile-recall:focus-visible {
 }
 
 /* The switcher and the "which branch are you at" prompt both list branches as
-   profile-menu buttons; the current one is inert, so it should not read as a
-   target. */
+   profile-menu buttons; the current one is inert, but dimming it made it read
+   as unavailable rather than as the one already chosen -- the accent badge
+   carries that meaning on its own. */
 .profile-menu-button[disabled] {
-  opacity: 0.6;
   cursor: default;
 }
 
