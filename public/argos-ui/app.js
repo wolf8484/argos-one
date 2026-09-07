@@ -3289,7 +3289,7 @@ function openBranchSwitcherSheet() {
   const rows = state.branches.map((branch) => `<button class="profile-menu-button" type="button" ${branch.isCurrent ? "disabled" : `data-action="pick-branch" data-branch-id="${branch.id}"`}>
       ${icon("building")}<span>${escapeHTML(branch.name)}</span>${branch.isCurrent ? `<span class="settings-row-value branch-current-badge">Selected</span>` : icon("arrow")}
     </button>`).join("");
-  openSheet(`<div class="sheet-head"><div><span class="field-label">${escapeHTML(state.business?.name || "This business")}</span><h2>Switch branch</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><h2>Switch branch</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
       <p class="sheet-intro">Only this device switches. Anywhere else you're signed in stays where it is.</p>
       <nav class="profile-menu" aria-label="Branches">${rows}</nav>
