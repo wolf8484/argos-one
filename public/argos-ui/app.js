@@ -2892,6 +2892,15 @@ function registrationIdRow(code) {
     </div>`;
 }
 
+// Profile sheets list their facts as the same read-only row the branch details
+// block uses: label left, value right, one per line.
+function profileFactRow(title, value) {
+  return `<div class="settings-row">
+      <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
+      <span class="settings-row-value">${escapeHTML(value)}</span>
+    </div>`;
+}
+
 function branchRow(branch, { title = "", subtitle = "" } = {}) {
   const current = branch.isCurrent;
   return `<button class="settings-row" type="button" data-action="${current ? "open-settings-page" : "open-branch"}" ${current ? `data-settings-page="workshop-profile"` : `data-branch-id="${branch.id}"`}>
@@ -3427,20 +3436,21 @@ function openTechnicianDetailsSheet(technician) {
   // actually joined has a login to place.
   const showBranchMembership = isMultiBranch() && isOrgOwner() && Boolean(technician.profile_id);
   const canAct = canActOnTechnician(technician);
-  const fact = (value, hasValue) => hasValue ? `<strong>${escapeHTML(value)}</strong>` : `<span class="profile-fact-empty">${escapeHTML(value)}</span>`;
   openSheet(`<div class="sheet-head"><div><h2>Staff details</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Staff member">
         <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
         <div><h3>${escapeHTML(technicianName(technician))}</h3><p>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}</p></div>
       </section>
-      <div class="profile-facts" aria-label="Staff contact and work details">
-        <div class="profile-fact"><span class="field-label">Mobile</span>${fact(formatPhoneForDisplay(contact.phone) || "Not set", Boolean(contact.phone))}</div>
-        <div class="profile-fact"><span class="field-label">Email</span>${fact(contact.email || "Not set", Boolean(contact.email))}</div>
-        <button class="profile-fact" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
-          <span class="field-label">Assigned bay</span>${fact(bay?.name || NO_BAY, Boolean(bay))}
+      <div class="settings-list profile-detail-list" role="group" aria-label="Staff contact and work details">
+        ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
+        ${profileFactRow("Email", contact.email || "Not set")}
+        <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
+          <span class="settings-row-text"><strong>Assigned bay</strong></span>
+          <span class="settings-row-value">${escapeHTML(bay?.name || NO_BAY)}</span>
+          <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
         </button>
-        <div class="profile-fact"><span class="field-label">Employee ID</span>${fact(technician.employee_id || "Not registered", Boolean(technician.employee_id))}</div>
+        ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
       </div>
       ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
       ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="field-label">Also works at</span><p class="muted">Loading branches...</p></section>` : ""}
@@ -4943,7 +4953,7 @@ function calendarSheet() {
 // would be noise. For an owner or admin the pair is the honest answer to "did
 // I leave the front counter tablet on the wrong branch": Registered at is the
 // hardware, Viewing is them, and an override never outlives their own login.
-function branchFacts(factRow) {
+function branchFacts() {
   if (!isMultiBranch()) return "";
   const registeredId = state.device?.registeredShopId;
   const registered = registeredId
@@ -4954,10 +4964,10 @@ function branchFacts(factRow) {
   // "Branch" it has always been -- telling a technician their phone is "not set
   // up" invites them to go fix something that is not broken.
   if (!canSwitchBranch()) {
-    return registered ? factRow("Registered at", registered) : factRow("Branch", viewing);
+    return registered ? profileFactRow("Registered at", registered) : profileFactRow("Branch", viewing);
   }
-  return `${factRow("Registered at", registered || "Not set up")}
-    ${factRow("Viewing", viewing)}`;
+  return `${profileFactRow("Registered at", registered || "Not set up")}
+    ${profileFactRow("Viewing", viewing)}`;
 }
 
 function technicianProfileSheet() {
@@ -4966,12 +4976,6 @@ function technicianProfileSheet() {
   const role = currentTechnician()?.role || state.profile?.role || "technician";
   const employeeId = currentTechnician()?.employee_id;
   const bayLabel = assignedBayLabel();
-  // Same read-only row the branch details block uses: label left, value
-  // right, one per line.
-  const factRow = (title, value) => `<div class="settings-row">
-      <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
-      <span class="settings-row-value">${escapeHTML(value)}</span>
-    </div>`;
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
       <section class="technician-profile" aria-label="Signed-in technician">
@@ -4979,9 +4983,9 @@ function technicianProfileSheet() {
         <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
       </section>
       <div class="settings-list profile-detail-list" role="group" aria-label="Technician work details">
-        ${branchFacts(factRow)}
-        ${factRow("Assigned bay", bayLabel)}
-        ${factRow("Employee ID", employeeId || "Not registered")}
+        ${branchFacts()}
+        ${profileFactRow("Assigned bay", bayLabel)}
+        ${profileFactRow("Employee ID", employeeId || "Not registered")}
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         ${canSwitchBranch() ? `<button class="profile-menu-button" type="button" data-action="open-branch-switcher">${icon("building")}<span>Switch branch</span>${icon("arrow")}</button>` : ""}

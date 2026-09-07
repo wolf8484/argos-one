@@ -4106,39 +4106,9 @@ button.settings-toggle-row {
   margin-top: 4px;
 }
 
-.profile-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin-top: 1px;
-  background: var(--line);
-}
-
-.profile-fact {
-  min-width: 0;
-  padding: 16px;
-  background: var(--surface-2);
-}
-
-.profile-fact strong {
-  display: block;
-  margin-top: 6px;
-  font-size: var(--copy-size);
-  line-height: 20px;
-}
-
-.profile-fact-empty {
-  display: block;
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: var(--copy-size);
-  font-weight: 400;
-  line-height: 20px;
-}
-
-/* The signed-in profile lists the same facts as read-only settings rows, so
-   it needs the hairline that separates it from the avatar block above -- the
-   two share a surface. */
+/* The profile sheets list their facts as read-only settings rows, so they need
+   the hairline that separates the list from the avatar block above -- the two
+   share a surface. */
 .profile-detail-list {
   border-top: 1px solid #2d2d2d;
 }
@@ -4147,21 +4117,6 @@ button.settings-toggle-row {
    margin the two would run together. */
 .profile-detail-list + .profile-menu {
   border-top: 1px solid #2d2d2d;
-}
-
-/* A fact that is actually a quick-edit control (e.g. assigned bay) rather
-   than plain read-only text -- same tile, but tappable. */
-button.profile-fact {
-  display: block;
-  width: 100%;
-  border: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-button.profile-fact:hover,
-button.profile-fact:focus-visible {
-  background: var(--surface-3);
 }
 
 .profile-menu {
