@@ -3453,7 +3453,7 @@ function openTechnicianDetailsSheet(technician) {
         ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
       </div>
       ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
-      ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="field-label">Also works at</span><p class="muted">Loading branches...</p></section>` : ""}
+      ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Also works at</span><p class="muted">Loading branches...</p></section>` : ""}
       ${canAct ? `<div class="profile-note-actions">
         <button class="danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
         <button class="primary-button" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
@@ -3472,7 +3472,7 @@ async function loadTechnicianBranches(technicianId) {
     ({ branches } = await apiRequest(`/api/shop/technicians/${technicianId}/branches`));
   } catch (_) {
     const failed = target();
-    if (failed) failed.innerHTML = `<span class="field-label">Also works at</span><p class="muted">Couldn't load their other branches.</p>`;
+    if (failed) failed.innerHTML = `<span class="settings-group-label">Also works at</span><p class="muted">Couldn't load their other branches.</p>`;
     return;
   }
   const host = target();
@@ -3481,9 +3481,9 @@ async function loadTechnicianBranches(technicianId) {
   const others = branches.filter((branch) => !branch.isCurrent);
   const available = state.branches.filter((branch) => !branches.some((held) => held.shopId === branch.id));
   const list = others.length
-    ? `<ul class="branch-membership-list">${others.map((branch) => `<li><span>${escapeHTML(branch.name)}</span><span class="settings-row-value">${branch.active ? roleLabel(branch.role) : "Inactive"}</span></li>`).join("")}</ul>`
+    ? `<div class="settings-list">${others.map((branch) => profileFactRow(branch.name, branch.active ? roleLabel(branch.role) : "Inactive")).join("")}</div>`
     : `<p class="muted">Only this branch.</p>`;
-  host.innerHTML = `<span class="field-label">Also works at</span>
+  host.innerHTML = `<span class="settings-group-label">Also works at</span>
     ${list}
     ${available.length ? `<button class="text-button" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to another branch</button>` : ""}`;
 }

@@ -6002,31 +6002,15 @@ a.profile-recall:focus-visible {
   border-top: 1px solid var(--line);
 }
 
+/* The section's own 8px gap already sits under the label, so trim the label's
+   margin to land on the 16px the details block uses. */
+.branch-membership .settings-group-label {
+  margin-bottom: 8px;
+}
+
 .branch-membership .text-button {
   align-self: flex-start;
   min-height: 52px;
-}
-
-.branch-membership-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.branch-membership-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface-2);
-  font-size: var(--caps-size);
-  line-height: 18px;
 }
 
 /* The switcher and the "which branch are you at" prompt both list branches as
