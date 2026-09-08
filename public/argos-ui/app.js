@@ -1384,12 +1384,11 @@ function scrollToNextView() {
   window.scrollTo({ top: Math.min(window.scrollY + step, maximumScroll), behavior: "smooth" });
 }
 
-function taskHeader({ context, title, backAction = "", backLabel = "Go back", status = "", statusType = "saved", deleteAction = "" }) {
+function taskHeader({ context, title, backAction = "", backLabel = "Go back", status = "", statusType = "saved" }) {
   return `<header class="task-header${backAction ? " has-back" : ""}">
     ${backAction ? `<button class="task-back" type="button" data-action="${backAction}" aria-label="${backLabel}">${icon("back")}</button>` : ""}
     <div class="task-header-copy${context ? "" : " is-title-only"}"><h1>${title}</h1>${context ? `<span class="task-context">${context}</span>` : ""}</div>
     ${status ? `<span class="task-status is-${statusType}">${statusType === "saved" ? '<span class="task-status-dot" aria-hidden="true"></span>' : ""}${status}</span>` : ""}
-    ${deleteAction ? `<button class="icon-button" type="button" data-action="${deleteAction}" aria-label="Delete this job">${icon("trash")}</button>` : ""}
   </header>`;
 }
 
@@ -1414,14 +1413,13 @@ function workflowJourney(currentStep) {
 }
 
 function vehicleTaskHeader() {
-  return taskHeader({ context: "New job", title: "Vehicle details", deleteAction: canEditCurrentJob() ? "delete-job" : "" });
+  return taskHeader({ context: "New job", title: "Vehicle details" });
 }
 
 function problemTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -1438,7 +1436,6 @@ function resultsTaskHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -1446,7 +1443,6 @@ function repairRecordHeader() {
   return taskHeader({
     context: vehicleMoustache(),
     title: vehicleName(),
-    deleteAction: canEditCurrentJob() ? "delete-job" : "",
   });
 }
 
@@ -4049,7 +4045,7 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
-      <div class="action-dock vehicle-actions span-2"><button class="secondary-button full" type="button" data-action="cancel-job">${icon("trash")} Cancel job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
+      <div class="action-dock vehicle-actions span-2"><button class="danger-outline-button full" type="button" data-action="cancel-job">${icon("trash")} Delete job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
   if (!canEditCurrentJob()) lockWorkflowForm();
@@ -5364,7 +5360,6 @@ document.addEventListener("click", (event) => {
     // (not just the first and last tabs) -- it picks whichever confirmation
     // actually matches the current step's state: the repair step has a
     // draft worth flushing before archiving, the earlier steps don't.
-    if (action === "delete-job") return state.route === "repair" ? deleteRepairConfirmation() : cancelJobConfirmation();
     if (action === "restore-job") return restoreJob();
     if (action === "delete-forever") return deleteForeverConfirmation();
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);

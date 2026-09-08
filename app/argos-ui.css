@@ -2462,7 +2462,7 @@ button.journey-item:active {
 }
 
 .action-dock.vehicle-actions {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .action-dock.resolved-actions {
