@@ -4018,7 +4018,7 @@ function renderVehicle() {
     ${assignmentBar()}
     <form id="vehicle-form" class="form-grid two-col">
       <div class="form-field span-2 vin-field">
-        <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN</label></div>
+        <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN <span class="optional-label">(optional)</span></label></div>
         <div class="vin-row">
           <input class="input" id="vin" name="vin" maxlength="17" value="${state.vehicle.vin}" placeholder="17-character VIN" autocapitalize="characters" />
           <button class="icon-button vin-camera" type="button" data-action="scan-vin" aria-label="Open camera to scan VIN">${icon("scan")}</button>
