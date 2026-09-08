@@ -2701,51 +2701,59 @@ function renderNetworkSharingPage() {
   const branchSharing = Boolean(state.shop?.sharesWithBranches);
   const canManageBranches = ["owner", "admin"].includes(myBranchRole());
   return `${settingsPageHeader("Repair sharing", "Network")}
-    <p class="settings-detail-intro">Share your verified repairs and see what others have already fixed.</p>
+    <span class="settings-group-label">Network</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Share your verified repairs and see what others have already fixed. <button class="text-link" type="button" data-action="explain-repair-sharing">Learn more</button></p>
     <div class="settings-list">
-      ${settingsSwitchRow({ title: "Share with the network", description: loaded ? "Anonymised patterns, shared with every workshop" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
-      ${isMultiBranch() ? settingsSwitchRow({ title: "Share across your branches", description: canManageBranches ? "Named repairs, shared with your own sites only" : "Only an Owner or Admin can change this", checked: branchSharing, action: "toggle-branch-sharing", disabled: !loaded || !canManageBranches }) : ""}
+      ${settingsSwitchRow({ title: "Share with other shops", description: loaded ? "Anonymised patterns, shared with every workshop" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
     </div>
-    ${isMultiBranch() && branchSharing ? branchShareTargetsSection(canManageBranches) : ""}
-    <span class="settings-group-label settings-group-label-spaced">What's shared</span>
-    <ul class="settings-check-list">
-      <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
-      <li>${icon("check")}<span>Vehicle (make, model, year, engine)</span></li>
-      <li>${icon("check")}<span>Symptoms and causes</span></li>
-      <li>${icon("check")}<span>Parts and repairs performed</span></li>
-      <li>${icon("check")}<span>Success outcome</span></li>
-    </ul>
-    <span class="settings-group-label settings-group-label-spaced">What's not shared</span>
-    <ul class="settings-check-list is-muted">
-      <li>${icon("close")}<span>Customer, VIN or technician details</span></li>
-    </ul>
-    ${isMultiBranch() ? `<p class="settings-detail-note">Repairs shared across your branches keep the branch name, so your team can see which site did the work. Nothing leaves your business.</p>` : ""}`;
+    ${isMultiBranch() ? `<span class="settings-group-label settings-group-label-spaced">Branches</span>
+    <div class="settings-list">
+      ${settingsSwitchRow({ title: "Share across your branches", description: canManageBranches ? "Named repairs, shared with your own sites only" : "Only an Owner or Admin can change this", checked: branchSharing, action: "toggle-branch-sharing", disabled: !loaded || !canManageBranches })}
+      ${branchSharing ? branchShareTargetRows(canManageBranches) : ""}
+    </div>` : ""}`;
 }
 
-// Rendered only when the branch switch is on. Turning that switch on shares
-// with every branch; these are for taking individual ones back out, which is
-// why they are opt-out rows rather than an empty list waiting to be filled.
-function branchShareTargetsSection(canManage) {
+// Rendered only when the branch switch is on, directly under it in the same
+// list -- turning that switch on shares with every branch, and these rows are
+// for taking individual ones back out again.
+function branchShareTargetRows(canManage) {
   const targets = state.branchShareTargets;
   if (targets === null) {
-    return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
-      <div class="settings-list"><div class="settings-row"><span class="settings-row-text"><strong>Loading branches…</strong></span></div></div>`;
+    return `<div class="settings-row"><span class="settings-row-text"><strong>Loading branches…</strong></span></div>`;
   }
   if (!targets.length) {
-    return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
-      <p class="settings-detail-note">This is your only branch, so there is nothing to share with yet.</p>`;
+    return `<div class="settings-row"><span class="settings-row-text"><small>This is your only branch, so there is nothing to share with yet.</small></span></div>`;
   }
-  return `<span class="settings-group-label settings-group-label-spaced">Branches</span>
-    <div class="settings-list">
-      ${targets.map((target) => settingsSwitchRow({
-        title: target.name,
-        description: target.shared ? "Can see this branch's repairs" : "Not sharing with this branch",
-        checked: target.shared,
-        action: "toggle-branch-share-target",
-        disabled: !canManage,
-        extraAttrs: ` data-target-shop-id="${escapeHTML(target.id)}"`,
-      })).join("")}
-    </div>`;
+  return targets.map((target) => settingsSwitchRow({
+    title: target.name,
+    description: target.shared ? "Can see this branch's repairs" : "Not sharing with this branch",
+    checked: target.shared,
+    action: "toggle-branch-share-target",
+    disabled: !canManage,
+    extraAttrs: ` data-target-shop-id="${escapeHTML(target.id)}"`,
+  })).join("");
+}
+
+// Everything the page used to state up front and again at the bottom. It is
+// onboarding copy: true, worth reading once, and not worth the vertical space
+// on every visit after that.
+function repairSharingExplainerSheet() {
+  openSheet(`<div class="sheet-head"><div><h2>About repair sharing</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <span class="settings-group-label">What's shared</span>
+      <ul class="settings-check-list">
+        <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
+        <li>${icon("check")}<span>Vehicle (make, model, year, engine)</span></li>
+        <li>${icon("check")}<span>Symptoms and causes</span></li>
+        <li>${icon("check")}<span>Parts and repairs performed</span></li>
+        <li>${icon("check")}<span>Success outcome</span></li>
+      </ul>
+      <span class="settings-group-label settings-group-label-spaced">What's not shared</span>
+      <ul class="settings-check-list is-muted">
+        <li>${icon("close")}<span>Customer or staff details and vehicle's VIN number</span></li>
+      </ul>
+      ${isMultiBranch() ? `<p class="settings-detail-note">Repairs shared across your branches keep the branch name, so your team can see which site did the work. Nothing leaves your business.</p>` : ""}
+    </div>`, { ariaLabel: "About repair sharing" });
 }
 
 // Fetched when the page opens rather than with the account payload: it is one
@@ -5409,6 +5417,7 @@ document.addEventListener("click", (event) => {
     }
     if (action === "add-branch") return openAddBranchModal();
     if (action === "explain-branches") return branchesExplainerSheet();
+    if (action === "explain-repair-sharing") return repairSharingExplainerSheet();
     if (action === "delete-branch") {
       return deleteBranchConfirmation(state.branches.find((item) => item.id === actionButton.dataset.branchId));
     }
