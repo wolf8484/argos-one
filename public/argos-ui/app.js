@@ -710,9 +710,10 @@ function vehiclePayload() {
       drivetrain: state.vehicle.drivetrain || null,
       transmission: state.vehicle.transmission || null,
     },
-    // A new job lands in the shop's default bay when one is configured under
-    // Settings -> Profile & management -> Job defaults.
-    bay: defaultBayName(),
+    // Both are chosen on the Vehicle step before the job is saved, and default
+    // to the shop's bay and whoever is signed in when nobody picks.
+    bay: draftBayName(),
+    technicianId: draftTechnicianId(),
   };
 }
 
@@ -861,6 +862,61 @@ function assignedBayLabel() {
   const bayId = currentTechnician()?.default_bay_id;
   if (!bayId) return NO_BAY;
   return state.bays.find((bay) => bay.id === bayId)?.name || NO_BAY;
+}
+
+// Bay and owner for a job that hasn't been saved yet. undefined means nobody
+// has touched the picker, so the shop default (and whoever is signed in)
+// still applies -- both of which may only arrive once the roster loads, so
+// they're resolved at render time rather than frozen when the draft starts.
+function draftBayName() {
+  return state.jobBay === undefined ? defaultBayName() : state.jobBay;
+}
+
+function draftTechnicianId() {
+  return state.jobTechnicianId === undefined ? (currentTechnician()?.id || null) : state.jobTechnicianId;
+}
+
+function draftTechnicianName() {
+  const technician = state.technicians.find((candidate) => candidate.id === draftTechnicianId());
+  return technician ? technicianName(technician) : "Unassigned";
+}
+
+// Vehicle step only, and only before the job exists: booking a car in is when
+// the bay and the owner are actually known. Once the job is saved these are
+// no longer editable here -- assignmentBar() takes over and reassignment is a
+// deliberate action elsewhere.
+function jobSetupBar() {
+  if (isPersistedJobId(state.currentJobId)) return "";
+  return `<button class="assignment-bar job-setup-bar" type="button" data-action="edit-job-setup">
+    <span class="assignment-bar-label">${icon("building")}<span><strong>${escapeHTML(draftBayName() || NO_BAY)}</strong> &middot; <strong>${escapeHTML(draftTechnicianName())}</strong></span></span>
+    <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+  </button>`;
+}
+
+function openJobSetupSheet() {
+  const bayRows = state.bays.filter((bay) => bay.active).map((bay) => `<button class="settings-row" type="button" data-action="set-draft-bay" data-choice-id="${escapeHTML(bay.name)}">
+      <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
+      ${draftBayName() === bay.name ? `<span class="settings-row-value">Selected</span>` : ""}
+    </button>`).join("");
+  const staff = state.technicians.filter((technician) => technician.active && technician.profile_id);
+  const staffRows = staff.map((technician) => `<button class="settings-row" type="button" data-action="set-draft-technician" data-choice-id="${technician.id}">
+      <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
+      ${draftTechnicianId() === technician.id ? `<span class="settings-row-value">Selected</span>` : ""}
+    </button>`).join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>Bay &amp; technician</h2>
+    <span class="settings-group-label">Bay</span>
+    <div class="settings-list">
+      <button class="settings-row" type="button" data-action="set-draft-bay" data-choice-id="">
+        <span class="settings-row-text"><strong>${NO_BAY}</strong></span>
+        ${draftBayName() ? "" : `<span class="settings-row-value">Selected</span>`}
+      </button>
+      ${bayRows}
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">Technician</span>
+    <div class="settings-list">${staffRows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
+    <div class="profile-note-actions"><button class="primary-button full" type="button" data-action="close-sheet">Done</button></div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Bay and technician" });
 }
 
 function defaultBayName() {
@@ -1146,6 +1202,8 @@ function resetJobDraft() {
     vin: "", year: "", make: "", model: "", mileage: "", customerName: "",
     customerFirstName: "", customerLastName: "", customerPhone: "", customerEmail: "",
   };
+  state.jobBay = undefined;
+  state.jobTechnicianId = undefined;
   state.complaint = "";
   state.notes = "";
   state.dtcs = [];
@@ -4002,6 +4060,7 @@ function renderVehicle() {
     ${vehicleTaskHeader()}
     ${workflowJourney(1)}
     ${assignmentBar()}
+    ${jobSetupBar()}
     <form id="vehicle-form" class="form-grid two-col">
       <div class="form-field span-2 vin-field">
         <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN <span class="optional-label">(optional)</span></label></div>
@@ -5520,6 +5579,17 @@ document.addEventListener("click", (event) => {
           showToast("Assigned bay updated");
         })
         .catch((error) => showToast(error.message || "Could not update that bay"));
+    }
+    if (action === "edit-job-setup") return openJobSetupSheet();
+    if (action === "set-draft-bay") {
+      state.jobBay = actionButton.dataset.choiceId || null;
+      render();
+      return openJobSetupSheet();
+    }
+    if (action === "set-draft-technician") {
+      state.jobTechnicianId = actionButton.dataset.choiceId || null;
+      render();
+      return openJobSetupSheet();
     }
     if (action === "pick-default-bay") {
       return openDefaultPickerModal({

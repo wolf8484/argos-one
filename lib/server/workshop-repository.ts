@@ -57,8 +57,16 @@ export class WorkshopRepository {
     customer: { fullName: string; phone?: string | null; email?: string | null }
     vehicle: Record<string, unknown>
     bay?: string | null
+    technicianId?: string | null
   }) {
     const shopId = this.profile.shop_id
+    let assignedTo = this.profile.id
+    if (input.technicianId) {
+      assignedTo = await this.resolveAssignableProfileId(input.technicianId)
+      if (this.profile.role === 'technician' && assignedTo !== this.profile.id) {
+        throw new ApiError('You can only book jobs in under your own name.', 403)
+      }
+    }
     const { data: customer, error: customerError } = await this.supabase.from('customers').insert({
       shop_id: shopId,
       full_name: input.customer.fullName,
@@ -93,7 +101,7 @@ export class WorkshopRepository {
       customer_id: customer.id,
       stage: 'assessment',
       bay: input.bay || null,
-      assigned_to: this.profile.id,
+      assigned_to: assignedTo,
       created_by: this.profile.id,
     }).select().single()
     if (jobError) throw jobError
@@ -161,6 +169,25 @@ export class WorkshopRepository {
     return this.getJob(jobId)
   }
 
+  // Turns a roster id into the profiles.id that jobs.assigned_to stores, and
+  // is the one place the rules for "can this person own a job" live: they must
+  // be on this shop's roster, active, and have a linked login (rows imported
+  // without one can't own anything). Who may do the assigning is a separate
+  // question, and each caller answers it -- booking a job in and handing an
+  // existing one off don't have the same rule.
+  private async resolveAssignableProfileId(technicianId: string) {
+    const { data: technician, error } = await this.supabase
+      .from('shop_technicians')
+      .select('profile_id,active')
+      .eq('id', technicianId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (error) throw error
+    if (!technician.active) throw new ApiError('This staff member is inactive.', 400)
+    if (!technician.profile_id) throw new ApiError("This staff member doesn't have a linked login, so a job can't be assigned to them.", 400)
+    return technician.profile_id as string
+  }
+
   // A technician may only hand off a job that's currently theirs; owners and
   // managers can reassign anything. The target must be an active staff
   // member with a linked login (assigned_to is a profiles.id, and staff
@@ -177,17 +204,9 @@ export class WorkshopRepository {
       throw new ApiError('You can only reassign jobs assigned to you.', 403)
     }
 
-    const { data: technician, error: technicianError } = await this.supabase
-      .from('shop_technicians')
-      .select('profile_id,active')
-      .eq('id', technicianId)
-      .eq('shop_id', this.profile.shop_id)
-      .single()
-    if (technicianError) throw technicianError
-    if (!technician.active) throw new ApiError('This staff member is inactive.', 400)
-    if (!technician.profile_id) throw new ApiError("This staff member doesn't have a linked login, so a job can't be assigned to them.", 400)
+    const profileId = await this.resolveAssignableProfileId(technicianId)
 
-    const { error } = await this.supabase.from('jobs').update({ assigned_to: technician.profile_id }).eq('id', jobId)
+    const { error } = await this.supabase.from('jobs').update({ assigned_to: profileId }).eq('id', jobId)
     if (error) throw error
     return this.getJob(jobId)
   }

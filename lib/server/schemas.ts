@@ -34,6 +34,7 @@ export const createJobSchema = z.object({
   customer: customerSchema,
   vehicle: vehicleSchema,
   bay: z.string().trim().max(30).nullable().optional(),
+  technicianId: z.string().uuid().nullable().optional(),
 })
 
 export const assessmentSchema = z.object({
