@@ -899,6 +899,16 @@ main:focus {
   -webkit-line-clamp: 2;
 }
 
+@media (max-width: 500px) {
+  .job-vehicle {
+    font-size: 18px;
+  }
+
+  .job-issue {
+    font-size: 14px;
+  }
+}
+
 .code-chip,
 .data-chip {
   display: inline-flex;
