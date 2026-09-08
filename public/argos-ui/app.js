@@ -2727,7 +2727,7 @@ function branchShareTargetRows(canManage) {
   }
   return targets.map((target) => settingsSwitchRow({
     title: target.name,
-    description: target.shared ? "Can see this branch's repairs" : "Not sharing with this branch",
+    description: target.shared ? "Sharing with this branch" : "Not sharing with this branch",
     checked: target.shared,
     action: "toggle-branch-share-target",
     disabled: !canManage,
@@ -2742,19 +2742,27 @@ function branchShareTargetRows(canManage) {
 function repairSharingExplainerSheet() {
   openSheet(`<div class="sheet-head"><div><h2>About repair sharing</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
-      <span class="settings-group-label">What's shared</span>
+      <p class="settings-detail-intro">Two separate switches. One sends your repairs out to other workshops with nothing that names you. The other keeps them inside your business, with the branch that did the work attached. You can have either, both, or neither.</p>
+
+      <span class="settings-group-label">Share with other shops</span>
+      <p class="settings-detail-intro settings-detail-intro-tight">Your repairs go out anonymised. Nothing names your workshop, and you never see your own back. Other shops see the fault and the fix, plus how many workshops have hit the same thing. It works both ways: switch this off and you stop seeing theirs too.</p>
+
+      <span class="settings-group-label settings-group-label-spaced">Share across your branches</span>
+      <p class="settings-detail-intro settings-detail-intro-tight">Repairs stay inside your business and keep the branch name, so your team can see which site did the work. You choose which branches take part.</p>
+
+      <span class="settings-group-label settings-group-label-spaced">Either way, a shared repair carries</span>
       <ul class="settings-check-list">
         <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
-        <li>${icon("check")}<span>Vehicle (make, model, year, engine)</span></li>
+        <li>${icon("check")}<span>Vehicle (make, model, trim)</span></li>
         <li>${icon("check")}<span>Symptoms and causes</span></li>
         <li>${icon("check")}<span>Parts and repairs performed</span></li>
         <li>${icon("check")}<span>Success outcome</span></li>
       </ul>
-      <span class="settings-group-label settings-group-label-spaced">What's not shared</span>
+
+      <span class="settings-group-label settings-group-label-spaced">Never shared, either way</span>
       <ul class="settings-check-list is-muted">
         <li>${icon("close")}<span>Customer or staff details and vehicle's VIN number</span></li>
       </ul>
-      ${isMultiBranch() ? `<p class="settings-detail-note">Repairs shared across your branches keep the branch name, so your team can see which site did the work. Nothing leaves your business.</p>` : ""}
     </div>`, { ariaLabel: "About repair sharing" });
 }
 
