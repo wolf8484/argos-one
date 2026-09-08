@@ -631,8 +631,7 @@ async function loadBackendData() {
     // than leaving a signed-in shell that can reach nothing -- the login
     // screen explains why they landed there.
     if (error.code === "no_workshop") {
-      await apiRequest("/api/auth/signout", { method: "POST" }).catch(() => {});
-      window.location.href = "/login?revoked=1";
+      await endRevokedSession();
       return;
     }
     state.backendStatus = error.status === 401 ? "signed-out" : "offline";
@@ -1195,6 +1194,28 @@ function updateNavUpdateBadge() {
 // Compares the commit baked into this loaded bundle against a live check --
 // a stale open tab/installed PWA never re-fetches app.js on its own, so this
 // is the only way it learns a newer deploy exists.
+async function endRevokedSession() {
+  await apiRequest("/api/auth/signout", { method: "POST" }).catch(() => {});
+  window.location.href = "/login?revoked=1";
+}
+
+// The same ending, reached without waiting for the tab to try something.
+// Nothing here is a security boundary -- current_shop_id() already refuses a
+// revoked login every single request -- it only stops a shell that can reach
+// nothing from sitting there showing numbers that are no longer theirs.
+let accessCheckInFlight = false;
+function checkAccess() {
+  if (accessCheckInFlight || state.backendStatus !== "connected") return;
+  accessCheckInFlight = true;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  fetch("/api/me/access", { cache: "no-store", signal: controller.signal })
+    .then((response) => (response.status === 403 ? response.json() : null))
+    .then((data) => { if (data && data.code === "no_workshop") endRevokedSession(); })
+    .catch(() => {})
+    .finally(() => { clearTimeout(timeout); accessCheckInFlight = false; });
+}
+
 function checkForUpdate() {
   if (updateCheckInFlight) return;
   updateCheckInFlight = true;
@@ -6211,9 +6232,9 @@ showBootOverlay();
 loadBackendData();
 
 checkForUpdate();
-setInterval(checkForUpdate, 30 * 1000);
+setInterval(() => { checkForUpdate(); checkAccess(); }, 30 * 1000);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") checkForUpdate();
+  if (document.visibilityState === "visible") { checkForUpdate(); checkAccess(); }
 });
-window.addEventListener("focus", checkForUpdate);
+window.addEventListener("focus", () => { checkForUpdate(); checkAccess(); });
 })();

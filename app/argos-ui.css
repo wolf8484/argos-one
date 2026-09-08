@@ -3352,14 +3352,7 @@ button.settings-toggle-row {
   color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.5;
-  margin-top: 16px;
-}
-
-/* The trade-off with margin-top-only spacing: the first thing in a sheet or
-   page now needs its own top gap zeroed, or it inherits one meant for
-   separating it from a previous element that, being first, it doesn't have. */
-.settings-detail-intro:first-child {
-  margin-top: 0;
+  margin-bottom: 16px;
 }
 
 .settings-check-list {
