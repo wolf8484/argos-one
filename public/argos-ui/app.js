@@ -2702,8 +2702,8 @@ function renderNetworkSharingPage() {
   const branchSharing = Boolean(state.shop?.sharesWithBranches);
   const canManageBranches = ["owner", "admin"].includes(myBranchRole());
   return `${settingsPageHeader("Repair sharing", "Network")}
+    <p class="settings-detail-intro">Share your repair solutions and see what others have already solved. <button class="text-link" type="button" data-action="explain-repair-sharing">Learn more</button></p>
     <span class="settings-group-label">Network</span>
-    <p class="settings-detail-intro settings-detail-intro-tight">Share your verified repairs and see what others have already fixed. <button class="text-link" type="button" data-action="explain-repair-sharing">Learn more</button></p>
     <div class="settings-list">
       ${settingsSwitchRow({ title: "Share with other shops", description: loaded ? "Anonymised patterns, shared with every workshop" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
     </div>
@@ -2744,7 +2744,7 @@ function repairSharingExplainerSheet() {
     <div class="sheet-body">
       <p class="settings-detail-intro">Two separate switches. One sends your repairs out to other workshops with nothing that names you. The other keeps them inside your business, with the branch that did the work attached. You can have either, both, or neither.</p>
 
-      <span class="settings-group-label">Share with other shops</span>
+      <span class="settings-group-label settings-group-label-spaced">Share with other shops</span>
       <p class="settings-detail-intro settings-detail-intro-tight">Your repairs go out anonymised. Nothing names your workshop, and you never see your own back. Other shops see the fault and the fix, plus how many workshops have hit the same thing. It works both ways: switch this off and you stop seeing theirs too.</p>
 
       <span class="settings-group-label settings-group-label-spaced">Share across your branches</span>
