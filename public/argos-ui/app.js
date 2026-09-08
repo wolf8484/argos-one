@@ -2646,7 +2646,6 @@ function renderSettingsHome() {
         description: isTechnicianRole ? "See who's on the team" : "Add, edit or remove staff",
         value: String(activeTechnicians), page: "technicians",
       }),
-      !isTechnicianRole ? settingsRow({ iconName: "settings", title: "Job defaults", description: "Default bay, technician and assignment", page: "job-defaults" }) : "",
     ].join(""))}
 
     ${settingsGroup("Preferences", [
@@ -3045,7 +3044,18 @@ function renderBaysPage() {
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`).join("")
     : `<div class="settings-row"><span class="settings-row-text"><strong>No bays yet</strong><small>Add the bays this workshop runs.</small></span></div>`;
+  const defaultBay = state.bays.find((bay) => bay.id === state.shop?.default_bay_id);
   return `${settingsPageHeader("Manage bays", "Profile & management")}
+    <span class="settings-group-label">Defaults</span>
+    <div class="settings-list">
+      <button class="settings-row" type="button" data-action="pick-default-bay">
+        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-text"><strong>Default bay</strong><small>New jobs start in this bay</small></span>
+        <span class="settings-row-value">${escapeHTML(defaultBay?.name || "Not set")}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>
+    </div>
+    <span class="settings-group-label settings-group-label-spaced">All bays</span>
     <div class="settings-list">${rows}</div>
     <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
 }
@@ -3121,29 +3131,6 @@ function renderUnitsPage() {
       ${settingsRow({ title: "Weight", description: "Parts and vehicle weight", value: isMetric ? "kg" : "lb" })}
     </div>
     ${unwiredBanner("Job odometer readings switch units immediately -- that's the only numeric measurement Argos One tracks today. The rest of this preview shows which unit each category would use; length, temperature, pressure, torque and weight aren't recorded as fields anywhere yet.")}`;
-}
-
-function renderJobDefaultsPage() {
-  const shop = state.shop || {};
-  const defaultBay = state.bays.find((bay) => bay.id === shop.default_bay_id);
-  const defaultTechnician = state.technicians.find((technician) => technician.id === shop.default_technician_id);
-  return `${settingsPageHeader("Job defaults", "Profile & management")}
-    <p class="settings-detail-intro">These defaults are applied when a new job is created.</p>
-    <div class="settings-list">
-      <button class="settings-row" type="button" data-action="pick-default-bay">
-        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
-        <span class="settings-row-text"><strong>Default bay</strong><small>New jobs start in this bay</small></span>
-        <span class="settings-row-value">${escapeHTML(defaultBay?.name || "Not set")}</span>
-        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>
-      <button class="settings-row" type="button" data-action="pick-default-technician">
-        <span class="settings-row-icon" aria-hidden="true">${icon("wrench")}</span>
-        <span class="settings-row-text"><strong>Default technician</strong><small>Suggested owner for new jobs</small></span>
-        <span class="settings-row-value">${escapeHTML(defaultTechnician ? technicianName(defaultTechnician) : "Not set")}</span>
-        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-      </button>
-    </div>
-    ${defaultTechnician ? unwiredBanner("The default bay is applied to every new job. The default technician is recorded here but isn't assigned automatically yet -- jobs are still picked up manually.") : ""}`;
 }
 
 function renderNotificationsPage() {
@@ -3377,7 +3364,7 @@ function openBayModal(bay) {
       <div class="profile-note-actions">
         ${isNew
           ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
-          : `<button class="danger-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
+          : `<button class="danger-outline-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
         <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
     </form>
@@ -3960,7 +3947,6 @@ const SETTINGS_PAGES = {
   bays: renderBaysPage,
   technicians: renderTechniciansPage,
   units: renderUnitsPage,
-  "job-defaults": renderJobDefaultsPage,
   notifications: renderNotificationsPage,
   storage: renderStoragePage,
   privacy: renderPrivacyPage,
@@ -3983,7 +3969,7 @@ function updateMicPermissionLabel() {
 
 // "technicians" is deliberately not in this set: a technician can open the
 // staff directory, just as a read-only list -- see renderTechniciansPage.
-const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays", "job-defaults"]);
+const LOCKED_SETTINGS_PAGES = new Set(["workshop-profile", "branches", "branch-detail", "bays"]);
 
 function renderSettings() {
   if (!state.settingsPage) return renderSettingsHome();
@@ -5543,17 +5529,8 @@ document.addEventListener("click", (event) => {
         action: "set-default-bay",
       });
     }
-    if (action === "pick-default-technician") {
-      return openDefaultPickerModal({
-        title: "Default technician",
-        options: state.technicians.map((technician) => ({ id: technician.id, label: technicianName(technician) })),
-        selectedId: state.shop?.default_technician_id || "",
-        action: "set-default-technician",
-      });
-    }
-    if (action === "set-default-bay" || action === "set-default-technician") {
-      const key = action === "set-default-bay" ? "defaultBayId" : "defaultTechnicianId";
-      return saveShopFields({ [key]: actionButton.dataset.choiceId || null })
+    if (action === "set-default-bay") {
+      return saveShopFields({ defaultBayId: actionButton.dataset.choiceId || null })
         .then(() => { closeSheet(); render(); })
         .catch((error) => showToast(error.message || "Could not save that default"));
     }
