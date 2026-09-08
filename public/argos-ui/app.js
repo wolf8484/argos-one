@@ -898,11 +898,22 @@ function openJobSetupSheet() {
       <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
       ${draftBayName() === bay.name ? `<span class="settings-row-value">Selected</span>` : ""}
     </button>`).join("");
-  const staff = state.technicians.filter((technician) => technician.active && technician.profile_id);
-  const staffRows = staff.map((technician) => `<button class="settings-row" type="button" data-action="set-draft-technician" data-choice-id="${technician.id}">
+  // Invited staff are listed but not selectable: a job's owner is a profiles
+  // row, which doesn't exist until they redeem their code. Hiding them made
+  // the picker look broken -- saying "Pending" explains itself.
+  const staff = state.technicians.filter((technician) => technician.active);
+  const staffRows = staff.map((technician) => {
+    if (!technician.profile_id) {
+      return `<div class="settings-row is-disabled">
+        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>Hasn't signed up yet</small></span>
+        <span class="settings-row-value is-invited">Pending</span>
+      </div>`;
+    }
+    return `<button class="settings-row" type="button" data-action="set-draft-technician" data-choice-id="${technician.id}">
       <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
       ${draftTechnicianId() === technician.id ? `<span class="settings-row-value">Selected</span>` : ""}
-    </button>`).join("");
+    </button>`;
+  }).join("");
   openSheet(`<div class="confirmation-content">
     <h2>Bay &amp; technician</h2>
     <span class="settings-group-label">Bay</span>
@@ -913,6 +924,7 @@ function openJobSetupSheet() {
       </button>
       ${bayRows}
     </div>
+    ${bayRows ? "" : `<p class="settings-detail-note">This branch has no bays yet — add them under Bay management.</p>`}
     <span class="settings-group-label settings-group-label-spaced">Technician</span>
     <div class="settings-list">${staffRows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
     <div class="profile-note-actions"><button class="primary-button full" type="button" data-action="close-sheet">Done</button></div>
@@ -3143,7 +3155,7 @@ function renderTechniciansPage() {
     ? state.technicians.map((technician) => {
       const pending = isInvitePending(technician);
       const expired = pending && inviteExpired(technicianInvite(technician));
-      const status = pending ? (expired ? "Expired" : "Invited") : technician.active ? "Active" : "Inactive";
+      const status = pending ? (expired ? "Expired" : "Pending") : technician.active ? "Active" : "Inactive";
       const text = `<span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
         <span class="settings-row-value${pending ? (expired ? " is-expired" : " is-invited") : ""}">${status}</span>`;
       if (isTechnicianRole) {
@@ -3458,9 +3470,8 @@ function openInviteStaffModal() {
       <div class="customer-details-grid">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" placeholder="First name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role">${roleOptionsHtml("technician")}</select>${icon("down")}</span></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Mobile <span class="muted">(optional)</span></span></div><input class="input" name="mobile" type="tel" inputmode="tel" placeholder="0412 345 678" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" placeholder="name@email.com" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptionsHtml(null)}</select>${icon("down")}</span></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Mobile</span></div><input class="input" name="mobile" type="tel" inputmode="tel" placeholder="0412 345 678" maxlength="${PHONE_INPUT_MAX_LENGTH}" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="optional-label">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" placeholder="name@email.com" /></label>
       </div>
       <div class="profile-note-actions">
         <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
@@ -3916,9 +3927,9 @@ async function saveStaffInvite(form) {
     email: String(data.get("email") || "").trim() || null,
     mobile: String(data.get("mobile") || "").trim() || null,
     role: String(data.get("role") || "technician"),
-    defaultBayId: String(data.get("defaultBayId") || "") || null,
   };
   if (!payload.firstName) return showToast("Give the staff member a first name");
+  if (!payload.mobile) return showToast("Enter their mobile number");
   const submitButton = form.querySelector('button[type="submit"]');
   if (submitButton?.disabled) return;
   setButtonLoading(submitButton, "Creating…");
@@ -5433,7 +5444,7 @@ document.addEventListener("click", (event) => {
       window.scrollTo({ top: 0, behavior: "instant" });
       // The roster is only fetched at app boot and after actions taken from
       // this same tab, so a staff member joining from their own device (the
-      // whole point of the invite flow) would otherwise stay "Invited" here
+      // whole point of the invite flow) would otherwise stay "Pending" here
       // until the admin reloads or logs out and back in.
       if (page === "technicians") loadWorkshopRoster().then(render);
       return;

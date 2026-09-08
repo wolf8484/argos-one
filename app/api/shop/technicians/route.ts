@@ -26,8 +26,8 @@ export async function POST(request: Request) {
   if ('error' in auth) return auth.error
   try {
     const input = inviteStaffSchema.parse(await request.json())
-    const mobile = input.mobile?.trim() ? normalizePhone(input.mobile) : null
-    if (input.mobile?.trim() && !mobile) {
+    const mobile = normalizePhone(input.mobile)
+    if (!mobile) {
       return NextResponse.json({ error: "That mobile number doesn't look right. Use a format like 0412 345 678." }, { status: 400 })
     }
     const repository = new WorkshopRepository(auth.supabase, auth.profile)

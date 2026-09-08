@@ -173,12 +173,14 @@ export const updateTechnicianSchema = technicianSchema.partial()
 // What an owner/admin fills in to invite someone. Contact details are both
 // optional: the admin may only know the person's name, and the invitee
 // supplies whichever identifier they actually have when they join.
+// The mobile is the invitee's identifier at redemption time, so it's the one
+// contact detail an invite can't do without. A bay is deliberately absent:
+// nothing can be assigned to a roster row that has no login yet.
 export const inviteStaffSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
   email: z.string().trim().email().max(160).nullable().optional(),
-  mobile: z.string().trim().max(30).nullable().optional(),
+  mobile: z.string().trim().min(1).max(30),
   role: z.enum(['admin', 'technician']).default('technician'),
-  defaultBayId: z.string().uuid().nullable().optional(),
 })
 
 export const inviteLookupSchema = z.object({

@@ -1273,13 +1273,11 @@ export class WorkshopRepository {
     email?: string | null
     mobile?: string | null
     role?: string
-    defaultBayId?: string | null
   }) {
     this.assertCanManageStaff()
     const technician = await this.addTechnician({
       firstName: input.firstName,
       role: input.role ?? 'technician',
-      defaultBayId: input.defaultBayId ?? null,
     })
     const invite = await this.issueInvite(technician.id, {
       email: input.email ?? null,
