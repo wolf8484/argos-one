@@ -2604,9 +2604,10 @@ function unwiredBanner(text) {
   return `<div class="settings-unwired-banner">${icon("info")}<span>${escapeHTML(text)}</span></div>`;
 }
 
-function settingsSwitchRow({ title, description = "", checked, action = "", disabled = false, extraAttrs = "" }) {
+function settingsSwitchRow({ title, description = "", checked, action = "", disabled = false, extraAttrs = "", iconName = "" }) {
   const switchHtml = `<span class="switch${checked ? " is-on" : ""}${disabled ? " is-disabled" : ""}" role="switch" aria-checked="${checked ? "true" : "false"}"><span class="switch-thumb"></span></span>`;
-  const inner = `<span class="settings-row-text"><strong>${escapeHTML(title)}</strong>${description ? `<small>${escapeHTML(description)}</small>` : ""}</span>${switchHtml}`;
+  const iconHtml = iconName ? `<span class="settings-row-icon" aria-hidden="true">${icon(iconName)}</span>` : "";
+  const inner = `${iconHtml}<span class="settings-row-text"><strong>${escapeHTML(title)}</strong>${description ? `<small>${escapeHTML(description)}</small>` : ""}</span>${switchHtml}`;
   if (disabled || !action) return `<div class="settings-row settings-toggle-row${disabled ? " is-disabled" : ""}">${inner}</div>`;
   return `<button class="settings-row settings-toggle-row" type="button" data-action="${action}" aria-pressed="${checked ? "true" : "false"}"${extraAttrs}>${inner}</button>`;
 }
@@ -2731,6 +2732,7 @@ function branchShareTargetRows(canManage) {
     action: "toggle-branch-share-target",
     disabled: !canManage,
     extraAttrs: ` data-target-shop-id="${escapeHTML(target.id)}"`,
+    iconName: "building",
   })).join("");
 }
 
