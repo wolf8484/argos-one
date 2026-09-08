@@ -2702,12 +2702,13 @@ function renderNetworkSharingPage() {
   const branchSharing = Boolean(state.shop?.sharesWithBranches);
   const canManageBranches = ["owner", "admin"].includes(myBranchRole());
   return `${settingsPageHeader("Repair sharing", "Network")}
-    <p class="settings-detail-intro">Share your repair solutions and see what others have already solved. <button class="text-link" type="button" data-action="explain-repair-sharing">Learn more</button></p>
     <span class="settings-group-label">Network</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Share your repair solutions across the network and see what other shops have already solved. <button class="text-link" type="button" data-action="explain-network-sharing">Learn more</button></p>
     <div class="settings-list">
       ${settingsSwitchRow({ title: "Share with other shops", description: loaded ? "Anonymised patterns, shared with every workshop" : "Checking your workshop's setting…", checked: sharing, action: "toggle-network-sharing", disabled: !loaded })}
     </div>
     ${isMultiBranch() ? `<span class="settings-group-label settings-group-label-spaced">Branches</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Share repairs between your own sites, with the branch that did the work attached. <button class="text-link" type="button" data-action="explain-branch-sharing">Learn more</button></p>
     <div class="settings-list">
       ${settingsSwitchRow({ title: "Share across your branches", description: canManageBranches ? "Named repairs, shared with your own sites only" : "Only an Owner or Admin can change this", checked: branchSharing, action: "toggle-branch-sharing", disabled: !loaded || !canManageBranches })}
       ${branchSharing ? branchShareTargetRows(canManageBranches) : ""}
@@ -2739,31 +2740,42 @@ function branchShareTargetRows(canManage) {
 // Everything the page used to state up front and again at the bottom. It is
 // onboarding copy: true, worth reading once, and not worth the vertical space
 // on every visit after that.
-function repairSharingExplainerSheet() {
-  openSheet(`<div class="sheet-head"><div><h2>About repair sharing</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+// Both switches send the same fields; only the audience differs. Repeated in
+// each sheet rather than cross-referenced, because a workshop with no
+// branches only ever opens one of them.
+function sharedFieldsSection() {
+  return `<span class="settings-group-label settings-group-label-spaced">What a shared repair carries</span>
+    <ul class="settings-check-list">
+      <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
+      <li>${icon("check")}<span>Vehicle (make, model, trim)</span></li>
+      <li>${icon("check")}<span>Symptoms and causes</span></li>
+      <li>${icon("check")}<span>Parts and repairs performed</span></li>
+      <li>${icon("check")}<span>Success outcome</span></li>
+    </ul>
+
+    <span class="settings-group-label settings-group-label-spaced">Never shared</span>
+    <ul class="settings-check-list is-muted">
+      <li>${icon("close")}<span>Customer or staff details and vehicle's VIN number</span></li>
+    </ul>`;
+}
+
+function networkSharingExplainerSheet() {
+  openSheet(`<div class="sheet-head"><div><h2>About the network</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
-      <p class="settings-detail-intro">Two separate switches. One sends your repairs out to other workshops with nothing that names you. The other keeps them inside your business, with the branch that did the work attached. You can have either, both, or neither.</p>
+      <p class="settings-detail-intro">Your repairs go out to every other Argos One workshop, anonymised. Nothing names your workshop, and you never see your own back.</p>
+      <p class="settings-detail-intro">They see the fault and the fix, plus how many workshops have hit the same thing. You see theirs the same way.</p>
+      <p class="settings-detail-intro">It works both ways: switch this off and you stop seeing the network too.</p>
+      ${sharedFieldsSection()}
+    </div>`, { ariaLabel: "About the network" });
+}
 
-      <span class="settings-group-label settings-group-label-spaced">Share with other shops</span>
-      <p class="settings-detail-intro settings-detail-intro-tight">Your repairs go out anonymised. Nothing names your workshop, and you never see your own back. Other shops see the fault and the fix, plus how many workshops have hit the same thing. It works both ways: switch this off and you stop seeing theirs too.</p>
-
-      <span class="settings-group-label settings-group-label-spaced">Share across your branches</span>
-      <p class="settings-detail-intro settings-detail-intro-tight">Repairs stay inside your business and keep the branch name, so your team can see which site did the work. You choose which branches take part.</p>
-
-      <span class="settings-group-label settings-group-label-spaced">Either way, a shared repair carries</span>
-      <ul class="settings-check-list">
-        <li>${icon("check")}<span>Verified repairs (no customer details)</span></li>
-        <li>${icon("check")}<span>Vehicle (make, model, trim)</span></li>
-        <li>${icon("check")}<span>Symptoms and causes</span></li>
-        <li>${icon("check")}<span>Parts and repairs performed</span></li>
-        <li>${icon("check")}<span>Success outcome</span></li>
-      </ul>
-
-      <span class="settings-group-label settings-group-label-spaced">Never shared, either way</span>
-      <ul class="settings-check-list is-muted">
-        <li>${icon("close")}<span>Customer or staff details and vehicle's VIN number</span></li>
-      </ul>
-    </div>`, { ariaLabel: "About repair sharing" });
+function branchSharingExplainerSheet() {
+  openSheet(`<div class="sheet-head"><div><h2>About branch sharing</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body">
+      <p class="settings-detail-intro">Repairs stay inside your business. Nothing here reaches the network, and turning this on says nothing about the switch above it.</p>
+      <p class="settings-detail-intro">Each repair keeps the branch that did the work, so your team can see which site fixed it. You choose which branches take part.</p>
+      ${sharedFieldsSection()}
+    </div>`, { ariaLabel: "About branch sharing" });
 }
 
 // Fetched when the page opens rather than with the account payload: it is one
@@ -5427,7 +5439,8 @@ document.addEventListener("click", (event) => {
     }
     if (action === "add-branch") return openAddBranchModal();
     if (action === "explain-branches") return branchesExplainerSheet();
-    if (action === "explain-repair-sharing") return repairSharingExplainerSheet();
+    if (action === "explain-network-sharing") return networkSharingExplainerSheet();
+    if (action === "explain-branch-sharing") return branchSharingExplainerSheet();
     if (action === "delete-branch") {
       return deleteBranchConfirmation(state.branches.find((item) => item.id === actionButton.dataset.branchId));
     }
