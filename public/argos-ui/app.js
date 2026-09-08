@@ -2614,14 +2614,12 @@ function settingsSwitchRow({ title, description = "", checked, action = "", disa
 
 function renderSettingsHome() {
   const theme = document.documentElement.dataset.theme || "dark";
-  // Until the shop has loaded, show no value rather than defaulting to "Off":
-  // this row reports whether repair data leaves the workshop, and stating
-  // "Off" while it is actually on misrepresents a privacy setting.
-  // Reports both switches, because one row now stands for two of them and
-  // "On" would be ambiguous about which. Blank until the shop has loaded:
-  // stating "Off" while sharing is actually on misrepresents a privacy setting.
+  // On if either switch is on -- which of the two is a question for the page
+  // itself, and naming them here made the value long enough to wrap the row.
+  // Blank until the shop has loaded: stating "Off" while sharing is actually
+  // on misrepresents a privacy setting.
   const sharingLabel = state.shop
-    ? [state.shop.sharesRepairData ? "Network" : "", state.shop.sharesWithBranches && isMultiBranch() ? "Branches" : ""].filter(Boolean).join(" & ") || "Off"
+    ? (state.shop.sharesRepairData || (state.shop.sharesWithBranches && isMultiBranch()) ? "On" : "Off")
     : "";
   const unitsLabel = unitSystem() === "metric" ? "Metric" : "Imperial";
   const activeBays = state.bays.filter((bay) => bay.active).length;
@@ -2631,7 +2629,7 @@ function renderSettingsHome() {
     <div class="page-header"><div><h1>Settings</h1></div></div>
 
     ${settingsGroup("Appearance", [
-      settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Reduced glare in the workshop" : "Maximum clarity in daylight", value: theme === "dark" ? "Dark" : "Light", page: "theme" }),
+      settingsRow({ iconName: "sun", title: "Theme", description: theme === "dark" ? "Dark mode selected" : "Light mode selected", page: "theme" }),
     ].join(""))}
 
     ${settingsGroup("Network", [
