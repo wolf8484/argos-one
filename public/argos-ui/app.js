@@ -898,21 +898,13 @@ function openJobSetupSheet() {
       <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
       ${draftBayName() === bay.name ? `<span class="settings-row-value">Selected</span>` : ""}
     </button>`).join("");
-  // Invited staff are listed but not selectable: a job's owner is a profiles
-  // row, which doesn't exist until they redeem their code. Hiding them made
-  // the picker look broken -- saying "Pending" explains itself.
-  const staff = state.technicians.filter((technician) => technician.active);
-  const staffRows = staff.map((technician) => {
-    if (!technician.profile_id) {
-      return `<div class="settings-row is-disabled">
-        <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>Hasn't signed up yet</small></span>
-        <span class="settings-row-value is-invited">Pending</span>
-      </div>`;
-    }
-    return `<button class="settings-row" type="button" data-action="set-draft-technician" data-choice-id="${technician.id}">
-      <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
-      ${draftTechnicianId() === technician.id ? `<span class="settings-row-value">Selected</span>` : ""}
-    </button>`;
+  // Invited staff are listed but disabled: a job's owner is a profiles row,
+  // which doesn't exist until they redeem their code. Hiding them made the
+  // picker look broken -- saying "Pending" explains itself.
+  const staffOptions = state.technicians.filter((technician) => technician.active).map((technician) => {
+    const pending = isInvitePending(technician);
+    const label = `${technicianName(technician)}${pending ? " (Pending)" : ""}`;
+    return `<option value="${technician.id}"${pending ? " disabled" : ""}${draftTechnicianId() === technician.id ? " selected" : ""}>${escapeHTML(label)}</option>`;
   }).join("");
   openSheet(`<div class="confirmation-content">
     <h2>Bay &amp; technician</h2>
@@ -926,7 +918,7 @@ function openJobSetupSheet() {
     </div>
     ${bayRows ? "" : `<p class="settings-detail-note">This branch has no bays yet — add them under Bay management.</p>`}
     <span class="settings-group-label settings-group-label-spaced">Technician</span>
-    <div class="settings-list">${staffRows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
+    <label class="form-field"><span class="select-control"><select class="select" id="draft-technician" aria-label="Technician">${staffOptions || `<option value="">No staff available yet</option>`}</select>${icon("down")}</span></label>
     <div class="profile-note-actions"><button class="primary-button full" type="button" data-action="close-sheet">Done</button></div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Bay and technician" });
 }
@@ -2905,7 +2897,7 @@ function technicianInvite(technician) {
 }
 
 function isInvitePending(technician) {
-  return !technician.profile_id && Boolean(technicianInvite(technician));
+  return !technician.profile_id;
 }
 
 // Real contact details for an already-joined technician live on their linked
@@ -5597,11 +5589,6 @@ document.addEventListener("click", (event) => {
       render();
       return openJobSetupSheet();
     }
-    if (action === "set-draft-technician") {
-      state.jobTechnicianId = actionButton.dataset.choiceId || null;
-      render();
-      return openJobSetupSheet();
-    }
     if (action === "pick-default-bay") {
       return openDefaultPickerModal({
         title: "Default bay",
@@ -6082,6 +6069,13 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches("#draft-technician")) {
+    state.jobTechnicianId = event.target.value || null;
+    // No sheet refresh: the select already shows the new value. Only the bar
+    // behind it needs redrawing.
+    render();
+    return;
+  }
   if (event.target.matches("#repair-case-select")) {
     const detail = state.activeProfile;
     const row = detail && (detail.repairGroups || []).find((r) => (r.system || "other") === activeRepairCase.system && r.label === activeRepairCase.label);
