@@ -1578,7 +1578,7 @@ button.journey-item {
 
 .journey-item.is-skipped {
   background: var(--surface-2);
-  color: var(--journey-incomplete);
+  color: var(--muted-strong);
 }
 
 button.journey-item:active {
@@ -2024,10 +2024,9 @@ button.journey-item:active {
 .textarea {
   display: block;
   width: 100%;
-  border: 0;
   border-radius: 0;
   background: var(--surface-2);
-  color: var(--text);
+  color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.35;
   appearance: none;
@@ -3350,7 +3349,7 @@ button.settings-toggle-row {
 }
 
 .settings-detail-intro {
-  color: var(--muted-strong);
+  color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.5;
   margin-top: 16px;
@@ -3376,7 +3375,7 @@ button.settings-toggle-row {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  color: var(--text);
+  color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.4;
 }
@@ -6139,7 +6138,7 @@ a.profile-recall:focus-visible {
 .settings-detail-note {
   margin: 16px 0 0;
   color: var(--muted);
-  font-size: var(--caps-size);
+  font-size: var(--copy-size);
   line-height: 1.5;
 }
 
