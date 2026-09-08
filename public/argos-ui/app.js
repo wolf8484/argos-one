@@ -848,7 +848,6 @@ function assignmentBar() {
   const assigneeName = job.assigneeName || "Unassigned";
   return `<div class="assignment-bar${editable ? "" : " is-locked"}">
     <span class="assignment-bar-label">${editable ? "" : icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></span>
-    ${editable ? `<button class="text-button assignment-reassign-button" type="button" data-action="reassign-job">Reassign</button>` : ""}
   </div>`;
 }
 
@@ -1374,7 +1373,7 @@ function scrollJourneyIntoView() {
   const currentStep = Number(current.dataset.journeyStep);
   if (currentStep <= 1) journey.scrollLeft = 0;
   else if (currentStep === 2) journey.scrollLeft = current.offsetLeft;
-  else journey.scrollLeft = current.offsetLeft + current.offsetWidth - journey.clientWidth;
+  else journey.scrollLeft = journey.scrollWidth;
 }
 
 function scrollToNextView() {
@@ -4024,7 +4023,7 @@ function renderVehicle() {
           <input class="input" id="vin" name="vin" maxlength="17" value="${state.vehicle.vin}" placeholder="17-character VIN" autocapitalize="characters" />
           <button class="icon-button vin-camera" type="button" data-action="scan-vin" aria-label="Open camera to scan VIN">${icon("scan")}</button>
         </div>
-        <span class="helper">Use the camera on the dash or door-jamb plate. Vehicle data can still be corrected after decoding.</span>
+        <span class="helper">Use camera to scan VIN or enter manually.</span>
       </div>
       <div class="vehicle-details-grid span-2">
         <label class="form-field"><div class="field-header"><span class="field-label">Year</span></div><input class="input" name="year" inputmode="numeric" value="${state.vehicle.year}" placeholder="e.g. 2010" required /></label>
@@ -4034,7 +4033,7 @@ function renderVehicle() {
         ${specFieldHtml("drivetrain", "Drivetrain", "e.g. AWD", ["FWD", "RWD", "AWD", "4WD"])}
         ${specFieldHtml("engine", "Engine", "e.g. 2.0L turbo", null)}
         ${specFieldHtml("transmission", "Transmission", "e.g. 7-speed DSG", null)}
-        <label class="form-field"><div class="field-header"><span class="field-label">Registration <span class="muted">(optional)</span></span></div><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Registration <span class="optional-label">(optional)</span></span></div><input class="input" name="registration" autocapitalize="characters" value="${escapeHTML(state.vehicle.registration)}" placeholder="e.g. 1ABC234" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Current mileage</span></div><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="secondary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add new vehicle</button></div>
       </div>
@@ -4042,8 +4041,8 @@ function renderVehicle() {
       <div class="customer-details-grid span-2">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="customerLastName" autocomplete="family-name" value="${escapeHTML(lastName)}" placeholder="Last name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="optional-label">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="optional-label">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
       <div class="action-dock vehicle-actions span-2"><button class="danger-outline-button full" type="button" data-action="cancel-job">${icon("trash")} Delete job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
