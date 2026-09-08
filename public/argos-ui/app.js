@@ -4049,7 +4049,7 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="muted">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
-      <div class="action-dock vehicle-actions span-2"><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
+      <div class="action-dock vehicle-actions span-2"><button class="secondary-button full" type="button" data-action="cancel-job">${icon("trash")} Cancel job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
   if (!canEditCurrentJob()) lockWorkflowForm();

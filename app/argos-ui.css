@@ -1347,10 +1347,14 @@ main:focus {
   width: min(100%, 820px);
 }
 
+/* Sits at the top of a screen exactly where .page-header does on the pages
+   that use that instead, so it carries the same 8px above and the same 40px
+   below (16px padding + 24px margin there). */
 .task-header {
   display: grid;
   align-items: center;
   gap: 16px;
+  padding-top: 8px;
   margin-bottom: 40px;
 }
 
