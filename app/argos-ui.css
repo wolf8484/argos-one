@@ -3210,7 +3210,7 @@ button.settings-row:focus-visible {
 .settings-row-value {
   flex: none;
   color: var(--muted);
-  font-size: var(--caps-size);
+  font-size: var(--copy-size);
   line-height: 18px;
   white-space: nowrap;
 }
