@@ -4145,6 +4145,12 @@ button.settings-toggle-row {
   height: 20px;
 }
 
+/* The third column is sized for the chevron, so the row that carries a badge
+   instead has to let that column size itself or the word is clipped. */
+.profile-menu-button:has(.branch-current-badge) {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+}
+
 .profile-menu-button:active {
   background: var(--surface-3);
 }
