@@ -3209,8 +3209,7 @@ button.settings-row:focus-visible {
 
 .settings-row-value {
   flex: none;
-  color: var(--muted);
-  font-size: var(--copy-size);
+  font-size: var(--caps-size);
   line-height: 18px;
   white-space: nowrap;
 }
@@ -3547,7 +3546,7 @@ button.settings-toggle-row {
 }
 
 .sheet-body {
-  padding: 20px var(--gutter) 32px;
+  padding: 16px var(--gutter) 16px;
 }
 
 /* While a sheet's own save is in flight, nothing inside it (or the backdrop
@@ -5966,7 +5965,7 @@ a.profile-recall:focus-visible {
 /* Reads as a state, not an action -- the branch you are already in is the one
    row in the directory that cannot be switched to. */
 .settings-row-value.branch-current-badge {
-  color: var(--accent);
+  color: #c3c3c3;
 }
 
 /* On a narrow phone the switcher's third column is only as wide as the chevron
@@ -6154,7 +6153,7 @@ a.profile-recall:focus-visible {
 /* The intro sentence sits between a group label and the button under it, so
    it needs less air than an intro that opens a page. */
 .settings-detail-intro.settings-detail-intro-tight {
-  margin: 0 0 16px;
+  margin: 0 0 24px;
 }
 
 .settings-page-action.settings-page-action-tight {
