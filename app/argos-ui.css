@@ -3580,6 +3580,8 @@ button.settings-toggle-row {
   gap: 16px;
   padding: 16px var(--gutter) 0px;
   background: var(--sheet-surface);
+  touch-action: none;
+  cursor: grab;
 }
 
 .sheet-head::before {

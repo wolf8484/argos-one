@@ -12,6 +12,7 @@ const dictationDock = document.querySelector("#dictation-dock");
 let sheetCloseTimer;
 let sheetReturnFocus = null;
 let lockedScrollY = null;
+let sheetDrag = null;
 let activeDictationButton = null;
 let activeDictationTarget = null;
 let dictationDockHideTimer;
@@ -4697,6 +4698,38 @@ function closeSheet() {
   }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240);
 }
 
+// The sheet-head's handle bar (.sheet-head::before) doubles as a drag-down-
+// to-close grip. Only sheets built from a .sheet-head (i.e. not the centered
+// confirmation modals, which have no handle) support this.
+function beginSheetDrag(event) {
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  if (event.target.closest("button, a, input, select, textarea")) return;
+  const head = event.target.closest(".sheet-head");
+  const sheet = head?.closest(".bottom-sheet");
+  if (!sheet) return;
+  sheetDrag = { sheet, startY: event.clientY, dy: 0, pointerId: event.pointerId };
+  sheet.style.transition = "none";
+  head.setPointerCapture(event.pointerId);
+}
+
+function moveSheetDrag(event) {
+  if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
+  event.preventDefault();
+  const dy = Math.max(0, event.clientY - sheetDrag.startY);
+  sheetDrag.dy = dy;
+  sheetDrag.sheet.style.transform = `translateY(${dy}px)`;
+}
+
+function endSheetDrag(event) {
+  if (!sheetDrag || event.pointerId !== sheetDrag.pointerId) return;
+  const { sheet, dy } = sheetDrag;
+  sheet.style.transition = "";
+  sheet.style.transform = "";
+  sheetDrag = null;
+  const threshold = Math.min(160, sheet.getBoundingClientRect().height * 0.28);
+  if (dy > threshold) closeSheet();
+}
+
 function deleteRepairConfirmation() {
   openSheet(`<div class="confirmation-content">
     <h2>Delete this repair?</h2>
@@ -6278,6 +6311,11 @@ sheetLayer.addEventListener("pointerdown", beginPhotoGesture, { passive: false }
 sheetLayer.addEventListener("pointermove", movePhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointerup", endPhotoGesture, { passive: false });
 sheetLayer.addEventListener("pointercancel", endPhotoGesture, { passive: false });
+
+sheetLayer.addEventListener("pointerdown", beginSheetDrag);
+sheetLayer.addEventListener("pointermove", moveSheetDrag, { passive: false });
+sheetLayer.addEventListener("pointerup", endSheetDrag);
+sheetLayer.addEventListener("pointercancel", endSheetDrag);
 
 
 
