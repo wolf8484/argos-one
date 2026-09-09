@@ -37,6 +37,11 @@
   --content: 960px;
   --copy-size: 16px;
   --caps-size: 14px;
+  /* Shared card gap/radius: control tiles, job cards, and library brand tiles
+     are all built from this pair so a future change to the "card" look
+     updates every grid of them at once. */
+  --card-gap: 12px;
+  --card-radius: 12px;
 }
 
 @property --ai-trace-angle {
@@ -585,9 +590,14 @@ main:focus {
 .control-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
+  gap: var(--card-gap);
   margin: 2px 0 0;
-  background: var(--line);
+}
+
+@media (max-width: 500px) {
+  .control-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .control-tile {
@@ -599,7 +609,7 @@ main:focus {
   min-height: 194px;
   padding: 16px;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
@@ -764,7 +774,7 @@ main:focus {
 
 .job-list {
   display: grid;
-  gap: 12px;
+  gap: var(--card-gap);
 }
 
 .job-card {
@@ -776,7 +786,7 @@ main:focus {
   min-height: 132px;
   padding: 16px;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   transition: background 160ms ease;
@@ -1053,11 +1063,8 @@ main:focus {
 .library-brand-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2px;
+  gap: var(--card-gap);
   margin-bottom: 40px;
-  /* Deliberately no background here: the surface-2 tiles already separate
-     against the page, and a filled grid background would leave the last
-     row's empty cells looking like blank tiles. */
 }
 
 @media (max-width: 500px) {
@@ -1071,6 +1078,7 @@ main:focus {
   color: var(--text);
   text-align: left;
   border: 0;
+  border-radius: var(--card-radius);
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
