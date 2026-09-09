@@ -1773,22 +1773,18 @@ function formatShortDate(value) {
   return date.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// A profile is created the moment a car is booked in, so a model can sit in
-// the library with nothing finished on it yet. Reporting that as a flat
-// "0 repairs" reads as an empty library; saying how many jobs are still open
-// explains the zero instead of just stating it.
-function libraryCountLabel(repairs, openJobs) {
-  if (repairs > 0) return `${repairs} ${repairs === 1 ? "repair" : "repairs"}`;
-  if (openJobs > 0) return `${openJobs} in progress`;
-  return "No repairs yet";
+// Repairs are shown only when there are some. A model reaches the library by
+// having knowledge attached in the first place, so a card with no number means
+// "notes, not repairs" -- never "nothing here". Printing "0 repairs" would say
+// the opposite of what is true.
+function libraryRepairLabel(repairs) {
+  return repairs > 0 ? `<span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>` : "";
 }
 
 function profileCard(profile, { hidden = false } = {}) {
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
     <h2 class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</h2>
-    <span class="library-result-counts">
-      <span>${libraryCountLabel(Number(profile.repair_count || 0), Number(profile.open_job_count || 0))}</span>
-    </span>
+    <span class="library-result-counts">${libraryRepairLabel(Number(profile.repair_count || 0))}</span>
     <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
 }
@@ -1802,7 +1798,7 @@ function profileTrimRows(profiles) {
   return profiles.flatMap((profile) => {
     const trims = Array.isArray(profile.trims) && profile.trims.length
       ? profile.trims
-      : [{ trim: null, vehicle_count: profile.vehicle_count, repair_count: profile.repair_count, open_job_count: profile.open_job_count }];
+      : [{ trim: null, vehicle_count: profile.vehicle_count, repair_count: profile.repair_count }];
     // A bare model name is the right label when it is the only row for that
     // model. Sitting beside a named trim it reads as a duplicate of it, so it
     // says what it actually is -- a car whose trim was never recorded.
@@ -1819,9 +1815,7 @@ function profileTrimCard(profile, entry, untrimmed = false) {
   const label = trimKey ? `${profile.model || ""} ${trimKey}`.trim() : modelName;
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-trim="${escapeHTML(trimKey)}" aria-label="Open the ${escapeHTML(label)} car profile">
     <h2 class="library-result-name">${escapeHTML(label)}${untrimmed ? ` <span class="library-result-qualifier">· Trim not recorded</span>` : ""}</h2>
-    <span class="library-result-counts">
-      <span>${libraryCountLabel(Number(entry.repair_count || 0), Number(entry.open_job_count || 0))}</span>
-    </span>
+    <span class="library-result-counts">${libraryRepairLabel(Number(entry.repair_count || 0))}</span>
     <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
 }
@@ -1837,15 +1831,15 @@ function libraryBrandGroups(profiles) {
   return Array.from(groups.values()).sort((a, b) => a.make.localeCompare(b.make));
 }
 
+// Models only. A second number here was trying to summarise a whole brand's
+// worth of knowledge in one figure and could only mislead; how deep any given
+// model goes is a question for the model list, one level down.
 function libraryBrandTile(group) {
   const modelCount = group.profiles.length;
-  const repairCount = group.profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
-  const openCount = group.profiles.reduce((sum, profile) => sum + Number(profile.open_job_count || 0), 0);
   return `<button class="library-brand-tile" type="button" data-action="open-library-brand" data-brand="${escapeHTML(group.make)}" aria-label="Open ${escapeHTML(group.make)} car profiles">
     <span class="library-brand-name">${escapeHTML(group.make)}</span>
     <span class="library-brand-counts">
       <span class="library-brand-count">${modelCount} ${modelCount === 1 ? "model" : "models"}</span>
-      <span class="library-brand-count">${libraryCountLabel(repairCount, openCount)}</span>
     </span>
   </button>`;
 }
