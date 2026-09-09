@@ -3072,19 +3072,26 @@ button.journey-item:active {
 
 .setting-choice {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
   padding: 16px;
   border-radius: 12px;
+  border: 1px solid transparent;
   background: var(--surface-2);
   color: var(--text);
   font-size: var(--copy-size);
   text-align: left;
 }
 
+/* Theme is the one .setting-choice with a 48px swatch instead of a 20px
+   settings-row-icon -- its column has to stay wide enough to hold it. */
+.setting-choice:has(.theme-swatch) {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+
 .setting-choice.is-selected {
-  box-shadow: inset 0 -4px var(--accent);
+  border-color: var(--accent);
 }
 
 .setting-choice > span:nth-child(2) {
