@@ -1521,7 +1521,7 @@ function renderHome() {
       </button>`
     : `<button type="button" class="control-tile" data-route="new" aria-label="Start a new job">
         <span class="tile-copy"><strong>No active job</strong><small>Ready for the next vehicle</small></span>
-        <span class="tile-icon">${materialIcon("resumeJob")}</span>
+        <span class="tile-icon">${icon("wrench")}</span>
       </button>`;
   app.innerHTML = `<section class="screen dashboard-shell">
     <div class="home-status-block">
