@@ -1428,6 +1428,12 @@ main:focus {
   font-size: clamp(22px, 4vw, 28px);
 }
 
+/* The car profile's header uses the same visual weight as a settings page's
+   h2 (e.g. Theme), not the larger workflow h1 used elsewhere in taskHeader(). */
+.car-profile-shell .task-header-copy h1 {
+  font-size: clamp(20px, 3.4vw, 24px);
+}
+
 .task-header-copy h2 {
   line-height: 28px;
 }
@@ -5863,6 +5869,7 @@ body.dictation-active .toast {
 .known-issues-system-icon svg {
   width: 24px;
   height: 24px;
+  stroke-width: 1.1;
 }
 
 .known-issues-summary-text {
