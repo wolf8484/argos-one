@@ -4121,21 +4121,17 @@ button.settings-toggle-row {
 
 /* The profile sheets list their facts as read-only settings rows, so they need
    the hairline that separates the list from the avatar block above -- the two
-   share a surface. */
+   share a surface. Rounded and clipped as one block, since this is
+   information, not a set of buttons like .profile-menu below it. */
 .profile-detail-list {
   border-top: 1px solid #2d2d2d;
-}
-
-/* The shortcut menu shares the list's surface, so without the menu's old top
-   margin the two would run together. */
-.profile-detail-list + .profile-menu {
-  border-top: 1px solid #2d2d2d;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .profile-menu {
-  background: var(--line);
-  gap: 1px;
   display: grid;
+  gap: 12px;
 }
 
 .profile-menu-button {
@@ -4146,6 +4142,7 @@ button.settings-toggle-row {
   min-height: 56px;
   padding: 0 16px;
   gap: 12px;
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
