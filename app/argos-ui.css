@@ -661,7 +661,7 @@ main:focus {
    heavier at the same weight since their icons carry more visual mass, so
    they're thinned down independently. */
 .control-tile:not(.is-primary) .tile-icon svg {
-  stroke-width: 1.1;
+  stroke-width: 0.85;
 }
 
 .tile-copy {
