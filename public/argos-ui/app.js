@@ -3185,7 +3185,7 @@ function renderUnitsPage() {
       </button>
     </div>
     <span class="settings-group-label settings-group-label-spaced">Units preview</span>
-    <div class="settings-list">
+    <div class="settings-list units-preview-list">
       ${settingsRow({ title: "Length", description: "Vehicle dimensions", value: isMetric ? "mm" : "in" })}
       ${settingsRow({ title: "Temperature", description: "Fluid and ambient readings", value: isMetric ? "°C" : "°F" })}
       ${settingsRow({ title: "Pressure", description: "Tyre and system pressure", value: isMetric ? "kPa" : "psi" })}

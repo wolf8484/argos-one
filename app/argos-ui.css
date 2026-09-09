@@ -3065,9 +3065,9 @@ button.journey-item:active {
 .theme-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
   margin-top: 0;
-  background: transparent;
+  background: none;
 }
 
 .setting-choice {
@@ -3075,8 +3075,8 @@ button.journey-item:active {
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
-  min-height: 132px;
-  padding: 18px;
+  padding: 16px;
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--text);
   font-size: var(--copy-size);
@@ -3365,7 +3365,7 @@ button.settings-toggle-row {
   margin-top: 16px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted-strong);
   font-size: var(--caps-size);
@@ -3377,7 +3377,7 @@ button.settings-toggle-row {
   width: 20px;
   height: 20px;
   margin-top: 1px;
-  color: var(--muted-strong);
+  color: var(--accent);
 }
 
 .settings-detail-intro {
@@ -6194,4 +6194,9 @@ a.profile-recall:focus-visible {
 .settings-page-action.settings-page-action-tight {
   margin-top: 0;
   margin-bottom: 24px;
+}
+
+.units-preview-list {
+  border-radius: 12px;
+  overflow: hidden;
 }
