@@ -2443,7 +2443,8 @@ button.journey-item:active {
 
 .photo-slot {
   display: block;
-  border: 1px dashed var(--line-strong);
+  border: 2px dashed var(--line-strong);
+  border-radius: 12px;
   background: color-mix(in srgb, var(--surface-3) 42%, var(--surface-2));
 }
 
@@ -4632,10 +4633,7 @@ button.settings-toggle-row {
 
 .settings-update-banner-text {
   color: #111111;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 400;
 }
 
 .top-progress-bar {
