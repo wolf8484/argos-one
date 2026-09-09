@@ -3133,7 +3133,7 @@ button.journey-item:active {
   grid-column: 1 / -1;
   color: var(--accent);
   font-size: var(--caps-size);
-  line-height: 1;
+  line-height: 1.5;
   text-transform: uppercase;
 }
 
@@ -3371,7 +3371,6 @@ button.settings-toggle-row {
   gap: 12px;
   margin-top: 16px;
   padding: 16px;
-  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted-strong);
