@@ -1773,12 +1773,21 @@ function formatShortDate(value) {
   return date.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// A profile is created the moment a car is booked in, so a model can sit in
+// the library with nothing finished on it yet. Reporting that as a flat
+// "0 repairs" reads as an empty library; saying how many jobs are still open
+// explains the zero instead of just stating it.
+function libraryCountLabel(repairs, openJobs) {
+  if (repairs > 0) return `${repairs} ${repairs === 1 ? "repair" : "repairs"}`;
+  if (openJobs > 0) return `${openJobs} in progress`;
+  return "No repairs yet";
+}
+
 function profileCard(profile, { hidden = false } = {}) {
-  const repairs = Number(profile.repair_count || 0);
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-library-search="${escapeHTML(profileSearchText(profile))}"${hidden ? " hidden" : ""} aria-label="Open the ${escapeHTML(profileName(profile))} car profile">
     <h2 class="library-result-name">${escapeHTML(profile.model || profileName(profile))}</h2>
     <span class="library-result-counts">
-      <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
+      <span>${libraryCountLabel(Number(profile.repair_count || 0), Number(profile.open_job_count || 0))}</span>
     </span>
     <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
@@ -1793,22 +1802,25 @@ function profileTrimRows(profiles) {
   return profiles.flatMap((profile) => {
     const trims = Array.isArray(profile.trims) && profile.trims.length
       ? profile.trims
-      : [{ trim: null, vehicle_count: profile.vehicle_count, repair_count: profile.repair_count }];
-    return trims.map((entry) => ({ profile, entry }));
+      : [{ trim: null, vehicle_count: profile.vehicle_count, repair_count: profile.repair_count, open_job_count: profile.open_job_count }];
+    // A bare model name is the right label when it is the only row for that
+    // model. Sitting beside a named trim it reads as a duplicate of it, so it
+    // says what it actually is -- a car whose trim was never recorded.
+    return trims.map((entry) => ({ profile, entry, untrimmed: trims.length > 1 && !entry.trim }));
   }).sort((a, b) => {
     const modelCompare = (a.profile.model || "").localeCompare(b.profile.model || "");
     return modelCompare !== 0 ? modelCompare : (b.entry.repair_count || 0) - (a.entry.repair_count || 0);
   });
 }
 
-function profileTrimCard(profile, entry) {
+function profileTrimCard(profile, entry, untrimmed = false) {
   const trimKey = entry.trim || "";
-  const label = trimKey ? `${profile.model || ""} ${trimKey}`.trim() : (profile.model || profileName(profile));
-  const repairs = Number(entry.repair_count || 0);
+  const modelName = profile.model || profileName(profile);
+  const label = trimKey ? `${profile.model || ""} ${trimKey}`.trim() : modelName;
   return `<button class="library-result-card" type="button" data-action="open-car-profile" data-profile-id="${escapeHTML(profile.id)}" data-trim="${escapeHTML(trimKey)}" aria-label="Open the ${escapeHTML(label)} car profile">
-    <h2 class="library-result-name">${escapeHTML(label)}</h2>
+    <h2 class="library-result-name">${escapeHTML(label)}${untrimmed ? ` <span class="library-result-qualifier">· Trim not recorded</span>` : ""}</h2>
     <span class="library-result-counts">
-      <span>${repairs} ${repairs === 1 ? "repair" : "repairs"}</span>
+      <span>${libraryCountLabel(Number(entry.repair_count || 0), Number(entry.open_job_count || 0))}</span>
     </span>
     <span class="library-result-action" aria-hidden="true">${icon("arrow")}</span>
   </button>`;
@@ -1828,11 +1840,12 @@ function libraryBrandGroups(profiles) {
 function libraryBrandTile(group) {
   const modelCount = group.profiles.length;
   const repairCount = group.profiles.reduce((sum, profile) => sum + Number(profile.repair_count || 0), 0);
+  const openCount = group.profiles.reduce((sum, profile) => sum + Number(profile.open_job_count || 0), 0);
   return `<button class="library-brand-tile" type="button" data-action="open-library-brand" data-brand="${escapeHTML(group.make)}" aria-label="Open ${escapeHTML(group.make)} car profiles">
     <span class="library-brand-name">${escapeHTML(group.make)}</span>
     <span class="library-brand-counts">
       <span class="library-brand-count">${modelCount} ${modelCount === 1 ? "model" : "models"}</span>
-      <span class="library-brand-count">${repairCount} ${repairCount === 1 ? "repair" : "repairs"}</span>
+      <span class="library-brand-count">${libraryCountLabel(repairCount, openCount)}</span>
     </span>
   </button>`;
 }
@@ -1924,7 +1937,7 @@ function renderKnowledge() {
     const trimRows = profileTrimRows(activeGroup.profiles);
     app.innerHTML = `<section class="screen workflow-shell">
       ${taskHeader({ context: "Repair library", title: activeGroup.make, backAction: "back-to-library-brands", backLabel: "Back to all brands" })}
-      <div class="library-result-list">${trimRows.map(({ profile, entry }) => profileTrimCard(profile, entry)).join("")}</div>
+      <div class="library-result-list">${trimRows.map(({ profile, entry, untrimmed }) => profileTrimCard(profile, entry, untrimmed)).join("")}</div>
     </section>`;
     return;
   }
@@ -2102,7 +2115,8 @@ function profileNetworkSection(networkGroups) {
   const statusTag = sharing
     ? `<span class="reference-tag reference-tag-active">Active</span>`
     : `<span class="reference-tag">Off</span>`;
-  const heading = `<div class="field-header"><span class="field-label">Network cases${statusTag}</span></div>`;
+  const heading = `<div class="field-header"><span class="field-label">Network cases${statusTag}</span></div>
+    ${sectionSource("Anonymised patterns from other Argos One workshops. No shop is named.")}`;
 
   if (!canRead) {
     return `${heading}<p class="profile-empty">Turn on sharing in Settings to see what other shops found for this trim.</p>`;
@@ -2120,6 +2134,15 @@ function profileNetworkSection(networkGroups) {
         <ul class="profile-repair-list">${group.rows.map(networkPatternRow).join("")}</ul>
       </details>`).join("")}
     </div>`;
+}
+
+// Every block on the car profile is a different source of truth: this shop's
+// own finished work, its typed notes, a sibling branch, an anonymised
+// stranger, or a regulator. Which one a mechanic is reading changes how much
+// weight it carries -- and it was previously only inferable from the heading
+// wording -- so each says so outright, in the same place and the same voice.
+function sectionSource(text) {
+  return `<p class="section-source">${escapeHTML(text)}</p>`;
 }
 
 function branchPatternRow(row) {
@@ -2140,7 +2163,8 @@ function profileBranchSection(branchGroups) {
   const statusTag = sharing
     ? `<span class="reference-tag reference-tag-active">Active</span>`
     : `<span class="reference-tag">Off</span>`;
-  const heading = `<div class="field-header"><span class="field-label">Your other branches${statusTag}</span></div>`;
+  const heading = `<div class="field-header"><span class="field-label">Your other branches${statusTag}</span></div>
+    ${sectionSource("Your own sites, named, in their own words.")}`;
 
   if (!branchGroups.length) {
     return `${heading}<p class="profile-empty">${sharing ? "No repairs from your other branches for this trim yet." : "Turn on branch sharing in Settings to see what your other sites have fixed."}</p>`;
@@ -2270,10 +2294,12 @@ function renderCarProfile() {
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
       <div class="field-header"><span class="field-label">Common symptoms &amp; repairs</span></div>
+      ${sectionSource("This workshop's own completed repairs.")}
       ${visibleGroups.length
         ? profileRepairsSection(visibleGroups)
         : `<p class="profile-empty">No repairs recorded for this trim yet.</p>`}
       <div class="field-header"><span class="field-label">Shop notes</span></div>
+      ${sectionSource("Written by your team at this workshop.")}
       ${visibleNotes.length
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
         : `<p class="profile-empty profile-empty-tight">${notes.length ? "No notes for this trim yet." : "No notes yet. Add the first one below."}</p>`}
@@ -2285,6 +2311,7 @@ function renderCarProfile() {
       ${profileBranchSection(visibleBranches)}
       ${profileNetworkSection(visibleNetwork)}
       <div class="field-header"><span class="field-label">Known issues <span class="optional-label">(all trims)</span></span></div>
+      ${sectionSource("Public reference data, not workshop records. Recalls are manufacturer-issued; complaint counts are US NHTSA data.")}
       <div class="known-issues-list">
         ${knownIssuesAccordion("Recalls", "", profileRecallsSection(recalls), recallsSummaryText(recalls))}
         ${knownIssuesAccordion("Commonly reported", "", profileComplaintTrendsSection(complaintTrends), complaintTrendsCaption(complaintTrends))}

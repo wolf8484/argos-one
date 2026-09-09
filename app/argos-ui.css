@@ -1199,6 +1199,11 @@ main:focus {
   line-height: 24px;
 }
 
+.library-result-qualifier {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .library-result-counts {
   display: flex;
   flex-shrink: 0;
@@ -5749,6 +5754,15 @@ body.dictation-active .toast {
 
 .profile-repair-row-button:hover {
   background: var(--surface-3);
+}
+
+/* Sits directly under a section heading and above that section's content, so
+   the source is read before the content it qualifies rather than after it. */
+.section-source {
+  margin: -8px 0 12px;
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 1.45;
 }
 
 .profile-empty {
