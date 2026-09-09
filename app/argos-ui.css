@@ -978,7 +978,7 @@ main:focus {
   align-items: center;
   min-height: 26px;
   padding: 3px 10px;
-  border-radius: 6px;
+  border-radius: 4px;
   background: #386fd3;
   color: #ffffff;
   font-size: 14px;
@@ -2358,7 +2358,7 @@ button.journey-item:active {
 .filter-button {
   min-height: 52px;
   padding: 0 16px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid #2d2d2d;
   border-radius: var(--card-radius);
   background: 0 0;
   color: var(--muted-strong);
@@ -3180,7 +3180,8 @@ button.journey-item:active {
 .settings-list {
   display: flex;
   flex-direction: column;
-  background: var(--surface-2);
+  gap: 12px;
+  background: transparent;
 }
 
 .settings-row {
@@ -3190,26 +3191,11 @@ button.journey-item:active {
   width: 100%;
   padding: 16px;
   border: 0;
-  border-bottom: 1px solid #2d2d2d;
-  background: transparent;
+  border-radius: 12px;
+  background: var(--surface-2);
   color: var(--text);
   font-size: var(--copy-size);
   text-align: left;
-}
-
-.settings-list > *:last-child {
-  border-bottom: none;
-}
-
-.settings-group .settings-list {
-  gap: 12px;
-  background: transparent;
-}
-
-.settings-group .settings-row {
-  border-radius: 12px;
-  border-bottom: none;
-  background: var(--surface-2);
 }
 
 button.settings-row {
@@ -4174,7 +4160,18 @@ button.settings-toggle-row {
 }
 
 .profile-card .settings-list {
+  gap: 0;
   border-top: 1px solid #2d2d2d;
+}
+
+.profile-card .settings-row {
+  border-radius: 0;
+  border-bottom: 1px solid #2d2d2d;
+  background: transparent;
+}
+
+.profile-card .settings-list > *:last-child {
+  border-bottom: none;
 }
 
 .profile-menu {
@@ -5787,7 +5784,7 @@ body.dictation-active .toast {
   border: 1px solid var(--line-strong);
   letter-spacing: .04em;
   text-transform: uppercase;
-  border-radius: 0;
+  border-radius: 4px;
   align-items: center;
   padding: 2px 6px 1px;
   font-size: 11px;
@@ -6163,9 +6160,9 @@ a.profile-recall:focus-visible {
   color: #111111;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-radius: 2px;
+  border-radius: 4px;
   flex: none;
-  padding: 1px 4px 0px;
+  padding: 2px 6px 0px;
   font-weight: 600;
 }
 
