@@ -3530,19 +3530,21 @@ function openTechnicianDetailsSheet(technician) {
   const canAct = canActOnTechnician(technician);
   openSheet(`<div class="sheet-head"><div><h2>Staff details</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body">
-      <section class="technician-profile" aria-label="Staff member">
-        <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
-        <div><h3>${escapeHTML(technicianName(technician))}</h3><p>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}</p></div>
-      </section>
-      <div class="settings-list profile-detail-list" role="group" aria-label="Staff contact and work details">
-        ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
-        ${profileFactRow("Email", contact.email || "Not set")}
-        <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
-          <span class="settings-row-text"><strong>Assigned bay</strong></span>
-          <span class="settings-row-value">${escapeHTML(bay?.name || NO_BAY)}</span>
-          <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-        </button>
-        ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
+      <div class="profile-card">
+        <section class="technician-profile" aria-label="Staff member">
+          <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
+          <div><h3>${escapeHTML(technicianName(technician))}</h3><p>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}</p></div>
+        </section>
+        <div class="settings-list" role="group" aria-label="Staff contact and work details">
+          ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
+          ${profileFactRow("Email", contact.email || "Not set")}
+          <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
+            <span class="settings-row-text"><strong>Assigned bay</strong></span>
+            <span class="settings-row-value">${escapeHTML(bay?.name || NO_BAY)}</span>
+            <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+          </button>
+          ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
+        </div>
       </div>
       ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
       ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Also works at</span><p class="muted">Loading branches...</p></section>` : ""}
@@ -5070,14 +5072,16 @@ function technicianProfileSheet() {
   const bayLabel = assignedBayLabel();
   openSheet(`<div class="sheet-head"><div><h2>Your profile</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close technician profile">${icon("close")}</button></div>
     <div class="sheet-body">
-      <section class="technician-profile" aria-label="Signed-in technician">
-        <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
-        <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
-      </section>
-      <div class="settings-list profile-detail-list" role="group" aria-label="Technician work details">
-        ${branchFacts()}
-        ${profileFactRow("Assigned bay", bayLabel)}
-        ${profileFactRow("Employee ID", employeeId || "Not registered")}
+      <div class="profile-card">
+        <section class="technician-profile" aria-label="Signed-in technician">
+          <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
+          <div><h3>${escapeHTML(fullName)}</h3><p>${escapeHTML(roleLabel(role))}</p></div>
+        </section>
+        <div class="settings-list" role="group" aria-label="Technician work details">
+          ${branchFacts()}
+          ${profileFactRow("Assigned bay", bayLabel)}
+          ${profileFactRow("Employee ID", employeeId || "Not registered")}
+        </div>
       </div>
       <nav class="profile-menu" aria-label="Technician shortcuts">
         ${canSwitchBranch() ? `<button class="profile-menu-button" type="button" data-action="open-branch-switcher">${icon("building")}<span>Switch branch</span>${icon("arrow")}</button>` : ""}

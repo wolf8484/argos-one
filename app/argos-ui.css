@@ -4119,14 +4119,15 @@ button.settings-toggle-row {
   margin-top: 4px;
 }
 
-/* The profile sheets list their facts as read-only settings rows, so they need
-   the hairline that separates the list from the avatar block above -- the two
-   share a surface. Rounded and clipped as one block, since this is
-   information, not a set of buttons like .profile-menu below it. */
-.profile-detail-list {
+/* The avatar header and its read-only fact list share one surface and are one
+   piece of information, not a set of buttons like .profile-menu below --
+   hence a single hairline and radius around the whole card rather than
+   between its two parts, and a gap before the menu that follows it. */
+.profile-card {
   border-top: 1px solid #2d2d2d;
   border-radius: 12px;
   overflow: hidden;
+  margin-bottom: 12px;
 }
 
 .profile-menu {
