@@ -1935,7 +1935,7 @@ function renderKnowledge() {
 
   if (activeGroup) {
     const trimRows = profileTrimRows(activeGroup.profiles);
-    app.innerHTML = `<section class="screen workflow-shell">
+    app.innerHTML = `<section class="screen workflow-shell library-brand-shell">
       ${taskHeader({ context: "Repair library", title: activeGroup.make, backAction: "back-to-library-brands", backLabel: "Back to all brands" })}
       <div class="library-result-list">${trimRows.map(({ profile, entry, untrimmed }) => profileTrimCard(profile, entry, untrimmed)).join("")}</div>
     </section>`;
