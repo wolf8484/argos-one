@@ -1388,6 +1388,7 @@ main:focus {
   place-items: center;
   width: 52px;
   height: 52px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--accent);
   transition: background-color 160ms ease;
@@ -1528,8 +1529,9 @@ main:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: -24px 0 24px;
-  padding: 12px var(--gutter);
+  margin: -16px 0 24px;
+  padding: 16px var(--gutter);
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted-strong);
   font-size: var(--copy-size);
@@ -2101,7 +2103,7 @@ button.journey-item:active {
   right: 16px;
   width: 20px;
   height: 20px;
-  color: var(--muted);
+  color: var(--accent);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -2351,7 +2353,7 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 16px;
   border: 1px solid var(--line-strong);
-  border-radius: 0;
+  border-radius: var(--card-radius);
   background: 0 0;
   color: var(--muted-strong);
   font-size: var(--copy-size);
@@ -5748,6 +5750,7 @@ body.dictation-active .toast {
 .profile-empty {
   margin: 0 0 40px;
   padding: 16px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: #9b9b97;
   font-style: italic;
@@ -5826,13 +5829,15 @@ body.dictation-active .toast {
 
 .known-issues-list {
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 40px;
   display: flex;
 }
 
 .known-issues-accordion {
+  border-radius: var(--card-radius);
   background: var(--surface-2);
+  overflow: hidden;
 }
 
 .known-issues-accordion summary {

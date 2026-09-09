@@ -4213,7 +4213,7 @@ function renderResults() {
 // the SAE code systems in dtc_reference, which only cover powertrain -- a
 // brake or suspension job has no fault code to derive a category from.
 const REPAIR_SYSTEMS = [
-  { value: "engine_fuel_air", label: "Engine — fuel & air" },
+  { value: "engine_fuel_air", label: "Engine, fuel & air" },
   { value: "ignition", label: "Ignition & misfire" },
   { value: "transmission", label: "Transmission & driveline" },
   { value: "emissions", label: "Emissions" },
