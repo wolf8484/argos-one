@@ -594,12 +594,6 @@ main:focus {
   margin: 2px 0 0;
 }
 
-@media (max-width: 500px) {
-  .control-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .control-tile {
   position: relative;
   display: flex;
