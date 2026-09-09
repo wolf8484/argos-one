@@ -3172,6 +3172,17 @@ button.journey-item:active {
   border-bottom: none;
 }
 
+.settings-group .settings-list {
+  gap: 12px;
+  background: transparent;
+}
+
+.settings-group .settings-row {
+  border-radius: 12px;
+  border-bottom: none;
+  background: var(--surface-2);
+}
+
 button.settings-row {
   transition: background-color 160ms ease;
 }
@@ -4128,6 +4139,10 @@ button.settings-toggle-row {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
+}
+
+.profile-card .settings-list {
+  border-top: 1px solid #2d2d2d;
 }
 
 .profile-menu {
