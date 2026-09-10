@@ -31,7 +31,8 @@ export class WorkshopRepository {
         customer:customers(id,full_name,phone,email),
         vehicle:vehicles(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type),
         dtcs:job_dtc_codes(id,code,description),
-        assignee:profiles!assigned_to(id,full_name)`)
+        assignee:profiles!assigned_to(id,full_name),
+        profileNote:vehicle_profile_notes!source_job_id(id,body)`)
       .order('updated_at', { ascending: false })
     if (error) throw error
     return data ?? []
@@ -46,7 +47,8 @@ export class WorkshopRepository {
       // after unrelated DDL, which turned this read into a PGRST200 500.
       .select(`*,customer:customers(*),vehicle:vehicles(*),dtcs:job_dtc_codes(*),
         repair:repair_records!job_id(*,items:repair_items(*),reference:repair_records!reference_repair_id(job_id)),photos:job_photos(*),
-        assignee:profiles!assigned_to(id,full_name)`)
+        assignee:profiles!assigned_to(id,full_name),
+        profileNote:vehicle_profile_notes!source_job_id(id,body)`)
       .eq('id', id)
       .single()
     if (error) throw error
@@ -365,6 +367,7 @@ export class WorkshopRepository {
   async saveRepair(jobId: string, input: {
     workPerformed: string; verificationNotes?: string | null; referenceRepairId?: string | null
     system?: string | null
+    extraNotes?: string | null
     dtcs: string[]; items: Array<Record<string, unknown>>; resolve: boolean
   }) {
     const { data: existingJob, error: existingJobError } = await this.supabase.from('jobs').select('assigned_to').eq('id', jobId).single()
@@ -388,6 +391,8 @@ export class WorkshopRepository {
     }
     const { data: repair, error } = await this.supabase.from('repair_records').upsert(repairPayload, { onConflict: 'job_id' }).select().single()
     if (error) throw error
+
+    await this.syncJobProfileNote(jobId, input.extraNotes)
 
     await Promise.all([
       // repair_steps is no longer written to (see comment above) -- this
@@ -442,6 +447,67 @@ export class WorkshopRepository {
       if (networkError) console.error('refresh_network_contributions failed', networkError)
     }
     return this.getJob(jobId)
+  }
+
+  // The repair form's "Extra notes" field carries what this job taught you
+  // about the *model*, which belongs on the car profile as a shop note rather
+  // than in the repair record (that one is about this single vehicle).
+  //
+  // Upserts on source_job_id rather than inserting: the repair form autosaves
+  // every ~900ms of quiet, so appending would leave a trail of near-duplicate
+  // notes on the profile. Scoping by source_job_id also means this can only
+  // ever touch the note this job created -- notes typed directly on the car
+  // profile carry a null source_job_id and are never in range.
+  private async syncJobProfileNote(jobId: string, body: string | null | undefined) {
+    const text = (body || '').trim()
+    const { data: existing } = await this.supabase
+      .from('vehicle_profile_notes')
+      .select('id')
+      .eq('source_job_id', jobId)
+      .limit(1)
+      .maybeSingle()
+
+    if (!text) {
+      if (existing) {
+        const { error } = await this.supabase.from('vehicle_profile_notes').delete().eq('id', existing.id)
+        if (error) throw error
+      }
+      return
+    }
+
+    if (existing) {
+      const { error } = await this.supabase
+        .from('vehicle_profile_notes')
+        .update({ body: text, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+      if (error) throw error
+      return
+    }
+
+    // Tagged with the car's own specifics so the note lands against the right
+    // trim in the profile's per-trim filtering, the same as a hand-typed one.
+    const { data: job, error: jobError } = await this.supabase
+      .from('jobs')
+      .select('vehicle:vehicles(profile_id,year,trim,transmission,mileage)')
+      .eq('id', jobId)
+      .single()
+    if (jobError) throw jobError
+    const vehicle = (Array.isArray(job.vehicle) ? job.vehicle[0] : job.vehicle) as
+      { profile_id: string | null; year: number | null; trim: string | null; transmission: string | null; mileage: number | null } | null
+    if (!vehicle?.profile_id) return
+
+    const { error } = await this.supabase.from('vehicle_profile_notes').insert({
+      shop_id: this.profile.shop_id,
+      profile_id: vehicle.profile_id,
+      body: text,
+      vehicle_year: vehicle.year ?? null,
+      vehicle_trim: vehicle.trim || null,
+      vehicle_transmission: vehicle.transmission || null,
+      vehicle_mileage: vehicle.mileage ?? null,
+      source_job_id: jobId,
+      created_by: this.profile.id,
+    })
+    if (error) throw error
   }
 
   async listVehicleProfiles() {

@@ -62,6 +62,10 @@ export const repairItemSchema = z.object({
 export const repairSchema = z.object({
   workPerformed: z.string().trim().max(20000).default(''),
   verificationNotes: nullableText,
+  // Model-level knowledge ("these always go at the water pump"), as opposed to
+  // what was done to this one car. Stored as a shop note on the car profile,
+  // not on the repair record -- see syncJobProfileNote.
+  extraNotes: nullableText,
   dtcs: z.array(z.string().trim().toUpperCase().regex(/^[A-Z][0-9A-Z]{4,6}$/)).max(30).default([]),
   referenceRepairId: z.string().uuid().nullable().optional(),
   system: z.enum([

@@ -511,6 +511,7 @@ function databaseJobToUi(row) {
     system: repair.system || "",
     parts: repairedItems,
     verification: repair.verification_notes || "No verification notes recorded.",
+    extraNotes: relatedRecord(row.profileNote)?.body || "",
     referenceJobId: relatedRecord(repair.reference)?.job_id || null,
     raw: row,
   };
@@ -992,6 +993,7 @@ function repairPayload(resolve = false) {
   return {
     workPerformed: state.repair.workNotes,
     verificationNotes: state.repair.verificationNotes || null,
+    extraNotes: state.repair.extraNotes || null,
     system: state.repair.system || null,
     dtcs: state.dtcs,
     referenceRepairId: selected && /^[0-9a-f-]{36}$/i.test(selected.id) ? selected.id : null,
@@ -1035,6 +1037,7 @@ function syncTextFieldState(target) {
   if (target.id === "notes") state.notes = target.value;
   if (target.id === "repair-notes") state.repair.workNotes = target.value;
   if (target.id === "repair-verification") state.repair.verificationNotes = target.value;
+  if (target.id === "repair-extra-notes") state.repair.extraNotes = target.value;
   if (target.id === "repair-notes" || target.id === "repair-verification") queueRepairAutosave();
 }
 
@@ -1213,7 +1216,7 @@ function resetJobDraft() {
   state.notes = "";
   state.dtcs = [];
   state.photos = [];
-  state.repair = { workNotes: "", verificationNotes: "", system: "", parts: [], photos: [] };
+  state.repair = { workNotes: "", verificationNotes: "", extraNotes: "", system: "", parts: [], photos: [] };
   state.catalog.models = [];
 }
 
@@ -4300,6 +4303,13 @@ function renderRepairRecord() {
       </div>
 
       <div class="form-field">
+        <div class="field-header"><label class="field-label" for="repair-extra-notes">Extra notes <span class="optional-label">(optional)</span></label></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button></div>
+        <p class="helper">Saved to the car profile as a shop note — about this model, not just this car.</p>
+        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
+      </div>
+
+      <div class="form-field">
         <div class="field-header"><span class="field-label">Repair photos <span class="optional-label">(optional)</span></span></div>
         <div class="photo-panel">${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
@@ -4549,6 +4559,7 @@ function syncRepairRecord(form) {
   const data = new FormData(form);
   state.repair.workNotes = String(data.get("workNotes") || "").trim();
   state.repair.verificationNotes = String(data.get("verificationNotes") || "").trim();
+  state.repair.extraNotes = String(data.get("extraNotes") || "").trim();
 }
 
 function validateRepairCompletion(form) {
@@ -4638,6 +4649,7 @@ function openJob(jobId, { reopenSheet = null } = {}) {
   state.repair = {
     workNotes: Array.isArray(job.workPerformed) ? job.workPerformed.join("\n") : job.workPerformed || "",
     verificationNotes: job.verification && !job.verification.startsWith("No verification") ? job.verification : "",
+    extraNotes: job.extraNotes || "",
     system: job.system || "",
     parts: (job.parts || []).map((part) => ({ ...part, key: part.id || part.number || part.name })),
     photos: [],
@@ -6032,6 +6044,7 @@ document.addEventListener("input", (event) => {
   if (event.target.matches("#repair-notes, #repair-verification")) {
     if (event.target.id === "repair-notes") state.repair.workNotes = event.target.value;
     if (event.target.id === "repair-verification") state.repair.verificationNotes = event.target.value;
+    if (event.target.id === "repair-extra-notes") state.repair.extraNotes = event.target.value;
     queueRepairAutosave();
     return;
   }
