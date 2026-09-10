@@ -430,17 +430,20 @@ main:focus {
   background: transparent;
 }
 
-.nav-item.is-active,
-.nav-new.is-active,
 .nav-item:hover,
 .nav-new:hover,
 .nav-new:focus-visible {
   color: #e0e0dc;
 }
 
+/* The accent here is --accent-fill, not --accent: the bar keeps a hardcoded
+   dark background in both themes, and --accent resolves to near-black under
+   the light theme, which would make the selected tab vanish. Background stays
+   transparent like every other tab -- the top stroke and the colour are what
+   mark the selection. */
 .nav-item.is-active,
 .nav-new.is-active {
-  background: color-mix(in srgb, var(--accent-fill) 8%, #090909);
+  color: var(--accent-fill);
 }
 
 .nav-item.is-active::before,
