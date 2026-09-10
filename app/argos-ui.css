@@ -5421,7 +5421,7 @@ body.dictation-active .toast {
   }
 
   .control-tile {
-    min-height: 180px;
+    min-height: 172px;
     padding: 16px;
   }
 
@@ -6224,7 +6224,7 @@ a.profile-recall:focus-visible {
   letter-spacing: 0.04em;
   border-radius: 4px;
   flex: none;
-  padding: 2px 6px 0px;
+  padding: 2px 6px 1px;
   font-weight: 600;
 }
 
