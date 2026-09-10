@@ -5080,7 +5080,22 @@ body.dictation-active .toast {
     width: 100%;
   }
   :root {
-    --topbar-height: calc(76px + var(--safe-top));
+    /* The bar's tallest child is 44px and its padding adds 20px, so anything
+       above 64px here is dead space -- and on a notched phone it sits on top
+       of a ~50px safe-area inset that is already unavoidable. */
+    --topbar-height: calc(64px + var(--safe-top));
+  }
+
+  /* 72px still reads as a deliberately oversized target for gloved or dirty
+     hands (iOS ships 49px) while giving back 16px of a screen that was
+     spending nearly a third of its height on chrome. */
+  .bottom-nav {
+    min-height: calc(72px + var(--safe-bottom));
+  }
+
+  .nav-item,
+  .nav-new {
+    min-height: 72px;
   }
 
   .resolved-summary {
@@ -5094,6 +5109,18 @@ body.dictation-active .toast {
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto auto;
     column-gap: 8px;
+    /* On a notched phone the safe-area inset already contributes ~50px above
+       this, so the bar's own padding is what there is left to give back. */
+    padding: calc(var(--safe-top) + 10px) var(--gutter) 10px;
+  }
+
+  .brand-logo,
+  .brand-logo img {
+    height: 24px;
+  }
+
+  .brand {
+    min-height: 36px;
   }
 
   .workshop-clock {

@@ -2295,7 +2295,7 @@ function renderCarProfile() {
       ${visibleGroups.length
         ? profileRepairsSection(visibleGroups)
         : `<p class="profile-empty">No repairs recorded for this trim yet.</p>`}
-      <div class="field-header"><span class="field-label">Shop notes</span></div>
+      <div class="field-header"><span class="field-label">Extra notes</span></div>
       ${sectionSource("Written by your team at this workshop.")}
       ${visibleNotes.length
         ? `<div class="profile-note-list">${visibleNotes.map(profileNoteCard).join("")}</div>`
@@ -4303,17 +4303,17 @@ function renderRepairRecord() {
       </div>
 
       <div class="form-field">
-        <div class="field-header"><label class="field-label" for="repair-extra-notes">Extra notes <span class="optional-label">(optional)</span></label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button></div>
-        <p class="helper">Saved to the car profile as a shop note — about this model, not just this car.</p>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
-      </div>
-
-      <div class="form-field">
         <div class="field-header"><span class="field-label">Repair photos <span class="optional-label">(optional)</span></span></div>
         <div class="photo-panel">${photoStrip(state.repair.photos, "repair", "Repair photo")}</div>
         <p class="photo-upload-hint">Maximum file size: 15 MB. Allowed formats: JPG, PNG, WebP, HEIC and HEIF.</p>
         ${photoActionButtons()}
+      </div>
+
+      <div class="form-field">
+        <div class="field-header"><label class="field-label" for="repair-extra-notes">Extra notes <span class="optional-label">(optional)</span></label></div>
+        <div class="text-field-shell"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button></div>
+        <p class="helper">Saved to the car profile as a shop notes</p>
+        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
