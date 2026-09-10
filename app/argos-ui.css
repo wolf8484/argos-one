@@ -32,6 +32,7 @@
   --journey-shadow: 0 1px 0 var(--line), 0 14px 26px rgba(0, 0, 0, 0.72);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-safe-bottom: min(env(safe-area-inset-bottom, 0px), 20px);
   --topbar-height: calc(84px + var(--safe-top));
   --gutter: 16px;
   --content: 960px;
@@ -341,7 +342,7 @@ h3 {
 
 main {
   flex: 1 1 auto;
-  padding-bottom: calc(104px + var(--safe-bottom));
+  padding-bottom: calc(104px + var(--nav-safe-bottom));
 }
 
 main:focus {
@@ -377,8 +378,13 @@ main:focus {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 100%;
-  min-height: calc(88px + var(--safe-bottom));
-  padding: 0 0 var(--safe-bottom);
+  min-height: calc(88px + var(--nav-safe-bottom));
+  /* Not the full safe-area inset. On a Face ID iPhone that is 34px, but the
+     home indicator itself is a ~5px bar sitting ~8px off the edge -- most of
+     the inset is slack, and spending all of it left a visible dead band under
+     the labels. 20px clears the indicator and keeps buttons out of the
+     home-swipe zone; going to 0 would put them under both. */
+  padding: 0 0 var(--nav-safe-bottom);
   border-top: 1px solid #2d2d2d;
   background: #090909;
 }
@@ -477,7 +483,7 @@ main:focus {
   position: fixed;
   z-index: 48;
   right: max(var(--gutter), 18px);
-  bottom: calc(104px + var(--safe-bottom));
+  bottom: calc(104px + var(--nav-safe-bottom));
   display: grid;
   place-items: center;
   width: 56px;
@@ -4759,7 +4765,7 @@ button.settings-toggle-row {
   position: fixed;
   z-index: 150;
   right: var(--gutter);
-  bottom: calc(102px + var(--safe-bottom));
+  bottom: calc(102px + var(--nav-safe-bottom));
   left: var(--gutter);
   max-width: 560px;
   margin: auto;
@@ -4785,7 +4791,7 @@ button.settings-toggle-row {
   position: fixed;
   z-index: 140;
   left: 50%;
-  bottom: calc(104px + var(--safe-bottom));
+  bottom: calc(104px + var(--nav-safe-bottom));
   display: grid;
   grid-template-columns: 56px 40px minmax(0, 1fr) 56px;
   align-items: center;
@@ -4914,7 +4920,7 @@ body.dictation-active .scroll-cue {
 }
 
 body.dictation-active .toast {
-  bottom: calc(190px + var(--safe-bottom));
+  bottom: calc(190px + var(--nav-safe-bottom));
 }
 
 @keyframes soundwave-pulse {
@@ -5090,7 +5096,7 @@ body.dictation-active .toast {
      hands (iOS ships 49px) while giving back 16px of a screen that was
      spending nearly a third of its height on chrome. */
   .bottom-nav {
-    min-height: calc(72px + var(--safe-bottom));
+    min-height: calc(72px + var(--nav-safe-bottom));
   }
 
   .nav-item,
