@@ -5067,6 +5067,16 @@ body.dictation-active .toast {
 }
 
 @media (max-width: 500px) {
+  .control-tile {
+    min-height: 180px;
+  }
+
+  .tile-icon,
+  .tile-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+
   .tile-copy strong {
     font-size: 18px;
   }
@@ -5411,7 +5421,7 @@ body.dictation-active .toast {
   }
 
   .control-tile {
-    min-height: 194px;
+    min-height: 180px;
     padding: 16px;
   }
 
