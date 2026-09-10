@@ -530,12 +530,16 @@ main:focus {
 }
 
 .home-status-block {
-  padding: 24px 0 40px;
+  padding: 40px 0 40px;
 }
 
+/* Three across at every width. The secondary metric used to drop onto its own
+   full-width row below 560px, which cost a whole band of vertical space on the
+   screen that can least afford it; at 44px all three figures fit side by side
+   and the labels take a second line instead. */
 .home-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
 }
 
@@ -545,19 +549,18 @@ main:focus {
   align-items: flex-start;
   justify-content: flex-end;
   min-width: 0;
-  min-height: 150px;
-  padding: 0 18px 0 0;
+  padding: 0 16px 0 0;
 }
 
-.home-metric + .home-metric:not(.secondary) {
+.home-metric + .home-metric {
   border-left: 1px solid #2d2d2d;
-  padding-left: 18px;
+  padding-left: 16px;
 }
 
 .home-metric strong {
   display: block;
-  font-size: clamp(62px, 18vw, 92px);
-  font-weight: 400;
+  font-size: 44px;
+  font-weight: 500;
   line-height: 1;
   letter-spacing: 0;
 }
@@ -570,31 +573,9 @@ main:focus {
 }
 
 .home-metric span {
-  margin-top: 17px;
+  margin-top: 16px;
   color: var(--muted);
   font-size: var(--copy-size);
-}
-
-.home-metric.secondary {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  min-height: 0;
-  margin-top: 28px;
-  padding: 22px 0 0;
-  border-top: 1px solid var(--line);
-}
-
-.home-metric.secondary strong {
-  font-size: 40px;
-  line-height: 1;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-.home-metric.secondary span {
-  margin: 12px 0 0;
 }
 
 .control-grid {
@@ -4983,29 +4964,16 @@ body.dictation-active .toast {
     grid-column: 4;
   }
 
-  .home-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .home-metric.secondary {
-    border-top: 0;
-    border-left: 1px solid #2d2d2d;
-    text-align: left;
-    grid-column: auto;
-    align-items: flex-start;
+  /* The 44px in the base rule exists to fit three figures across a phone.
+     From here there is room for the oversized treatment again, and it now
+     applies to all three rather than the secondary alone. */
+  .home-metric {
     min-height: 126px;
-    margin: 0;
-    padding: 0 0 0 18px;
-    display: flex;
   }
 
-  .home-metric.secondary strong {
+  .home-metric strong {
     font-size: clamp(62px, 18vw, 92px);
-    line-height: 1;
-  }
-
-  .home-metric.secondary span {
-    margin: 17px 0 0;
+    font-weight: 400;
   }
 
   .control-tile {
@@ -5412,14 +5380,6 @@ body.dictation-active .toast {
 }
 
 @media (max-width: 420px) {
-  .home-metric {
-    min-height: 140px;
-  }
-
-  .home-metric strong {
-    font-size: 58px;
-  }
-
   .control-tile {
     min-height: 172px;
     padding: 16px;
