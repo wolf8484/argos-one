@@ -2143,9 +2143,13 @@ function sectionSource(text) {
 }
 
 function branchPatternRow(row) {
-  return `<li><button class="profile-repair-row profile-repair-row-button profile-repair-row-button-stacked" type="button" data-action="open-repair-case" data-source="branch" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}" data-trim="${escapeHTML(row.trim || "")}" data-branch-id="${escapeHTML(row.branchId)}">
-    <span class="profile-repair-label">${escapeHTML(row.label)}</span>
-    <span class="profile-repair-meta"><span class="branch-case-name">${escapeHTML(row.branchName)}</span><span class="profile-repair-count-group"><strong>${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}</strong>${icon("arrow")}</span></span>
+  const countLabel = `${row.occurrences} repair${row.occurrences === 1 ? "" : "s"}`;
+  return `<li><button class="profile-repair-row profile-repair-row-button" type="button" data-action="open-repair-case" data-source="branch" data-system="${escapeHTML(row.system || "other")}" data-label="${escapeHTML(row.label)}" data-trim="${escapeHTML(row.trim || "")}" data-branch-id="${escapeHTML(row.branchId)}">
+    <span class="profile-repair-body">
+      <span class="profile-repair-label">${escapeHTML(row.label)}</span>
+      <span class="profile-repair-meta"><span class="profile-repair-mileage">${escapeHTML(row.branchName)}</span><span class="profile-repair-count">${countLabel}</span></span>
+    </span>
+    <span class="profile-repair-view">View</span>
   </button></li>`;
 }
 

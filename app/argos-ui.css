@@ -5763,23 +5763,6 @@ body.dictation-active .toast {
   background: var(--surface-3);
 }
 
-/* Branch cases carry a named source, so the label needs full width to read
-   before the branch/count line -- a plain row-flex would center that meta
-   beside a multi-line label instead of stacking under it. */
-.profile-repair-row-button-stacked {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.profile-repair-row-button-stacked .profile-repair-meta {
-  justify-content: space-between;
-}
-
-.profile-repair-count-group {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
 
 /* Sits directly under a section heading and above that section's content, so
    the source is read before the content it qualifies rather than after it. */
@@ -6211,15 +6194,6 @@ a.profile-recall:focus-visible {
 .settings-detail-intro.settings-detail-intro-lead {
   color: var(--muted-strong);
   margin-top: 4px;
-}
-
-/* A branch case is named, unlike a network case, so the row carries the site
-   it came from. Sits in the same meta slot as the network row's "N shops",
-   tinted so the two are distinguishable at a glance when both sections are
-   open on the same profile. */
-.branch-case-name {
-  color: var(--muted-strong);
-  font-weight: 400;
 }
 
 /* Trailing clarification under the two sharing switches. Lighter than
