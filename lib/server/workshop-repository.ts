@@ -27,10 +27,14 @@ export class WorkshopRepository {
   async listJobs() {
     const { data, error } = await this.supabase
       .from('jobs')
+      // Resolved jobs render straight from this cached list (no getJob()
+      // re-fetch), so the repair embed has to be here too, disambiguated by
+      // FK column the same way getJob() does.
       .select(`id,job_number,status,stage,bay,complaint,observations,summary,selected_reference_id,created_at,updated_at,resolved_at,assigned_to,
         customer:customers(id,full_name,phone,email),
         vehicle:vehicles(id,vin,year,make,model,mileage,engine,trim,drivetrain,transmission,body_style,fuel_type),
         dtcs:job_dtc_codes(id,code,description),
+        repair:repair_records!job_id(*,items:repair_items(*),reference:repair_records!reference_repair_id(job_id)),
         assignee:profiles!assigned_to(id,full_name),
         profileNote:vehicle_profile_notes!source_job_id(id,body)`)
       .order('updated_at', { ascending: false })
