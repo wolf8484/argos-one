@@ -2113,7 +2113,7 @@ function profileNetworkSection(networkGroups) {
     ? `<span class="reference-tag reference-tag-active">Active</span>`
     : `<span class="reference-tag">Off</span>`;
   const heading = `<div class="field-header"><span class="field-label">Network cases${statusTag}</span></div>
-    ${sectionSource("Anonymised patterns from other Argos One workshops. No shop is named.")}`;
+    ${sectionSource("Anonymous data from other workshops.")}`;
 
   if (!canRead) {
     return `${heading}<p class="profile-empty">Turn on sharing in Settings to see what other shops found for this trim.</p>`;
@@ -2160,8 +2160,8 @@ function profileBranchSection(branchGroups) {
   const statusTag = sharing
     ? `<span class="reference-tag reference-tag-active">Active</span>`
     : `<span class="reference-tag">Off</span>`;
-  const heading = `<div class="field-header"><span class="field-label">Your other branches${statusTag}</span></div>
-    ${sectionSource("Your own sites, named, in their own words.")}`;
+  const heading = `<div class="field-header"><span class="field-label">Branch cases${statusTag}</span></div>
+    ${sectionSource("Data from the business branches.")}`;
 
   if (!branchGroups.length) {
     return `${heading}<p class="profile-empty">${sharing ? "No repairs from your other branches for this trim yet." : "Turn on branch sharing in Settings to see what your other sites have fixed."}</p>`;
@@ -2308,7 +2308,7 @@ function renderCarProfile() {
       ${profileBranchSection(visibleBranches)}
       ${profileNetworkSection(visibleNetwork)}
       <div class="field-header"><span class="field-label">Known issues <span class="optional-label">(all trims)</span></span></div>
-      ${sectionSource("Public reference data, not workshop records. Recalls are manufacturer-issued; complaint counts are US NHTSA data.")}
+      ${sectionSource("Public recalls from manufacturers.")}
       <div class="known-issues-list">
         ${knownIssuesAccordion("Recalls", "", profileRecallsSection(recalls), recallsSummaryText(recalls))}
         ${knownIssuesAccordion("Commonly reported", "", profileComplaintTrendsSection(complaintTrends), complaintTrendsCaption(complaintTrends))}
