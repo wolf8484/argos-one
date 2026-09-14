@@ -5571,6 +5571,19 @@ body.dictation-active .toast {
 }
 
 @media (max-width: 450px) {
+  /* Side by side, the part-number column gets narrow enough that "(optional)"
+     drops to a second line and the two labels stop sharing a baseline. */
+  .repair-part-detail-pair {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  /* Stacked, the stepper spans the column, so the two buttons go to opposite
+     edges rather than huddling on the left with dead space beside them. */
+  .repair-part-detail-pair .repair-part-qty {
+    justify-content: space-between;
+  }
+
   .field-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
