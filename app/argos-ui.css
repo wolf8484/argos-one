@@ -835,7 +835,7 @@ main:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .job-status-group {
@@ -855,9 +855,10 @@ main:focus {
 
 .job-vehicle {
   color: var(--heading);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.25;
+  margin-bottom: 2px;
 }
 
 .job-card-context {
@@ -892,7 +893,7 @@ main:focus {
 
 .job-issue {
   display: -webkit-box;
-  margin: 12px 0 0;
+  margin: 4px 0 0;
   overflow: hidden;
   color: var(--muted);
   font-size: var(--copy-size);
