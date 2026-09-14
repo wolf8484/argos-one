@@ -1859,10 +1859,6 @@ button.journey-item:active {
   transition: transform 160ms ease;
 }
 
-.repair-part-card.is-open .repair-part-chevron svg {
-  transform: rotate(180deg);
-}
-
 .repair-part-thumb {
   width: 48px;
   height: 48px;
@@ -1884,44 +1880,17 @@ button.journey-item:active {
   height: 20px;
 }
 
-/* Horizontal margin rather than padding, so the keyline separating the row
-   from the editor is inset to match the one above the footer. */
-.repair-part-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 0 16px;
-  padding: 16px 0;
-  border-top: 1px solid var(--line);
-}
-
-/* The card is already surface-2, so a field on it needs the next step up to
-   read as something you can type into rather than as static text. */
-.repair-part-detail .input {
-  background: var(--surface-3);
-  color: var(--text);
-}
-
 /* These two sit side by side in a narrow column, so "(optional)" has to stay
    attached to its label rather than being pushed to the far edge. */
-.repair-part-detail .field-header {
+.repair-part-detail-pair .field-header {
   justify-content: flex-start;
   margin-bottom: 10px;
 }
 
-.repair-part-detail .field-label {
+.repair-part-detail-pair .field-label {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0 6px;
-}
-
-.repair-part-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
 }
 
 .repair-part-detail-pair {
@@ -1989,23 +1958,11 @@ button.journey-item:active {
   flex: none;
 }
 
-.repair-part-remove {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #e5484d;
-  font: inherit;
-  font-size: var(--caps-size);
-  cursor: pointer;
-}
-
-.repair-part-remove svg {
-  width: 18px;
-  height: 18px;
+/* The link sits between the fields and the action pair, so it needs a little
+   more air than the form's own 16px rhythm gives it. */
+.repair-part-modal-links {
+  display: flex;
+  padding: 4px 0;
 }
 
 .action-dock.repair-action-dock {

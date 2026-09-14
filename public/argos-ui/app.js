@@ -30,9 +30,6 @@ let lastResearchResult = null;
 // tap an offer to record it. Held here rather than on `state` because it is
 // sheet-local scratch, thrown away when the sheet closes.
 let partsSearch = { term: "", phase: "idle", offers: [], error: "" };
-// Which recorded part is expanded into its editor, by index. Only one at a
-// time -- the row/detail pattern the staff list uses.
-let expandedPartIndex = null;
 const photoGestureStates = new WeakMap();
 const BUILD_VERSION = window.__ARGOS_BUILD_VERSION__ || "dev-local";
 let updateAvailable = false;
@@ -4339,44 +4336,59 @@ function repairPartsTable() {
     return `<div class="repair-parts-empty"><span>No items added to this repair yet.</span></div>`;
   }
 
-  // Each item is its own card, stacked with a gap -- the same row/detail
-  // treatment as the staff list, rather than a table crammed into phone width.
+  // Each item is its own card, stacked with a gap -- the same row treatment as
+  // the staff list. Tapping a row opens the editor as a centred modal rather
+  // than expanding in place, which kept pushing the rest of the form around.
   return `<div class="repair-parts-list">
     ${state.repair.parts.map((part, index) => {
-      const open = expandedPartIndex === index;
-      const meta = [part.type, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" · ");
+      const meta = [part.type, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" \u00b7 ");
       const thumb = part.offerImageUrl
         ? `<img class="repair-part-thumb" src="${escapeHTML(part.offerImageUrl)}" alt="" loading="lazy" />`
         : `<span class="repair-part-thumb repair-part-thumb-empty">${icon("wrench")}</span>`;
-      return `<div class="repair-part-card${open ? " is-open" : ""}">
-        <button class="repair-part-row" type="button" data-action="toggle-part-detail" data-part-index="${index}" aria-expanded="${open}">
+      return `<div class="repair-part-card">
+        <button class="repair-part-row" type="button" data-action="open-part-modal" data-part-index="${index}">
           ${thumb}
           <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
           <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}</span>
-          <span class="repair-part-chevron">${icon("down")}</span>
+          <span class="repair-part-chevron">${icon("arrow")}</span>
         </button>
-        ${open ? `<div class="repair-part-detail">
-          <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" data-part-field="name" data-part-index="${index}" value="${escapeHTML(part.name)}" placeholder="e.g. Oil filter" /></label>
-          <div class="repair-part-detail-pair">
-            <label class="form-field"><div class="field-header"><span class="field-label">Part number <span class="optional-label">(optional)</span></span></div><input class="input" data-part-field="number" data-part-index="${index}" value="${escapeHTML(part.number || "")}" placeholder="e.g. C-31090" /></label>
-            <div class="form-field"><div class="field-header"><span class="field-label">Quantity</span></div>
-              <div class="repair-part-qty" role="group" aria-label="Quantity for ${escapeHTML(part.name)}">
-                <button type="button" data-action="part-qty" data-part-index="${index}" data-part-delta="-1" aria-label="Decrease quantity">${icon("minus")}</button>
-                <span>${escapeHTML(part.quantity || "1")}</span>
-                <button type="button" data-action="part-qty" data-part-index="${index}" data-part-delta="1" aria-label="Increase quantity">${icon("plus")}</button>
-              </div>
-            </div>
-          </div>
-          <div class="repair-part-foot">
-            ${part.offerUrl
-              ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")} View offer</a>`
-              : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
-            <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove</button>
-          </div>
-        </div>` : ""}
       </div>`;
     }).join("")}
   </div>`;
+}
+
+// The editor is a modal, not an inline panel: the fields commit on Save rather
+// than as you type, so a half-typed name never reaches the record.
+function openPartModal(index) {
+  const part = state.repair.parts[index];
+  if (!part) return;
+  const form = document.querySelector("#repair-form");
+  if (form) syncRepairRecord(form);
+  openSheet(`<div class="confirmation-content">
+    <h2>Edit item</h2>
+    <form class="settings-edit-form" id="part-form" autocomplete="off" data-part-index="${index}">
+      <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" name="name" value="${escapeHTML(part.name)}" placeholder="e.g. Oil filter" required /></label>
+      <div class="repair-part-detail-pair">
+        <label class="form-field"><div class="field-header"><span class="field-label">Part number <span class="optional-label">(optional)</span></span></div><input class="input" name="number" value="${escapeHTML(part.number || "")}" placeholder="e.g. C-31090" /></label>
+        <div class="form-field"><div class="field-header"><span class="field-label">Quantity</span></div>
+          <div class="repair-part-qty" role="group" aria-label="Quantity">
+            <button type="button" data-action="part-qty" data-part-delta="-1" aria-label="Decrease quantity">${icon("minus")}</button>
+            <span data-part-qty-value>${escapeHTML(part.quantity || "1")}</span>
+            <button type="button" data-action="part-qty" data-part-delta="1" aria-label="Increase quantity">${icon("plus")}</button>
+          </div>
+        </div>
+      </div>
+      <div class="repair-part-modal-links">
+        ${part.offerUrl
+          ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")} View offer</a>`
+          : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
+      </div>
+      <div class="profile-note-actions">
+        <button class="danger-outline-button" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove</button>
+        <button class="primary-button" type="submit">${icon("save")} Save changes</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Edit item" });
 }
 
 function resolvedPhotoGallery() {
@@ -5946,21 +5958,16 @@ document.addEventListener("click", (event) => {
       partsSearch = { term: "", phase: "idle", offers: [], error: "" };
       return partsEditorSheet();
     }
-    if (action === "toggle-part-detail") {
-      const index = Number(actionButton.dataset.partIndex);
-      const form = document.querySelector("#repair-form");
-      if (form) syncRepairRecord(form);
-      expandedPartIndex = expandedPartIndex === index ? null : index;
-      return render();
+    if (action === "open-part-modal") {
+      return openPartModal(Number(actionButton.dataset.partIndex));
     }
     if (action === "part-qty") {
-      const index = Number(actionButton.dataset.partIndex);
-      const part = state.repair.parts[index];
-      if (!part) return;
-      const next = Math.max(1, (Number(part.quantity) || 1) + Number(actionButton.dataset.partDelta));
-      part.quantity = String(next);
-      render();
-      return queueRepairAutosave();
+      // Stepped in the DOM only -- the value is read back on submit alongside
+      // the text fields, so nothing commits until Save is tapped.
+      const value = actionButton.parentElement.querySelector("[data-part-qty-value]");
+      if (!value) return;
+      value.textContent = String(Math.max(1, (Number(value.textContent) || 1) + Number(actionButton.dataset.partDelta)));
+      return;
     }
     if (action === "add-offer-part") {
       const offer = partsSearch.offers[Number(actionButton.dataset.offerIndex)];
@@ -6002,7 +6009,7 @@ document.addEventListener("click", (event) => {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
       state.repair.parts.splice(Number(actionButton.dataset.recordedPartIndex), 1);
-      expandedPartIndex = null;
+      closeSheet();
       render();
       queueRepairAutosave();
       return showToast("Item removed from this repair record.");
@@ -6158,16 +6165,6 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("input", (event) => {
-  // Written straight into state without a re-render, so the field keeps focus
-  // while typing; the collapsed row picks the new value up when it closes.
-  if (event.target.matches("[data-part-field]")) {
-    const part = state.repair.parts[Number(event.target.dataset.partIndex)];
-    if (part) {
-      part[event.target.dataset.partField] = event.target.value;
-      queueRepairAutosave();
-    }
-    return;
-  }
   if (event.target.matches("#repair-notes, #repair-verification")) {
     if (event.target.id === "repair-notes") state.repair.workNotes = event.target.value;
     if (event.target.id === "repair-verification") state.repair.verificationNotes = event.target.value;
@@ -6326,6 +6323,17 @@ document.addEventListener("change", (event) => {
 
 document.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (event.target.id === "part-form") {
+    const part = state.repair.parts[Number(event.target.dataset.partIndex)];
+    if (!part) return closeSheet();
+    part.name = event.target.elements.name.value.trim() || part.name;
+    part.number = event.target.elements.number.value.trim();
+    part.quantity = event.target.querySelector("[data-part-qty-value]")?.textContent || part.quantity;
+    closeSheet();
+    render();
+    queueRepairAutosave();
+    return showToast("Item updated.");
+  }
   if (event.target.id === "parts-search-form") {
     return runPartsSearch(event.target.querySelector("#parts-search-input")?.value);
   }
