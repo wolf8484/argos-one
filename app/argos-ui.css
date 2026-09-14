@@ -190,13 +190,13 @@ strong {
 }
 
 h1 {
-  font-size: clamp(22px, 4vw, 28px);
+  font-size: clamp(22px, 4vw, 26px);
   line-height: 1.05;
   letter-spacing: 0;
 }
 
 h2 {
-  font-size: clamp(20px, 3.4vw, 24px);
+  font-size: clamp(20px, 3.4vw, 22px);
   line-height: 1.08;
   letter-spacing: 0;
 }
@@ -1413,14 +1413,14 @@ main:focus {
 }
 
 .task-header-copy h1 {
-  font-size: clamp(22px, 4vw, 28px);
+  font-size: clamp(22px, 4vw, 26px);
 }
 
 /* Library screens use the same visual weight as a settings page's h2 (e.g.
    Theme), not the larger workflow h1 taskHeader() gives the job steps. */
 .car-profile-shell .task-header-copy h1,
 .library-brand-shell .task-header-copy h1 {
-  font-size: clamp(20px, 3.4vw, 24px);
+  font-size: clamp(20px, 3.4vw, 22px);
 }
 
 .task-header-copy h2 {
@@ -1816,7 +1816,7 @@ button.journey-item:active {
 }
 
 .repair-part-copy strong {
-  font-size: var(--copy-size);
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -2232,20 +2232,6 @@ button.journey-item:active {
   font-weight: 500;
 }
 
-.parts-offer-badge-added {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-}
-
-.parts-offer-badge-added svg {
-  width: 12px;
-  height: 12px;
-}
-
 .parts-offer-badge {
   padding: 2px 6px 1px;
   border-radius: 4px;
@@ -2277,9 +2263,24 @@ button.journey-item:active {
 }
 
 .parts-offer-price {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.parts-offer-price strong {
   color: var(--accent);
   font-size: 14px;
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The unit price only earns a line once the total stops matching it. */
+.parts-offer-price small {
+  color: var(--muted);
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
 

@@ -4354,7 +4354,7 @@ function repairPartsTable() {
         <button class="repair-part-row" type="button" data-action="open-part-modal" data-part-index="${index}">
           ${thumb}
           <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
-          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}</span>
+          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(multiplyPrice(part.price, part.quantity))}</strong>` : `<em>Not priced</em>`}</span>
           <span class="repair-part-chevron">${icon("arrow")}</span>
         </button>
       </div>`;
@@ -5362,6 +5362,18 @@ function recordedPartForOffer(offer) {
   return state.repair.parts.find((part) => (offer.link && part.offerUrl === offer.link) || part.name.toLowerCase() === title);
 }
 
+// A line's price is what the mechanic is buying: the unit price times how many
+// of them. The currency prefix the supplier sent is kept as-is.
+function multiplyPrice(price, quantity) {
+  const qty = Math.max(1, Number(quantity) || 1);
+  const text = String(price || "");
+  const match = text.match(/[\d.,]+/);
+  if (!match) return text;
+  const value = Number(match[0].replace(/,/g, ""));
+  if (!Number.isFinite(value)) return text;
+  return text.replace(match[0], (value * qty).toFixed(2));
+}
+
 function partsOfferCard(offer, index) {
   const merchant = offer.merchant || "Unknown supplier";
   const title = offer.title || partsSearch.term;
@@ -5370,12 +5382,12 @@ function partsOfferCard(offer, index) {
   return `<div class="parts-offer${quantity ? " is-added" : ""}">
     ${offer.imageUrl ? `<img class="parts-offer-thumb" src="${escapeHTML(offer.imageUrl)}" alt="" loading="lazy" />` : `<span class="parts-offer-thumb parts-offer-thumb-empty">${icon("search")}</span>`}
     <span class="parts-offer-body">
-      <span class="parts-offer-merchant">${offer === partsSearch.cheapest ? `<em class="parts-offer-badge">Lowest</em>` : ""}${quantity ? `<em class="parts-offer-badge parts-offer-badge-added">${icon("check")} Added</em>` : ""}${escapeHTML(merchant)}</span>
+      <span class="parts-offer-merchant">${offer === partsSearch.cheapest ? `<em class="parts-offer-badge">Lowest</em>` : ""}${escapeHTML(merchant)}</span>
       <span class="parts-offer-title">${escapeHTML(title)}</span>
       <span class="parts-offer-meta">${escapeHTML(offer.delivery || "Availability not listed")}</span>
     </span>
     <span class="parts-offer-side">
-      <strong class="parts-offer-price">${escapeHTML(offer.price || "Quote")}</strong>
+      <span class="parts-offer-price"><strong>${escapeHTML(multiplyPrice(offer.price, quantity) || "Quote")}</strong>${quantity > 1 ? `<small>${quantity} \u00d7 ${escapeHTML(offer.price)}</small>` : ""}</span>
       <span class="parts-offer-qty" role="group" aria-label="Quantity for ${escapeHTML(title)}">
         <button type="button" data-action="offer-qty" data-offer-index="${index}" data-part-delta="-1"${quantity ? "" : " disabled"} aria-label="Remove one from the repair">${icon("minus")}</button>
         <span>${quantity}</span>
