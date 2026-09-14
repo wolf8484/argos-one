@@ -4352,7 +4352,8 @@ function repairPartsTable() {
         <button class="repair-part-row" type="button" data-action="toggle-part-detail" data-part-index="${index}" aria-expanded="${open}">
           ${thumb}
           <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
-          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}${icon("down")}</span>
+          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}</span>
+          <span class="repair-part-chevron">${icon("down")}</span>
         </button>
         ${open ? `<div class="repair-part-detail">
           <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" data-part-field="name" data-part-index="${index}" value="${escapeHTML(part.name)}" placeholder="e.g. Oil filter" /></label>

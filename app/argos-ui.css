@@ -1789,7 +1789,7 @@ button.journey-item:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   min-height: 72px;
   padding: 16px;
@@ -1805,10 +1805,13 @@ button.journey-item:active {
   background: var(--surface-3);
 }
 
+/* Takes the slack between the thumbnail and the price so the name starts
+   right beside the image instead of drifting into the middle of the row. */
 .repair-part-copy {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1;
   min-width: 0;
 }
 
@@ -1827,29 +1830,36 @@ button.journey-item:active {
 .repair-part-value {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex: none;
   font-size: var(--copy-size);
 }
 
 .repair-part-value strong {
-  font-weight: 500;
   font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .repair-part-value em {
   color: var(--muted);
+  font-size: 14px;
   font-style: normal;
 }
 
-.repair-part-value svg {
+.repair-part-chevron {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.repair-part-chevron svg {
   width: 18px;
   height: 18px;
   color: var(--accent);
   transition: transform 160ms ease;
 }
 
-.repair-part-card.is-open .repair-part-value svg {
+.repair-part-card.is-open .repair-part-chevron svg {
   transform: rotate(180deg);
 }
 
@@ -5430,6 +5440,37 @@ body.dictation-active .toast {
   .repair-parts-empty {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  /* Listing titles run long, so on a phone the price drops to its own line
+     under the name rather than squeezing it into a narrow column. */
+  .repair-part-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "thumb copy chevron"
+      ".     price price";
+    align-items: center;
+    row-gap: 10px;
+  }
+
+  .repair-part-thumb {
+    grid-area: thumb;
+    align-self: start;
+  }
+
+  .repair-part-copy {
+    grid-area: copy;
+  }
+
+  .repair-part-chevron {
+    grid-area: chevron;
+    align-self: start;
+  }
+
+  .repair-part-value {
+    grid-area: price;
+    justify-content: flex-start;
   }
 
   .nav-item,
