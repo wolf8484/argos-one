@@ -1300,13 +1300,6 @@ main:focus {
   color: var(--muted);
 }
 
-.recorded-part-price a {
-  color: var(--accent);
-  font-size: 14px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .resolved-photo-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -1776,88 +1769,182 @@ button.journey-item:active {
   line-height: 1.4;
 }
 
-.repair-parts-table {
-  display: grid;
-  gap: 8px;
+/* Each recorded part is its own card, stacked with a gap and opened in place
+   -- the same row/detail treatment as the staff list, rather than a four
+   column table squeezed into phone width. */
+.repair-parts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
   margin-top: 2px;
-  padding: 12px;
+}
+
+.repair-part-card {
+  border-radius: var(--card-radius);
   background: var(--surface-2);
+  overflow: hidden;
 }
 
-.repair-parts-table-head,
-.repair-parts-table-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) 58px minmax(130px, 0.8fr) auto;
+.repair-part-row {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
+  width: 100%;
+  min-height: 72px;
+  padding: 16px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.repair-parts-table-head {
-  min-height: 42px;
-  color: var(--muted);
-  font-size: var(--caps-size);
-  text-transform: uppercase;
-}
-
-.repair-parts-table-row {
-  min-height: 82px;
-  padding: 12px 14px;
+.repair-part-row:active {
   background: var(--surface-3);
 }
 
-.recorded-part-main strong,
-.recorded-part-main span,
-.recorded-part-price strong,
-.recorded-part-price span {
-  display: block;
+.repair-part-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 
-.recorded-part-main strong,
-.recorded-part-price strong {
+.repair-part-copy strong {
   font-size: var(--copy-size);
   font-weight: 500;
+  line-height: 1.35;
 }
 
-.recorded-part-main span,
-.recorded-part-price span {
-  margin-top: 5px;
+.repair-part-copy > span {
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.35;
 }
 
-.recorded-part-qty {
+.repair-part-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
   font-size: var(--copy-size);
 }
 
-.recorded-part-actions,
-.suggested-part-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+.repair-part-value strong {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
-.recorded-part-actions button {
-  display: inline-flex;
+.repair-part-value em {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.repair-part-value svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+  transition: transform 160ms ease;
+}
+
+.repair-part-card.is-open .repair-part-value svg {
+  transform: rotate(90deg);
+}
+
+.repair-part-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 16px 16px;
+}
+
+.repair-part-detail-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.repair-part-qty {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.repair-part-qty button {
+  display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
-  padding: 0 10px;
-  gap: 8px;
-  border: 1px solid var(--secondary-border);
-  background: transparent;
-  color: var(--text);
-  font-size: var(--copy-size);
+  width: 52px;
+  min-height: 56px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
 }
 
-.recorded-part-actions button:active {
+.repair-part-qty button:active {
   background: var(--surface-3);
 }
 
-.recorded-part-actions svg {
-  width: 17px;
-  height: 17px;
+.repair-part-qty button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.repair-part-qty > span {
+  min-width: 28px;
+  font-size: var(--copy-size);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.repair-part-supplier {
+  color: var(--muted);
+  font-size: var(--caps-size);
+}
+
+.repair-part-supplier a {
   color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.repair-part-price-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--caps-size);
+  cursor: pointer;
+}
+
+.repair-part-price-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.repair-part-remove {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--caps-size);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .action-dock.repair-action-dock {
@@ -1874,72 +1961,9 @@ button.journey-item:active {
   height: 20px;
 }
 
-/* Parts editor */
-.parts-editor-section + .parts-editor-section {
-  margin-top: 40px;
-  padding-top: 18px;
-}
-
-.parts-editor-heading h3 {
-  margin-top: 6px;
-  font-size: 20px;
-}
-
-.parts-editor-heading p {
-  max-width: 680px;
-  margin-top: 8px;
-  color: var(--muted-strong);
-  font-size: var(--copy-size);
-  line-height: 1.45;
-}
-
-.suggested-parts-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.suggested-part-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 20px;
-  min-height: 82px;
-  padding: 14px;
-  background: var(--surface-2);
-}
-
-.suggested-part-row strong,
-.suggested-part-row span {
-  display: block;
-}
-
-.suggested-part-row strong {
-  font-size: var(--copy-size);
-  font-weight: 500;
-}
-
-.suggested-part-row > div:first-child span {
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: var(--caps-size);
-}
-
-.suggested-part-actions .part-button {
-  width: 148px;
-  min-width: 148px;
-  min-height: 52px;
-}
-
-.reference-toggle-button {
-  justify-content: center;
-}
-
-.reference-toggle-button.is-remove {
-  border-color: var(--line-strong);
-}
-
-.suggested-part-actions .part-button:disabled,
+/* Parts editor -- search first. One query field, supplier offers under it,
+   tap an offer to record the item. Parts carried over from a similar repair
+   are added on the Similar repairs step, so this sheet does one job. */
 .add-reference-part:disabled {
   border-color: var(--line);
   color: var(--muted);
@@ -1947,15 +1971,230 @@ button.journey-item:active {
   opacity: 0.72;
 }
 
-.custom-part-form {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1.4fr) minmax(0, 1fr) 82px;
+.parts-editor-body {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin-top: 18px;
 }
 
-.custom-part-save {
-  grid-column: 1 / -1;
+.parts-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.parts-search-icon {
+  position: absolute;
+  left: 14px;
+  display: flex;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.parts-search-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.parts-search-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 100px 0 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--copy-size);
+}
+
+.parts-search-input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.parts-search-go {
+  position: absolute;
+  right: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--caps-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.parts-search-hint {
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 1.45;
+}
+
+.parts-search-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--copy-size);
+}
+
+.parts-search-status svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  animation: parts-search-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes parts-search-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.parts-offer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+
+.parts-offer {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.parts-offer:active {
+  background: var(--surface-3);
+}
+
+.parts-offer-thumb {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 8px;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.parts-offer-thumb-empty {
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--muted);
+}
+
+.parts-offer-thumb-empty svg {
+  width: 20px;
+  height: 20px;
+}
+
+.parts-offer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.parts-offer-merchant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--copy-size);
+  font-weight: 500;
+}
+
+.parts-offer-badge {
+  padding: 2px 6px 1px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.parts-offer-title {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.parts-offer-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.parts-offer-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: none;
+}
+
+.parts-offer-price strong {
+  color: var(--accent);
+  font-size: 19px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.parts-offer-use {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted-strong);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.parts-offer-use svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Consumables and shop stock are not always findable, and a bay with bad
+   signal still has to be able to log a part -- so search is never a gate. */
+.parts-manual-add {
+  min-height: 56px;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--card-radius);
+  background: none;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: var(--caps-size);
+  cursor: pointer;
+}
+
+.parts-manual-add:active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.parts-editor-sheet .sheet-footer {
+  position: sticky;
+  bottom: 0;
+  padding: 12px var(--gutter) calc(12px + var(--safe-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--sheet-surface);
 }
 
 .part-product-placeholder {
@@ -2507,8 +2746,6 @@ button.journey-item:active {
 }
 
 .field-actions,
-.recorded-part-actions,
-.suggested-part-actions,
 .part-row-actions,
 .result-actions,
 .confirmation-actions {
@@ -4047,8 +4284,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .enhance-button:not(.is-enhancing),
 :root[data-theme="light"] .add-dtc-button,
 :root[data-theme="light"] .vin-camera,
-:root[data-theme="light"] .calendar-nav,
-:root[data-theme="light"] .recorded-part-actions button {
+:root[data-theme="light"] .calendar-nav {
   background: transparent;
   border-color: #1e1e1e;
   color: #1e1e1e;
@@ -4061,8 +4297,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .enhance-button:not(.is-enhancing) svg,
 :root[data-theme="light"] .add-dtc-button svg,
 :root[data-theme="light"] .vin-camera svg,
-:root[data-theme="light"] .calendar-nav svg,
-:root[data-theme="light"] .recorded-part-actions button svg {
+:root[data-theme="light"] .calendar-nav svg {
   color: #1e1e1e;
 }
 
@@ -4091,8 +4326,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .enhance-button:not(.is-enhancing):active,
 :root[data-theme="light"] .add-dtc-button:active,
 :root[data-theme="light"] .vin-camera:active,
-:root[data-theme="light"] .calendar-nav:active,
-:root[data-theme="light"] .recorded-part-actions button:active {
+:root[data-theme="light"] .calendar-nav:active {
   background: var(--surface-3);
 }
 
@@ -4216,7 +4450,6 @@ button.settings-toggle-row {
   .web-button:hover,
   .part-button:hover,
   .calendar-nav:hover,
-  .recorded-part-actions button:hover,
   .quick-chip:not(.is-selected):hover,
   .filter-button:not(.is-active):hover {
     background: var(--surface-3);
@@ -4230,7 +4463,6 @@ button.settings-toggle-row {
   :root[data-theme="light"] .add-dtc-button:hover,
   :root[data-theme="light"] .vin-camera:hover,
   :root[data-theme="light"] .calendar-nav:hover,
-  :root[data-theme="light"] .recorded-part-actions button:hover,
   :root[data-theme="light"] .quick-chip:not(.is-selected):hover,
   :root[data-theme="light"] .filter-button:not(.is-active):hover {
     background: #1d1d1d;
@@ -5136,79 +5368,9 @@ body.dictation-active .toast {
     height: 44px;
   }
 
-  .suggested-part-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 14px 0;
-  }
-
-  .suggested-part-actions {
-    justify-content: stretch;
-  }
-
-  .suggested-part-actions .part-button {
-    flex: 1;
-  }
-
-  .custom-part-form {
-    grid-template-columns: minmax(0, 1fr) 92px;
-  }
-
-  .custom-part-form .form-field:nth-child(1) {
-    grid-column: 1;
-  }
-
-  .custom-part-form .form-field:nth-child(4) {
-    grid-column: 2;
-  }
-
-  .custom-part-name,
-  .custom-part-form .form-field:nth-child(3),
-  .custom-part-save {
-    grid-column: 1 / -1;
-  }
-
   .repair-parts-empty {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .repair-parts-table-head {
-    display: none;
-  }
-
-  .repair-parts-table-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px 16px;
-    padding: 14px;
-  }
-
-  .recorded-part-main {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .recorded-part-qty {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: start;
-  }
-
-  .recorded-part-qty::before {
-    margin-right: 6px;
-    color: var(--muted);
-    content: "QTY";
-    font-size: var(--caps-size);
-  }
-
-  .recorded-part-price {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .recorded-part-actions {
-    grid-column: 2;
-    grid-row: 2;
   }
 
   .nav-item,

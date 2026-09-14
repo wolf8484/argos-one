@@ -26,6 +26,13 @@ let repairAutosaveInFlight = false;
 let animateNextScreen = false;
 let pendingMatchCarouselRestore = null;
 let lastResearchResult = null;
+// The parts sheet is search-first: one query field, supplier offers below it,
+// tap an offer to record it. Held here rather than on `state` because it is
+// sheet-local scratch, thrown away when the sheet closes.
+let partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+// Which recorded part is expanded into its editor, by index. Only one at a
+// time -- the row/detail pattern the staff list uses.
+let expandedPartIndex = null;
 const photoGestureStates = new WeakMap();
 const BUILD_VERSION = window.__ARGOS_BUILD_VERSION__ || "dev-local";
 let updateAvailable = false;
@@ -333,6 +340,7 @@ const icons = {
   database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
   arrow: '<path d="m9 18 6-6-6-6"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
   back: '<path d="m15 18-6-6 6-6"/>',
@@ -4331,14 +4339,36 @@ function repairPartsTable() {
     return `<div class="repair-parts-empty"><span>No items added to this repair yet.</span></div>`;
   }
 
-  return `<div class="repair-parts-table" role="table" aria-label="Parts and consumables added to this repair">
-    <div class="repair-parts-table-head visually-hidden" role="row"><span role="columnheader">Item</span><span role="columnheader">Qty</span><span role="columnheader">Supplier / price</span><span role="columnheader">Actions</span></div>
-    ${state.repair.parts.map((part, index) => `<div class="repair-parts-table-row" role="row">
-      <div class="recorded-part-main" role="cell"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(part.type)}${part.number ? ` · ${escapeHTML(part.number)}` : ""}</span></div>
-      <span class="recorded-part-qty" role="cell">${escapeHTML(part.quantity || "1")}</span>
-      <div class="recorded-part-price" role="cell">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong><span>${escapeHTML(part.supplier)}</span>${part.offerUrl ? `<a href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">View offer</a>` : ""}` : `<span>Not priced</span>`}</div>
-      <div class="recorded-part-actions" role="cell"><button type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Price</button><button type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">Remove</button></div>
-    </div>`).join("")}
+  // Each item is its own card, stacked with a gap -- the same row/detail
+  // treatment as the staff list, rather than a table crammed into phone width.
+  return `<div class="repair-parts-list">
+    ${state.repair.parts.map((part, index) => {
+      const open = expandedPartIndex === index;
+      const meta = [part.type, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" · ");
+      return `<div class="repair-part-card${open ? " is-open" : ""}">
+        <button class="repair-part-row" type="button" data-action="toggle-part-detail" data-part-index="${index}" aria-expanded="${open}">
+          <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
+          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}${icon("arrow")}</span>
+        </button>
+        ${open ? `<div class="repair-part-detail">
+          <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" data-part-field="name" data-part-index="${index}" value="${escapeHTML(part.name)}" /></label>
+          <div class="repair-part-detail-pair">
+            <label class="form-field"><div class="field-header"><span class="field-label">Part number</span></div><input class="input" data-part-field="number" data-part-index="${index}" value="${escapeHTML(part.number || "")}" placeholder="Optional" /></label>
+            <div class="form-field"><div class="field-header"><span class="field-label">Qty</span></div>
+              <div class="repair-part-qty" role="group" aria-label="Quantity for ${escapeHTML(part.name)}">
+                <button type="button" data-action="part-qty" data-part-index="${index}" data-part-delta="-1" aria-label="Decrease quantity">${icon("minus")}</button>
+                <span>${escapeHTML(part.quantity || "1")}</span>
+                <button type="button" data-action="part-qty" data-part-index="${index}" data-part-delta="1" aria-label="Increase quantity">${icon("plus")}</button>
+              </div>
+            </div>
+          </div>
+          ${part.supplier
+            ? `<p class="repair-part-supplier">${escapeHTML(part.price)} · ${escapeHTML(part.supplier)}${part.offerUrl ? ` <a href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">View offer</a>` : ""}</p>`
+            : `<button class="repair-part-price-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
+          <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">Remove item</button>
+        </div>` : ""}
+      </div>`;
+    }).join("")}
   </div>`;
 }
 
@@ -5221,29 +5251,83 @@ function addRepairPart(part) {
   return true;
 }
 
+// Search-first: the mechanic types what they need, picks a supplier offer, and
+// the item lands on the repair priced. Parts from the selected similar repair
+// are added on the Similar repairs step instead, so this sheet stays one job.
 function partsEditorSheet() {
-  const selected = repairMatches.find((repair) => repair.id === state.selectedRepair) || repairMatches[0];
-  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> · ${state.repair.parts.length} saved</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
-    <div class="sheet-body parts-editor-body">
-      ${state.repairReferenceEnabled ? `<section class="parts-editor-section" aria-labelledby="suggested-parts-heading">
-        <div class="parts-editor-heading"><span class="field-label">From selected repair ${selected.rank}</span><h3 id="suggested-parts-heading">Previously used on this fix</h3><p>Add only the items you actually use. Search pricing later from the repair record.</p></div>
-        <div class="suggested-parts-list">${selected.parts.map(([name, number, key]) => {
-          const isAdded = state.repair.parts.some((part) => part.key === key || part.name === name);
-          return `<div class="suggested-part-row"><div><strong>${name}</strong><span>${number}</span></div><div class="suggested-part-actions"><button class="part-button reference-toggle-button${isAdded ? " is-remove" : ""}" type="button" data-action="toggle-reference-part" data-reference-key="${key}" data-reference-name="${name}" data-reference-number="${number}" aria-pressed="${isAdded}">${isAdded ? `${icon("close")} Remove` : `${icon("plus")} Add`}</button></div></div>`;
-        }).join("")}</div>
-      </section>` : ""}
+  const count = state.repair.parts.length;
+  const term = partsSearch.term.trim();
+  let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing. Tap a result to add it to this repair.</p>`;
 
-      <section class="parts-editor-section custom-part-section" aria-labelledby="custom-part-heading">
-        <div class="parts-editor-heading"><span class="field-label">Different item</span><h3 id="custom-part-heading">Add a custom part</h3></div>
-        <form id="part-editor-form" class="custom-part-form">
-          <label class="form-field"><div class="field-header"><span class="field-label">Type</span></div><span class="select-control"><select class="select" name="custom-type"><option>Part</option><option>Consumable</option></select>${icon("down")}</span></label>
-          <label class="form-field custom-part-name"><div class="field-header"><span class="field-label">Part or consumable</span></div><input class="input" name="custom-name" placeholder="e.g. Oil filter" /></label>
-          <label class="form-field"><div class="field-header"><span class="field-label">Part number</span></div><input class="input" name="custom-number" placeholder="Optional" /></label>
-          <label class="form-field"><div class="field-header"><span class="field-label">Qty</span></div><input class="input" name="custom-quantity" value="1" inputmode="numeric" /></label>
-          <button class="primary-button full custom-part-save" type="button" data-action="save-custom-part">${icon("save")} Save item to repair</button>
-        </form>
-      </section>
-    </div>`);
+  if (partsSearch.phase === "searching") {
+    body = `<div class="parts-search-status">${icon("search")}<span>Checking suppliers for “${escapeHTML(term)}”…</span></div>`;
+  } else if (partsSearch.phase === "error") {
+    body = `<div class="source-card"><h3>Could not load supplier offers</h3><p>${escapeHTML(partsSearch.error || "Try again in a moment.")}</p></div>
+      ${partsManualAddButton(term)}`;
+  } else if (partsSearch.phase === "results") {
+    body = `${partsSearch.offers.length
+      ? `<span class="field-label">${partsSearch.offers.length} offer${partsSearch.offers.length === 1 ? "" : "s"} · cheapest first</span>
+        <div class="parts-offer-list">${partsSearch.offers.map(partsOfferCard).join("")}</div>`
+      : `<div class="source-card"><h3>No current offers found</h3><p>Try a more specific part number, or add it without a price.</p></div>`}
+      ${partsManualAddButton(term)}
+      <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>`;
+  }
+
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> · ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+    <div class="sheet-body parts-editor-body">
+      <form id="parts-search-form" class="parts-search">
+        <span class="parts-search-icon">${icon("search")}</span>
+        <input class="parts-search-input" id="parts-search-input" name="partsQuery" value="${escapeHTML(partsSearch.term)}" placeholder="e.g. Oil 5W-40, brake pads, gasket…" aria-label="Search parts and consumables" autocomplete="off" />
+        ${term ? `<button class="parts-search-go" type="submit">Search</button>` : ""}
+      </form>
+      ${body}
+    </div>
+    <div class="sheet-footer">
+      <button class="primary-button full" type="button" data-action="close-sheet">Done · ${count} item${count === 1 ? "" : "s"}</button>
+    </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
+}
+
+function partsManualAddButton(term) {
+  if (!term) return "";
+  return `<button class="parts-manual-add" type="button" data-action="add-manual-part">None of these — add “${escapeHTML(term)}” without a price</button>`;
+}
+
+function partsOfferCard(offer, index) {
+  const merchant = offer.merchant || "Unknown supplier";
+  const title = offer.title || partsSearch.term;
+  return `<button class="parts-offer" type="button" data-action="add-offer-part" data-offer-index="${index}">
+    ${offer.imageUrl ? `<img class="parts-offer-thumb" src="${escapeHTML(offer.imageUrl)}" alt="" loading="lazy" />` : `<span class="parts-offer-thumb parts-offer-thumb-empty">${icon("search")}</span>`}
+    <span class="parts-offer-body">
+      <span class="parts-offer-merchant">${index === 0 ? `<em class="parts-offer-badge">Lowest</em>` : ""}${escapeHTML(merchant)}</span>
+      <span class="parts-offer-title">${escapeHTML(title)}</span>
+      <span class="parts-offer-meta">${escapeHTML(offer.delivery || "Availability not listed")}</span>
+    </span>
+    <span class="parts-offer-price"><strong>${escapeHTML(offer.price || "Quote")}</strong><span class="parts-offer-use">Add ${icon("arrow")}</span></span>
+  </button>`;
+}
+
+async function runPartsSearch(rawTerm) {
+  const term = String(rawTerm || "").trim();
+  if (!term) return;
+  partsSearch = { term, phase: "searching", offers: [], error: "" };
+  partsEditorSheet();
+  // The vehicle sharpens fitment the same way the older price sheet did.
+  const query = [state.vehicle.year, state.vehicle.make, state.vehicle.model, term].filter(Boolean).join(" ");
+  try {
+    const response = await fetch("/api/parts/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Part search failed");
+    if (sheetLayer.hidden) return;
+    partsSearch = { term, phase: "results", offers: Array.isArray(result.offers) ? result.offers : [], error: "" };
+  } catch (error) {
+    if (sheetLayer.hidden) return;
+    partsSearch = { term, phase: "error", offers: [], error: error?.message || "" };
+  }
+  partsEditorSheet();
 }
 
 async function priceSheet(partName, partKey = "") {
@@ -5852,7 +5936,54 @@ document.addEventListener("click", (event) => {
     if (action === "open-parts-editor") {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
+      partsSearch = { term: "", phase: "idle", offers: [], error: "" };
       return partsEditorSheet();
+    }
+    if (action === "toggle-part-detail") {
+      const index = Number(actionButton.dataset.partIndex);
+      const form = document.querySelector("#repair-form");
+      if (form) syncRepairRecord(form);
+      expandedPartIndex = expandedPartIndex === index ? null : index;
+      return render();
+    }
+    if (action === "part-qty") {
+      const index = Number(actionButton.dataset.partIndex);
+      const part = state.repair.parts[index];
+      if (!part) return;
+      const next = Math.max(1, (Number(part.quantity) || 1) + Number(actionButton.dataset.partDelta));
+      part.quantity = String(next);
+      render();
+      return queueRepairAutosave();
+    }
+    if (action === "add-offer-part") {
+      const offer = partsSearch.offers[Number(actionButton.dataset.offerIndex)];
+      if (!offer) return;
+      // The listing title is the recorded name for now; it stays editable on
+      // the part card so a mechanic can shorten it to something readable.
+      addRepairPart({
+        type: "Part",
+        name: offer.title || partsSearch.term,
+        number: "",
+        quantity: "1",
+        supplier: offer.merchant || "Unknown supplier",
+        price: offer.price || "Quote required",
+        offerUrl: offer.link || "",
+        offerImageUrl: offer.imageUrl || "",
+      });
+      render();
+      partsEditorSheet();
+      queueRepairAutosave();
+      return showToast("Item added to the repair record.");
+    }
+    if (action === "add-manual-part") {
+      const term = partsSearch.term.trim();
+      if (!term) return;
+      addRepairPart({ type: "Part", name: term, number: "", quantity: "1" });
+      partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+      render();
+      partsEditorSheet();
+      queueRepairAutosave();
+      return showToast("Item added without a price.");
     }
     if (action === "add-reference-part") {
       const added = addRepairPart(repairPartFromReference(actionButton.dataset.referenceName, actionButton.dataset.referenceNumber, actionButton.dataset.referenceKey));
@@ -5860,36 +5991,11 @@ document.addEventListener("click", (event) => {
       if (added) queueRepairAutosave();
       return showToast(added ? "Item added to the repair record." : "This item is already in the repair record.");
     }
-    if (action === "toggle-reference-part") {
-      const key = actionButton.dataset.referenceKey;
-      const name = actionButton.dataset.referenceName;
-      const existingIndex = state.repair.parts.findIndex((part) => part.key === key || part.name === name);
-      const removed = existingIndex >= 0;
-      if (removed) state.repair.parts.splice(existingIndex, 1);
-      else addRepairPart(repairPartFromReference(name, actionButton.dataset.referenceNumber, key));
-      render();
-      partsEditorSheet();
-      queueRepairAutosave();
-      return showToast(removed ? "Item removed from the repair record." : "Item added to the repair record.");
-    }
-    if (action === "save-custom-part") {
-      const form = document.querySelector("#part-editor-form");
-      const data = new FormData(form);
-      const name = String(data.get("custom-name") || "").trim();
-      if (!name) {
-        form.querySelector('[name="custom-name"]')?.focus();
-        return showToast("Enter a part or consumable name first.");
-      }
-      addRepairPart({ type: String(data.get("custom-type") || "Part"), name, number: String(data.get("custom-number") || "").trim(), quantity: String(data.get("custom-quantity") || "1").trim() || "1" });
-      closeSheet();
-      render();
-      queueRepairAutosave();
-      return showToast("Custom item saved to the repair record.");
-    }
     if (action === "remove-recorded-part") {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
       state.repair.parts.splice(Number(actionButton.dataset.recordedPartIndex), 1);
+      expandedPartIndex = null;
       render();
       queueRepairAutosave();
       return showToast("Item removed from this repair record.");
@@ -6045,6 +6151,16 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  // Written straight into state without a re-render, so the field keeps focus
+  // while typing; the collapsed row picks the new value up when it closes.
+  if (event.target.matches("[data-part-field]")) {
+    const part = state.repair.parts[Number(event.target.dataset.partIndex)];
+    if (part) {
+      part[event.target.dataset.partField] = event.target.value;
+      queueRepairAutosave();
+    }
+    return;
+  }
   if (event.target.matches("#repair-notes, #repair-verification")) {
     if (event.target.id === "repair-notes") state.repair.workNotes = event.target.value;
     if (event.target.id === "repair-verification") state.repair.verificationNotes = event.target.value;
@@ -6203,6 +6319,9 @@ document.addEventListener("change", (event) => {
 
 document.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (event.target.id === "parts-search-form") {
+    return runPartsSearch(event.target.querySelector("#parts-search-input")?.value);
+  }
   if (event.target.id === "profile-note-form") return saveProfileNote(event.target);
   if (event.target.id === "edit-notes-form") return saveEditedNotes(event.target);
   if (event.target.id === "branch-form") return createBranch(event.target);
