@@ -1498,12 +1498,28 @@ function problemTaskHeader() {
   });
 }
 
+// The gear count tells a mechanic standing at the car nothing -- what matters
+// is whether it has a clutch pedal.
+function shortTransmission(transmission) {
+  const text = String(transmission || "");
+  if (!text) return "";
+  if (/manual/i.test(text)) return "Manual";
+  if (/auto|dsg|dct|cvt|tiptronic|tronic/i.test(text)) return "Auto";
+  return text;
+}
+
+// Trim, transmission and mileage -- the three a mechanic actually reads off
+// the header. Drivetrain and engine live on the vehicle details page.
+function vehicleSpecLine(vehicle) {
+  return [vehicle.trim, shortTransmission(vehicle.transmission), formatMileageDisplay(vehicle.mileage)].filter(Boolean).join(" \u00b7 ");
+}
+
 function vehicleName() {
   return `${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}`;
 }
 
 function vehicleMoustache() {
-  const specs = [state.vehicle.trim, state.vehicle.drivetrain, state.vehicle.engine, state.vehicle.transmission, formatMileageDisplay(state.vehicle.mileage)].filter(Boolean).join(" · ");
+  const specs = vehicleSpecLine(state.vehicle);
   return specs ? `<span>${specs}</span>` : "";
 }
 
@@ -1595,7 +1611,7 @@ function jobCard(job, { hidden = false } = {}) {
         <span class="job-bay">${job.bay.toUpperCase()}</span>
       </span>
       <span class="job-vehicle">${jobVehicleName(job)}</span>
-      <span class="job-card-context"><span>${escapeHTML(formatMileageDisplay(job.vehicle.mileage))}</span><span>${escapeHTML(job.vehicle.customerName)}</span></span>
+      <span class="job-card-context"><span>${escapeHTML(vehicleSpecLine(job.vehicle))}</span></span>
       <span class="job-issue">${jobSummary(job)}</span>
     </button>
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
