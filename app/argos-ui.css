@@ -2238,7 +2238,7 @@ button.journey-item:active {
 /* Short results (or none at all) must not collapse the sheet into a strip --
    it has to stay a workable surface while the mechanic types and searches. */
 .parts-editor-sheet {
-  min-height: 400px;
+  min-height: 480px;
 }
 
 .parts-editor-sheet .sheet-footer {
@@ -2253,6 +2253,13 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Both the CTA and the whole bar come and go as the field is typed into, so
+   they need to beat the display rules their classes set. */
+.parts-editor-footer[hidden],
+.parts-editor-footer .primary-button[hidden] {
+  display: none;
 }
 
 .parts-added-summary {

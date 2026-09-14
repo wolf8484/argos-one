@@ -30,6 +30,10 @@ let lastResearchResult = null;
 // tap an offer to record it. Held here rather than on `state` because it is
 // sheet-local scratch, thrown away when the sheet closes.
 let partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+// Keys of the parts added while this sheet has been open. The footer counts
+// these, not the record's total -- the mechanic wants to see what they just
+// did, not what was already logged.
+let partsAddedThisSession = new Set();
 const photoGestureStates = new WeakMap();
 const BUILD_VERSION = window.__ARGOS_BUILD_VERSION__ || "dev-local";
 let updateAvailable = false;
@@ -5276,6 +5280,7 @@ function addRepairPart(part) {
 // one job.
 function partsEditorSheet() {
   const count = state.repair.parts.length;
+  const addedHere = state.repair.parts.filter((part) => partsAddedThisSession.has(part.key)).length;
   const term = partsSearch.term.trim();
   let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing. Step an offer up to add it to this repair.</p>`;
 
@@ -5303,11 +5308,11 @@ function partsEditorSheet() {
       </form>
       ${body}
     </div>
-    <div class="sheet-footer parts-editor-footer">
-      ${count
-        ? `<p class="parts-added-summary"><span class="parts-added-count">${count}</span><span><strong>${count} item${count === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</span></p>`
+    <div class="sheet-footer parts-editor-footer"${addedHere || term ? "" : " hidden"} id="parts-editor-footer">
+      ${addedHere
+        ? `<p class="parts-added-summary"><span class="parts-added-count">${addedHere}</span><span><strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</span></p>`
         : ""}
-      <button class="primary-button full" type="submit" form="parts-search-form">${icon("search")} Search</button>
+      <button class="primary-button full" type="submit" form="parts-search-form" id="parts-search-submit"${term ? "" : " hidden"}>${icon("search")} Search</button>
     </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
 }
 
@@ -5980,6 +5985,7 @@ document.addEventListener("click", (event) => {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
       partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+      partsAddedThisSession = new Set();
       return partsEditorSheet();
     }
     if (action === "open-part-modal") {
@@ -6012,10 +6018,16 @@ document.addEventListener("click", (event) => {
           offerUrl: offer.link || "",
           offerImageUrl: offer.imageUrl || "",
         });
+        const added = recordedPartForOffer(offer);
+        if (added) partsAddedThisSession.add(added.key);
       } else {
         const next = (Number(recorded.quantity) || 1) + delta;
-        if (next < 1) state.repair.parts.splice(state.repair.parts.indexOf(recorded), 1);
-        else recorded.quantity = String(next);
+        if (next < 1) {
+          state.repair.parts.splice(state.repair.parts.indexOf(recorded), 1);
+          partsAddedThisSession.delete(recorded.key);
+        } else {
+          recorded.quantity = String(next);
+        }
       }
       render();
       partsEditorSheet();
@@ -6025,6 +6037,8 @@ document.addEventListener("click", (event) => {
       const term = partsSearch.term.trim();
       if (!term) return;
       addRepairPart({ type: "Part", name: term, number: "", quantity: "1" });
+      const manual = state.repair.parts.find((part) => part.name.toLowerCase() === term.toLowerCase());
+      if (manual) partsAddedThisSession.add(manual.key);
       partsSearch = { term: "", phase: "idle", offers: [], error: "" };
       render();
       partsEditorSheet();
@@ -6197,6 +6211,16 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  // Toggled in place rather than through a re-render, so the field keeps focus
+  // and the keyboard stays up while the mechanic types.
+  if (event.target.id === "parts-search-input") {
+    const typed = Boolean(event.target.value.trim());
+    const submit = document.querySelector("#parts-search-submit");
+    const footer = document.querySelector("#parts-editor-footer");
+    if (submit) submit.hidden = !typed;
+    if (footer) footer.hidden = !typed && !footer.querySelector(".parts-added-summary");
+    return;
+  }
   if (event.target.matches("#repair-notes, #repair-verification")) {
     if (event.target.id === "repair-notes") state.repair.workNotes = event.target.value;
     if (event.target.id === "repair-verification") state.repair.verificationNotes = event.target.value;
