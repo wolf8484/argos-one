@@ -5270,64 +5270,88 @@ function addRepairPart(part) {
   return true;
 }
 
-// Search-first: the mechanic types what they need, picks a supplier offer, and
-// the item lands on the repair priced. Parts from the selected similar repair
-// are added on the Similar repairs step instead, so this sheet stays one job.
+// Search-first: the mechanic types what they need, steps an offer's quantity
+// up, and the item lands on the repair priced. Parts from the selected similar
+// repair are added on the Similar repairs step instead, so this sheet stays
+// one job.
 function partsEditorSheet() {
   const count = state.repair.parts.length;
   const term = partsSearch.term.trim();
-  let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing. Tap a result to add it to this repair.</p>`;
+  let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing. Step an offer up to add it to this repair.</p>`;
 
-  if (partsSearch.phase === "searching") {
-    body = `<div class="parts-search-status">${icon("search")}<span>Checking suppliers for “${escapeHTML(term)}”…</span></div>`;
+  if (partsSearch.phase === "empty") {
+    body = `<div class="source-card"><h3>No item to search for</h3><p>Type a part or consumable in the field above, then tap Search.</p></div>`;
+  } else if (partsSearch.phase === "searching") {
+    body = `<div class="parts-search-status">${icon("search")}<span>Checking suppliers for \u201c${escapeHTML(term)}\u201d\u2026</span></div>`;
   } else if (partsSearch.phase === "error") {
     body = `<div class="source-card"><h3>Could not load supplier offers</h3><p>${escapeHTML(partsSearch.error || "Try again in a moment.")}</p></div>
       ${partsManualAddButton(term)}`;
   } else if (partsSearch.phase === "results") {
     body = `${partsSearch.offers.length
-      ? `<span class="field-label">${partsSearch.offers.length} offer${partsSearch.offers.length === 1 ? "" : "s"} · cheapest first</span>
+      ? `<span class="field-label">${partsSearch.offers.length} offer${partsSearch.offers.length === 1 ? "" : "s"} \u00b7 cheapest first</span>
         <div class="parts-offer-list">${partsSearch.offers.map(partsOfferCard).join("")}</div>`
       : `<div class="source-card"><h3>No current offers found</h3><p>Try a more specific part number, or add it without a price.</p></div>`}
       ${partsManualAddButton(term)}
       <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>`;
   }
 
-  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> · ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> \u00b7 ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body parts-editor-body">
       <form id="parts-search-form" class="parts-search">
         <span class="parts-search-icon">${icon("search")}</span>
-        <input class="parts-search-input" id="parts-search-input" name="partsQuery" value="${escapeHTML(partsSearch.term)}" placeholder="e.g. Oil 5W-40, brake pads, gasket…" aria-label="Search parts and consumables" autocomplete="off" />
-        ${term ? `<button class="parts-search-go" type="submit">Search</button>` : ""}
+        <input class="parts-search-input" id="parts-search-input" name="partsQuery" value="${escapeHTML(partsSearch.term)}" placeholder="e.g. Oil 5W-40, brake pads, gasket\u2026" aria-label="Search parts and consumables" autocomplete="off" />
       </form>
       ${body}
     </div>
-    <div class="sheet-footer">
-      <button class="primary-button full" type="button" data-action="close-sheet">Done · ${count} item${count === 1 ? "" : "s"}</button>
+    <div class="sheet-footer parts-editor-footer">
+      ${count
+        ? `<p class="parts-added-summary"><span class="parts-added-count">${count}</span><span><strong>${count} item${count === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</span></p>`
+        : ""}
+      <button class="primary-button full" type="submit" form="parts-search-form">${icon("search")} Search</button>
     </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
 }
 
 function partsManualAddButton(term) {
   if (!term) return "";
-  return `<button class="parts-manual-add" type="button" data-action="add-manual-part">None of these — add “${escapeHTML(term)}” without a price</button>`;
+  return `<button class="parts-manual-add" type="button" data-action="add-manual-part">None of these \u2014 add \u201c${escapeHTML(term)}\u201d without a price</button>`;
+}
+
+// An offer and a recorded part are matched on the supplier link first, falling
+// back to the name, because the name is editable once the item is on the record.
+function recordedPartForOffer(offer) {
+  const title = String(offer.title || "").toLowerCase();
+  return state.repair.parts.find((part) => (offer.link && part.offerUrl === offer.link) || part.name.toLowerCase() === title);
 }
 
 function partsOfferCard(offer, index) {
   const merchant = offer.merchant || "Unknown supplier";
   const title = offer.title || partsSearch.term;
-  return `<button class="parts-offer" type="button" data-action="add-offer-part" data-offer-index="${index}">
+  const recorded = recordedPartForOffer(offer);
+  const quantity = recorded ? Math.max(1, Number(recorded.quantity) || 1) : 0;
+  return `<div class="parts-offer${quantity ? " is-added" : ""}">
     ${offer.imageUrl ? `<img class="parts-offer-thumb" src="${escapeHTML(offer.imageUrl)}" alt="" loading="lazy" />` : `<span class="parts-offer-thumb parts-offer-thumb-empty">${icon("search")}</span>`}
     <span class="parts-offer-body">
-      <span class="parts-offer-merchant">${index === 0 ? `<em class="parts-offer-badge">Lowest</em>` : ""}${escapeHTML(merchant)}</span>
+      <span class="parts-offer-merchant">${index === 0 ? `<em class="parts-offer-badge">Lowest</em>` : ""}${quantity ? `<em class="parts-offer-badge parts-offer-badge-added">${icon("check")} Added</em>` : ""}${escapeHTML(merchant)}</span>
       <span class="parts-offer-title">${escapeHTML(title)}</span>
       <span class="parts-offer-meta">${escapeHTML(offer.delivery || "Availability not listed")}</span>
     </span>
-    <span class="parts-offer-price"><strong>${escapeHTML(offer.price || "Quote")}</strong><span class="parts-offer-use">Add ${icon("arrow")}</span></span>
-  </button>`;
+    <span class="parts-offer-side">
+      <strong class="parts-offer-price">${escapeHTML(offer.price || "Quote")}</strong>
+      <span class="parts-offer-qty" role="group" aria-label="Quantity for ${escapeHTML(title)}">
+        <button type="button" data-action="offer-qty" data-offer-index="${index}" data-part-delta="-1"${quantity ? "" : " disabled"} aria-label="Remove one from the repair">${icon("minus")}</button>
+        <span>${quantity}</span>
+        <button type="button" data-action="offer-qty" data-offer-index="${index}" data-part-delta="1" aria-label="Add one to the repair">${icon("plus")}</button>
+      </span>
+    </span>
+  </div>`;
 }
 
 async function runPartsSearch(rawTerm) {
   const term = String(rawTerm || "").trim();
-  if (!term) return;
+  if (!term) {
+    partsSearch = { term: "", phase: "empty", offers: [], error: "" };
+    return partsEditorSheet();
+  }
   partsSearch = { term, phase: "searching", offers: [], error: "" };
   partsEditorSheet();
   // The vehicle sharpens fitment the same way the older price sheet did.
@@ -5969,25 +5993,33 @@ document.addEventListener("click", (event) => {
       value.textContent = String(Math.max(1, (Number(value.textContent) || 1) + Number(actionButton.dataset.partDelta)));
       return;
     }
-    if (action === "add-offer-part") {
+    if (action === "offer-qty") {
       const offer = partsSearch.offers[Number(actionButton.dataset.offerIndex)];
       if (!offer) return;
-      // The listing title is the recorded name for now; it stays editable on
-      // the part card so a mechanic can shorten it to something readable.
-      addRepairPart({
-        type: "Part",
-        name: offer.title || partsSearch.term,
-        number: "",
-        quantity: "1",
-        supplier: offer.merchant || "Unknown supplier",
-        price: offer.price || "Quote required",
-        offerUrl: offer.link || "",
-        offerImageUrl: offer.imageUrl || "",
-      });
+      const delta = Number(actionButton.dataset.partDelta);
+      const recorded = recordedPartForOffer(offer);
+      if (!recorded) {
+        if (delta < 0) return;
+        // The listing title is the recorded name for now; it stays editable in
+        // the item modal so a mechanic can shorten it to something readable.
+        addRepairPart({
+          type: "Part",
+          name: offer.title || partsSearch.term,
+          number: "",
+          quantity: "1",
+          supplier: offer.merchant || "Unknown supplier",
+          price: offer.price || "Quote required",
+          offerUrl: offer.link || "",
+          offerImageUrl: offer.imageUrl || "",
+        });
+      } else {
+        const next = (Number(recorded.quantity) || 1) + delta;
+        if (next < 1) state.repair.parts.splice(state.repair.parts.indexOf(recorded), 1);
+        else recorded.quantity = String(next);
+      }
       render();
       partsEditorSheet();
-      queueRepairAutosave();
-      return showToast("Item added to the repair record.");
+      return queueRepairAutosave();
     }
     if (action === "add-manual-part") {
       const term = partsSearch.term.trim();
