@@ -4345,16 +4345,20 @@ function repairPartsTable() {
     ${state.repair.parts.map((part, index) => {
       const open = expandedPartIndex === index;
       const meta = [part.type, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" · ");
+      const thumb = part.offerImageUrl
+        ? `<img class="repair-part-thumb" src="${escapeHTML(part.offerImageUrl)}" alt="" loading="lazy" />`
+        : `<span class="repair-part-thumb repair-part-thumb-empty">${icon("wrench")}</span>`;
       return `<div class="repair-part-card${open ? " is-open" : ""}">
         <button class="repair-part-row" type="button" data-action="toggle-part-detail" data-part-index="${index}" aria-expanded="${open}">
+          ${thumb}
           <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
-          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}${icon("arrow")}</span>
+          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(part.price)}</strong>` : `<em>Not priced</em>`}${icon("down")}</span>
         </button>
         ${open ? `<div class="repair-part-detail">
-          <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" data-part-field="name" data-part-index="${index}" value="${escapeHTML(part.name)}" /></label>
+          <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" data-part-field="name" data-part-index="${index}" value="${escapeHTML(part.name)}" placeholder="e.g. Oil filter" /></label>
           <div class="repair-part-detail-pair">
-            <label class="form-field"><div class="field-header"><span class="field-label">Part number</span></div><input class="input" data-part-field="number" data-part-index="${index}" value="${escapeHTML(part.number || "")}" placeholder="Optional" /></label>
-            <div class="form-field"><div class="field-header"><span class="field-label">Qty</span></div>
+            <label class="form-field"><div class="field-header"><span class="field-label">Part number <span class="optional-label">(optional)</span></span></div><input class="input" data-part-field="number" data-part-index="${index}" value="${escapeHTML(part.number || "")}" placeholder="e.g. C-31090" /></label>
+            <div class="form-field"><div class="field-header"><span class="field-label">Quantity</span></div>
               <div class="repair-part-qty" role="group" aria-label="Quantity for ${escapeHTML(part.name)}">
                 <button type="button" data-action="part-qty" data-part-index="${index}" data-part-delta="-1" aria-label="Decrease quantity">${icon("minus")}</button>
                 <span>${escapeHTML(part.quantity || "1")}</span>
@@ -4362,10 +4366,12 @@ function repairPartsTable() {
               </div>
             </div>
           </div>
-          ${part.supplier
-            ? `<p class="repair-part-supplier">${escapeHTML(part.price)} · ${escapeHTML(part.supplier)}${part.offerUrl ? ` <a href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">View offer</a>` : ""}</p>`
-            : `<button class="repair-part-price-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
-          <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">Remove item</button>
+          <div class="repair-part-foot">
+            ${part.offerUrl
+              ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")}<span>View offer<small>Opens in your browser</small></span></a>`
+              : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")}<span>Find price<small>Searches Australian suppliers</small></span></button>`}
+            <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove item</button>
+          </div>
         </div>` : ""}
       </div>`;
     }).join("")}
