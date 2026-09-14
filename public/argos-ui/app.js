@@ -29,7 +29,7 @@ let lastResearchResult = null;
 // The parts sheet is search-first: one query field, supplier offers below it,
 // tap an offer to record it. Held here rather than on `state` because it is
 // sheet-local scratch, thrown away when the sheet closes.
-let partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+let partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
 // Keys of the parts added while this sheet has been open. The footer counts
 // these, not the record's total -- the mechanic wants to see what they just
 // did, not what was already logged.
@@ -354,6 +354,7 @@ const icons = {
   wrench: '<path d="M14.5 6.5a4.8 4.8 0 0 0-6-3.8l3 3-3.8 3.8-3-3a4.8 4.8 0 0 0 6.3 5.8L19.7 21l1.3-1.3-8.7-8.7a4.8 4.8 0 0 0 2.2-4.5Z"/>',
   bolt: '<path d="m13 2-8 12h7l-1 8 8-12h-7Z"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
+  sort: '<path d="M7 4v16m0 0-3.5-3.5M7 20l3.5-3.5M17 20V4m0 0-3.5 3.5M17 4l3.5 3.5"/>',
   close: '<path d="m6 6 12 12M18 6 6 18"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
@@ -5282,23 +5283,37 @@ function partsEditorSheet() {
   const count = state.repair.parts.length;
   const addedHere = state.repair.parts.filter((part) => partsAddedThisSession.has(part.key)).length;
   const term = partsSearch.term.trim();
-  let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing. Step an offer up to add it to this repair.</p>`;
+  const searching = partsSearch.phase === "searching";
+  let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing.</p>`;
 
   if (partsSearch.phase === "empty") {
     body = `<div class="source-card"><h3>No item to search for</h3><p>Type a part or consumable in the field above, then tap Search.</p></div>`;
-  } else if (partsSearch.phase === "searching") {
-    body = `<div class="parts-search-status">${icon("search")}<span>Checking suppliers for \u201c${escapeHTML(term)}\u201d\u2026</span></div>`;
+  } else if (searching) {
+    // Placeholders in the shape of the results, rather than a status box under
+    // a field that already says what is being looked for.
+    body = `<div class="parts-offer-list" aria-live="polite" aria-label="Checking suppliers">
+      ${Array.from({ length: 4 }, () => `<div class="parts-offer parts-offer-skeleton" aria-hidden="true"><span class="parts-offer-thumb"></span><span class="parts-offer-body"><span></span><span></span></span></div>`).join("")}
+    </div>`;
   } else if (partsSearch.phase === "error") {
     body = `<div class="source-card"><h3>Could not load supplier offers</h3><p>${escapeHTML(partsSearch.error || "Try again in a moment.")}</p></div>
       ${partsManualAddButton(term)}`;
   } else if (partsSearch.phase === "results") {
     body = `${partsSearch.offers.length
-      ? `<span class="field-label">${partsSearch.offers.length} offer${partsSearch.offers.length === 1 ? "" : "s"} \u00b7 cheapest first</span>
+      ? `<div class="parts-results-head">
+          <span class="field-label">${partsSearch.offers.length} result${partsSearch.offers.length === 1 ? "" : "s"} for \u201c${escapeHTML(term)}\u201d</span>
+          <span class="select-control parts-sort">${icon("sort")}<select class="select" id="parts-sort" aria-label="Sort offers">
+            ${PARTS_SORTS.map((option) => `<option value="${option.id}"${partsSearch.sort === option.id ? " selected" : ""}>${option.label}</option>`).join("")}
+          </select>${icon("down")}</span>
+        </div>
         <div class="parts-offer-list">${partsSearch.offers.map(partsOfferCard).join("")}</div>`
       : `<div class="source-card"><h3>No current offers found</h3><p>Try a more specific part number, or add it without a price.</p></div>`}
       ${partsManualAddButton(term)}
       <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>`;
   }
+
+  // Search is the only thing worth doing on an empty sheet. Once items are on
+  // the record, finishing becomes the primary move and search steps back.
+  const searchButton = `<button class="${addedHere ? "secondary-button" : "primary-button"} full" type="submit" form="parts-search-form" id="parts-search-submit"${term ? "" : " hidden"}${searching ? " disabled" : ""}>${icon("search")} ${searching ? "Searching\u2026" : "Search"}</button>`;
 
   openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> \u00b7 ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body parts-editor-body">
@@ -5312,8 +5327,24 @@ function partsEditorSheet() {
       ${addedHere
         ? `<p class="parts-added-summary"><span class="parts-added-count">${addedHere}</span><span><strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</span></p>`
         : ""}
-      <button class="primary-button full" type="submit" form="parts-search-form" id="parts-search-submit"${term ? "" : " hidden"}>${icon("search")} Search</button>
+      ${searchButton}
+      ${addedHere ? `<button class="primary-button full" type="button" data-action="close-sheet">${icon("check")} Add ${addedHere} item${addedHere === 1 ? "" : "s"}</button>` : ""}
     </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
+}
+
+const PARTS_SORTS = [
+  { id: "cheapest", label: "Cheapest first" },
+  { id: "dearest", label: "Dearest first" },
+  { id: "rated", label: "Best rated" },
+];
+
+// Sorted in place so the indices the steppers carry keep pointing at the same
+// offer; the cheapest is remembered separately for the badge.
+function sortPartsOffers() {
+  const price = (offer) => (typeof offer.priceValue === "number" ? offer.priceValue : Number.POSITIVE_INFINITY);
+  if (partsSearch.sort === "dearest") partsSearch.offers.sort((a, b) => price(b) - price(a));
+  else if (partsSearch.sort === "rated") partsSearch.offers.sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.ratingCount || 0) - (a.ratingCount || 0));
+  else partsSearch.offers.sort((a, b) => price(a) - price(b));
 }
 
 function partsManualAddButton(term) {
@@ -5336,7 +5367,7 @@ function partsOfferCard(offer, index) {
   return `<div class="parts-offer${quantity ? " is-added" : ""}">
     ${offer.imageUrl ? `<img class="parts-offer-thumb" src="${escapeHTML(offer.imageUrl)}" alt="" loading="lazy" />` : `<span class="parts-offer-thumb parts-offer-thumb-empty">${icon("search")}</span>`}
     <span class="parts-offer-body">
-      <span class="parts-offer-merchant">${index === 0 ? `<em class="parts-offer-badge">Lowest</em>` : ""}${quantity ? `<em class="parts-offer-badge parts-offer-badge-added">${icon("check")} Added</em>` : ""}${escapeHTML(merchant)}</span>
+      <span class="parts-offer-merchant">${offer === partsSearch.cheapest ? `<em class="parts-offer-badge">Lowest</em>` : ""}${quantity ? `<em class="parts-offer-badge parts-offer-badge-added">${icon("check")} Added</em>` : ""}${escapeHTML(merchant)}</span>
       <span class="parts-offer-title">${escapeHTML(title)}</span>
       <span class="parts-offer-meta">${escapeHTML(offer.delivery || "Availability not listed")}</span>
     </span>
@@ -5353,11 +5384,12 @@ function partsOfferCard(offer, index) {
 
 async function runPartsSearch(rawTerm) {
   const term = String(rawTerm || "").trim();
+  const sort = partsSearch.sort || "cheapest";
   if (!term) {
-    partsSearch = { term: "", phase: "empty", offers: [], error: "" };
+    partsSearch = { term: "", phase: "empty", offers: [], error: "", sort, cheapest: null };
     return partsEditorSheet();
   }
-  partsSearch = { term, phase: "searching", offers: [], error: "" };
+  partsSearch = { term, phase: "searching", offers: [], error: "", sort, cheapest: null };
   partsEditorSheet();
   // The vehicle sharpens fitment the same way the older price sheet did.
   const query = [state.vehicle.year, state.vehicle.make, state.vehicle.model, term].filter(Boolean).join(" ");
@@ -5370,10 +5402,14 @@ async function runPartsSearch(rawTerm) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Part search failed");
     if (sheetLayer.hidden) return;
-    partsSearch = { term, phase: "results", offers: Array.isArray(result.offers) ? result.offers : [], error: "" };
+    const offers = Array.isArray(result.offers) ? result.offers : [];
+    // The API already returns cheapest-first, so the head of the list is the
+    // one the badge belongs to whatever order the mechanic picks afterwards.
+    partsSearch = { term, phase: "results", offers, error: "", sort, cheapest: offers[0] || null };
+    sortPartsOffers();
   } catch (error) {
     if (sheetLayer.hidden) return;
-    partsSearch = { term, phase: "error", offers: [], error: error?.message || "" };
+    partsSearch = { term, phase: "error", offers: [], error: error?.message || "", sort, cheapest: null };
   }
   partsEditorSheet();
 }
@@ -5984,7 +6020,7 @@ document.addEventListener("click", (event) => {
     if (action === "open-parts-editor") {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
-      partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+      partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
       partsAddedThisSession = new Set();
       return partsEditorSheet();
     }
@@ -6039,7 +6075,7 @@ document.addEventListener("click", (event) => {
       addRepairPart({ type: "Part", name: term, number: "", quantity: "1" });
       const manual = state.repair.parts.find((part) => part.name.toLowerCase() === term.toLowerCase());
       if (manual) partsAddedThisSession.add(manual.key);
-      partsSearch = { term: "", phase: "idle", offers: [], error: "" };
+      partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
       render();
       partsEditorSheet();
       queueRepairAutosave();
@@ -6320,6 +6356,11 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.id === "parts-sort") {
+    partsSearch.sort = event.target.value;
+    sortPartsOffers();
+    return partsEditorSheet();
+  }
   if (event.target.matches("#draft-technician")) {
     state.jobTechnicianId = event.target.value || null;
     // No sheet refresh: the select already shows the new value. Only the bar

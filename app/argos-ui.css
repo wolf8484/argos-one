@@ -2005,7 +2005,7 @@ button.journey-item:active {
   position: absolute;
   left: 14px;
   display: flex;
-  color: var(--muted);
+  color: var(--accent);
   pointer-events: none;
 }
 
@@ -2037,22 +2037,67 @@ button.journey-item:active {
   line-height: 1.45;
 }
 
-.parts-search-status {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 16px;
-  border-radius: var(--card-radius);
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: var(--copy-size);
+.parts-offer-skeleton {
+  animation: parts-search-pulse 1.1s ease-in-out infinite;
+  pointer-events: none;
 }
 
-.parts-search-status svg {
-  width: 20px;
-  height: 20px;
+.parts-offer-skeleton .parts-offer-thumb,
+.parts-offer-skeleton .parts-offer-body > span {
+  display: block;
+  border-radius: 6px;
+  background: var(--surface-3);
+}
+
+.parts-offer-skeleton .parts-offer-body {
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.parts-offer-skeleton .parts-offer-body > span {
+  height: 12px;
+}
+
+.parts-offer-skeleton .parts-offer-body > span:last-child {
+  width: 55%;
+}
+
+.parts-results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* A compact pill rather than a full-width field -- it sits on the results
+   header line, not in the form above it. */
+.parts-sort {
+  flex: none;
+}
+
+.parts-sort .select {
+  min-height: 44px;
+  padding: 0 38px 0 38px;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.parts-sort > svg:first-child {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
   color: var(--accent);
-  animation: parts-search-pulse 1.1s ease-in-out infinite;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.parts-sort > svg:last-child {
+  right: 12px;
+  width: 16px;
+  height: 16px;
 }
 
 @keyframes parts-search-pulse {
@@ -2162,9 +2207,8 @@ button.journey-item:active {
 
 .parts-offer-side {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   flex: none;
 }
 
@@ -2238,7 +2282,15 @@ button.journey-item:active {
 /* Short results (or none at all) must not collapse the sheet into a strip --
    it has to stay a workable surface while the mechanic types and searches. */
 .parts-editor-sheet {
+  display: flex;
+  flex-direction: column;
   min-height: 480px;
+}
+
+/* Without this the body only takes the height of a hint line, and the Search
+   button floats halfway up an otherwise empty sheet. */
+.parts-editor-body {
+  flex: 1;
 }
 
 .parts-editor-sheet .sheet-footer {
@@ -5464,6 +5516,36 @@ body.dictation-active .toast {
   .repair-parts-empty {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  /* Four columns do not fit a phone, so price and stepper drop to a line of
+     their own -- still side by side, with the price against the left edge. */
+  .parts-offer {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "thumb body"
+      "side  side";
+    row-gap: 12px;
+  }
+
+  .parts-offer-thumb {
+    grid-area: thumb;
+  }
+
+  .parts-offer-body {
+    grid-area: body;
+  }
+
+  .parts-offer-side {
+    grid-area: side;
+    justify-content: space-between;
+  }
+
+  .parts-results-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   /* Listing titles run long, so on a phone the price drops to its own line
