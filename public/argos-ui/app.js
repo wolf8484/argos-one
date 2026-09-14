@@ -30,10 +30,10 @@ let lastResearchResult = null;
 // tap an offer to record it. Held here rather than on `state` because it is
 // sheet-local scratch, thrown away when the sheet closes.
 let partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
-// Keys of the parts added while this sheet has been open. The footer counts
-// these, not the record's total -- the mechanic wants to see what they just
-// did, not what was already logged.
-let partsAddedThisSession = new Set();
+// Quantity each part was at when the sheet opened. The footer counts what has
+// been added on top of that, not the record's total -- the mechanic wants to
+// see what they just did, not what was already logged.
+let partsSheetBaseline = new Map();
 const photoGestureStates = new WeakMap();
 const BUILD_VERSION = window.__ARGOS_BUILD_VERSION__ || "dev-local";
 let updateAvailable = false;
@@ -5281,9 +5281,15 @@ function addRepairPart(part) {
 // one job.
 function partsEditorSheet() {
   const count = state.repair.parts.length;
-  const addedHere = state.repair.parts.filter((part) => partsAddedThisSession.has(part.key)).length;
+  // Counted as units rather than lines: two of the same filter is two items to
+  // the mechanic buying them, and stepping an already-logged part up counts too.
+  const addedHere = state.repair.parts.reduce((total, part) => {
+    const added = Math.max(1, Number(part.quantity) || 1) - (partsSheetBaseline.get(part.key) || 0);
+    return added > 0 ? total + added : total;
+  }, 0);
   const term = partsSearch.term.trim();
   const searching = partsSearch.phase === "searching";
+  const typed = Boolean(partsSearch.term);
   let body = `<p class="parts-search-hint">Search Australian suppliers for live pricing.</p>`;
 
   if (partsSearch.phase === "empty") {
@@ -5311,24 +5317,21 @@ function partsEditorSheet() {
       <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>`;
   }
 
-  // Search is the only thing worth doing on an empty sheet. Once items are on
-  // the record, finishing becomes the primary move and search steps back.
-  const searchButton = `<button class="${addedHere ? "secondary-button" : "primary-button"} full" type="submit" form="parts-search-form" id="parts-search-submit"${term ? "" : " hidden"}${searching ? " disabled" : ""}>${icon("search")} ${searching ? "Searching\u2026" : "Search"}</button>`;
-
   openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> \u00b7 ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body parts-editor-body">
       <form id="parts-search-form" class="parts-search">
-        <span class="parts-search-icon">${icon("search")}</span>
-        <input class="parts-search-input" id="parts-search-input" name="partsQuery" value="${escapeHTML(partsSearch.term)}" placeholder="e.g. Oil 5W-40, brake pads, gasket\u2026" aria-label="Search parts and consumables" autocomplete="off" />
+        <span class="parts-search-field">
+          <span class="parts-search-icon">${icon("search")}</span>
+          <input class="parts-search-input" id="parts-search-input" name="partsQuery" value="${escapeHTML(partsSearch.term)}" placeholder="e.g. Oil 5W-40, brake pads, gasket\u2026" aria-label="Search parts and consumables" autocomplete="off" />
+          <button class="parts-search-clear" type="button" id="parts-search-clear" data-action="clear-parts-search" aria-label="Clear search"${typed ? "" : " hidden"}>${icon("close")}</button>
+        </span>
+        <button class="parts-search-go" type="submit" id="parts-search-submit"${typed ? "" : " hidden"}${searching ? " disabled" : ""}>${icon("search")} Search</button>
       </form>
       ${body}
     </div>
-    <div class="sheet-footer parts-editor-footer"${addedHere || term ? "" : " hidden"} id="parts-editor-footer">
-      ${addedHere
-        ? `<p class="parts-added-summary"><span class="parts-added-count">${addedHere}</span><span><strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</span></p>`
-        : ""}
-      ${searchButton}
-      ${addedHere ? `<button class="primary-button full" type="button" data-action="close-sheet">${icon("check")} Add ${addedHere} item${addedHere === 1 ? "" : "s"}</button>` : ""}
+    <div class="sheet-footer parts-editor-footer"${addedHere ? "" : " hidden"} id="parts-editor-footer">
+      <p class="parts-added-summary"><strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</p>
+      <button class="primary-button full" type="button" data-action="close-sheet">${icon("check")} Add ${addedHere} item${addedHere === 1 ? "" : "s"}</button>
     </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
 }
 
@@ -6021,8 +6024,13 @@ document.addEventListener("click", (event) => {
       const form = document.querySelector("#repair-form");
       if (form) syncRepairRecord(form);
       partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
-      partsAddedThisSession = new Set();
+      partsSheetBaseline = new Map(state.repair.parts.map((part) => [part.key, Math.max(1, Number(part.quantity) || 1)]));
       return partsEditorSheet();
+    }
+    if (action === "clear-parts-search") {
+      partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: partsSearch.sort || "cheapest", cheapest: null };
+      partsEditorSheet();
+      return document.querySelector("#parts-search-input")?.focus();
     }
     if (action === "open-part-modal") {
       return openPartModal(Number(actionButton.dataset.partIndex));
@@ -6054,16 +6062,10 @@ document.addEventListener("click", (event) => {
           offerUrl: offer.link || "",
           offerImageUrl: offer.imageUrl || "",
         });
-        const added = recordedPartForOffer(offer);
-        if (added) partsAddedThisSession.add(added.key);
       } else {
         const next = (Number(recorded.quantity) || 1) + delta;
-        if (next < 1) {
-          state.repair.parts.splice(state.repair.parts.indexOf(recorded), 1);
-          partsAddedThisSession.delete(recorded.key);
-        } else {
-          recorded.quantity = String(next);
-        }
+        if (next < 1) state.repair.parts.splice(state.repair.parts.indexOf(recorded), 1);
+        else recorded.quantity = String(next);
       }
       render();
       partsEditorSheet();
@@ -6073,8 +6075,6 @@ document.addEventListener("click", (event) => {
       const term = partsSearch.term.trim();
       if (!term) return;
       addRepairPart({ type: "Part", name: term, number: "", quantity: "1" });
-      const manual = state.repair.parts.find((part) => part.name.toLowerCase() === term.toLowerCase());
-      if (manual) partsAddedThisSession.add(manual.key);
       partsSearch = { term: "", phase: "idle", offers: [], error: "", sort: "cheapest", cheapest: null };
       render();
       partsEditorSheet();
@@ -6250,11 +6250,11 @@ document.addEventListener("input", (event) => {
   // Toggled in place rather than through a re-render, so the field keeps focus
   // and the keyboard stays up while the mechanic types.
   if (event.target.id === "parts-search-input") {
-    const typed = Boolean(event.target.value.trim());
+    const typed = Boolean(event.target.value);
     const submit = document.querySelector("#parts-search-submit");
-    const footer = document.querySelector("#parts-editor-footer");
+    const clear = document.querySelector("#parts-search-clear");
     if (submit) submit.hidden = !typed;
-    if (footer) footer.hidden = !typed && !footer.querySelector(".parts-added-summary");
+    if (clear) clear.hidden = !typed;
     return;
   }
   if (event.target.matches("#repair-notes, #repair-verification")) {

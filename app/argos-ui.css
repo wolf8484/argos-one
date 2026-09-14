@@ -1996,9 +1996,74 @@ button.journey-item:active {
 }
 
 .parts-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.parts-search-field {
   position: relative;
   display: flex;
   align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Sits beside the field rather than under the results, so searching again is
+   one reach from the thing you just typed. */
+.parts-search-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: none;
+  min-height: 56px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: var(--caps-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.parts-search-go[hidden] {
+  display: none;
+}
+
+.parts-search-go:disabled {
+  opacity: 0.6;
+}
+
+.parts-search-go svg {
+  width: 18px;
+  height: 18px;
+}
+
+.parts-search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--muted-strong);
+  cursor: pointer;
+}
+
+.parts-search-clear[hidden] {
+  display: none;
+}
+
+.parts-search-clear svg {
+  width: 16px;
+  height: 16px;
 }
 
 .parts-search-icon {
@@ -2017,7 +2082,7 @@ button.journey-item:active {
 .parts-search-input {
   width: 100%;
   min-height: 56px;
-  padding: 0 16px 0 44px;
+  padding: 0 56px 0 44px;
   border: 1px solid var(--line-strong);
   border-radius: var(--card-radius);
   background: var(--surface-2);
@@ -2064,9 +2129,9 @@ button.journey-item:active {
 
 .parts-results-head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* A compact pill rather than a full-width field -- it sits on the results
@@ -2089,7 +2154,7 @@ button.journey-item:active {
   left: 12px;
   width: 16px;
   height: 16px;
-  color: var(--accent);
+  color: var(--text);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -2128,7 +2193,6 @@ button.journey-item:active {
    the counter, so a glance down the list shows what is already in. */
 .parts-offer.is-added {
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
 }
 
 .parts-offer-thumb {
@@ -2214,7 +2278,7 @@ button.journey-item:active {
 
 .parts-offer-price {
   color: var(--accent);
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -2315,9 +2379,6 @@ button.journey-item:active {
 }
 
 .parts-added-summary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -2327,19 +2388,6 @@ button.journey-item:active {
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
-}
-
-.parts-added-count {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: none;
-  border: 1px solid var(--accent);
-  border-radius: 50%;
-  color: var(--accent);
-  font-size: var(--copy-size);
-  font-variant-numeric: tabular-nums;
 }
 
 .part-product-placeholder {
@@ -5540,12 +5588,6 @@ body.dictation-active .toast {
   .parts-offer-side {
     grid-area: side;
     justify-content: space-between;
-  }
-
-  .parts-results-head {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
   }
 
   /* Listing titles run long, so on a phone the price drops to its own line
