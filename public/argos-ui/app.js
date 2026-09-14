@@ -4369,9 +4369,9 @@ function repairPartsTable() {
           </div>
           <div class="repair-part-foot">
             ${part.offerUrl
-              ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")}<span>View offer<small>Opens in your browser</small></span></a>`
-              : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")}<span>Find price<small>Searches Australian suppliers</small></span></button>`}
-            <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove item</button>
+              ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")} View offer</a>`
+              : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
+            <button class="repair-part-remove" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove</button>
           </div>
         </div>` : ""}
       </div>`;

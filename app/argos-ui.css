@@ -1884,11 +1884,15 @@ button.journey-item:active {
   height: 20px;
 }
 
+/* Horizontal margin rather than padding, so the keyline separating the row
+   from the editor is inset to match the one above the footer. */
 .repair-part-detail {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 4px 16px 16px;
+  margin: 0 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
 }
 
 /* The card is already surface-2, so a field on it needs the next step up to
@@ -1983,18 +1987,6 @@ button.journey-item:active {
   width: 20px;
   height: 20px;
   flex: none;
-}
-
-.repair-part-offer-link span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.repair-part-offer-link small {
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .repair-part-remove {
