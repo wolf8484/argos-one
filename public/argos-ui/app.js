@@ -4919,23 +4919,29 @@ function hasUnsavedStepInput() {
   return false;
 }
 
+function jobNeverSaved() {
+  return state.route === "new" && state.step === 1 && !isPersistedJobId(state.currentJobId) && vehicleFormIsDirty();
+}
+
 let pendingNavRoute = null;
 
-function leaveWorkflowConfirmation(targetRoute) {
+// Neither reason here is a permanent-delete kind of action -- worst case is a
+// few typed fields, never the job itself once it has reached the server -- so
+// this stays a plain primary action, not a red/danger one.
+function leaveWorkflowConfirmation(targetRoute, reason) {
   pendingNavRoute = targetRoute;
-  const vehicle = vehicleName().trim();
-  const isNew = targetRoute === "new";
-  const jobDescription = vehicle ? ` for ${escapeHTML(vehicle)}` : "";
+  const jobDescription = vehicleName().trim() ? ` for ${escapeHTML(vehicleName().trim())}` : "";
+  const body = reason === "unsaved-job"
+    ? `The details you've entered${jobDescription} haven't reached the workshop cloud yet. Leaving now loses them for good.`
+    : `The changes you've made${jobDescription} haven't been saved. Leaving now loses them.`;
   openSheet(`<div class="confirmation-content">
-    <h2>${isNew ? "Start a new job?" : "Leave without saving?"}</h2>
-    <p>${isNew
-      ? `${vehicle ? `This discards the job in progress${jobDescription}.` : "This discards the job in progress."} ${isPersistedJobId(state.currentJobId) ? "It stays saved under Jobs if you'd rather come back to it." : "It hasn't been saved yet, so it can't be recovered."}`
-      : `The details you've entered${jobDescription} haven't been saved yet. Leaving now loses them.`}</p>
+    <h2>Leave without saving?</h2>
+    <p>${body}</p>
     <div class="confirmation-actions">
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep working</button>
-      <button class="danger-button full" type="button" data-action="confirm-leave-workflow">${isNew ? `${icon("plus")} Start new job` : `${icon("arrow")} Leave anyway`}</button>
+      <button class="primary-button full" type="button" data-action="confirm-leave-workflow">${icon("arrow")} Leave anyway</button>
     </div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Confirm starting a new job" : "Confirm leaving without saving" });
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm leaving without saving" });
 }
 
 function cancelJobConfirmation() {
@@ -5695,20 +5701,20 @@ document.addEventListener("click", (event) => {
   if (routeButton) {
     const targetRoute = routeButton.dataset.route;
     if (state.route === "repair") {
-      // The repair step autosaves, so leaving it is safe on its own -- except
-      // for New, which doubles as "you are here" while a job is open (see
-      // updateNavigation) and discards the whole draft via resetJobDraft.
-      if (targetRoute === "new") return leaveWorkflowConfirmation(targetRoute);
+      // The repair step always autosaves, so leaving it -- New included --
+      // never risks losing anything real; just flush whatever's pending and go.
       const repairForm = document.querySelector("#repair-form");
       if (repairForm) syncRepairRecord(repairForm);
       queueRepairAutosave(0);
       return setRoute(targetRoute);
     }
     // Steps 1-3 have no autosave at all -- the vehicle and assessment forms
-    // only reach the server on their own Continue button. Leaving via the nav
-    // used to drop whatever was typed with no warning.
-    if (targetRoute === "new" && (state.step > 1 || vehicleFormIsDirty())) return leaveWorkflowConfirmation(targetRoute);
-    if (targetRoute !== "new" && hasUnsavedStepInput()) return leaveWorkflowConfirmation(targetRoute);
+    // only reach the server on their own Continue button. Only interrupt when
+    // something would genuinely be lost; a clean or already-saved job (e.g.
+    // sitting on step 3, or just looking at step 1/2 without editing) leaves
+    // the same way Home/Jobs/Library already do -- no dialog needed.
+    if (jobNeverSaved()) return leaveWorkflowConfirmation(targetRoute, "unsaved-job");
+    if (hasUnsavedStepInput()) return leaveWorkflowConfirmation(targetRoute, "unsaved-edit");
     return setRoute(targetRoute);
   }
 
@@ -5752,14 +5758,6 @@ document.addEventListener("click", (event) => {
     if (action === "confirm-leave-workflow") {
       const targetRoute = pendingNavRoute || "home";
       pendingNavRoute = null;
-      // The New confirmation promises a persisted outgoing job "stays saved
-      // under Jobs" -- that only holds if whatever's still in the repair form
-      // actually lands on the server before the draft state gets wiped.
-      if (targetRoute === "new" && state.route === "repair" && isPersistedJobId(state.currentJobId)) {
-        const repairForm = document.querySelector("#repair-form");
-        if (repairForm) syncRepairRecord(repairForm);
-        queueRepairAutosave(0);
-      }
       closeSheet();
       return setRoute(targetRoute);
     }
