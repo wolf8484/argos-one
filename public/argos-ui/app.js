@@ -4883,16 +4883,59 @@ function completeJobConfirmation() {
   </div>`, { sheetClass: "confirmation-sheet complete-job-sheet", ariaLabel: "Confirm job completion" });
 }
 
-function newJobFromNavConfirmation() {
+// Before a job exists, decoding a VIN writes straight into state.vehicle
+// without a submit, so a plain diff against state would call that "clean" --
+// any real value here is unsaved until the vehicle form is actually submitted.
+// Once the job is persisted, a genuine diff is what matters (someone came
+// back to step 1 and edited a field without hitting Continue again).
+function vehicleFormIsDirty() {
+  const form = document.querySelector("#vehicle-form");
+  if (!form) return false;
+  const data = new FormData(form);
+  const keys = ["vin", "year", "make", "model", "mileage", "trim", "registration", "customerFirstName", "customerLastName", "customerPhone", "customerEmail"];
+  const values = Object.fromEntries(keys.map((key) => [key, String(data.get(key) || "").trim()]));
+  if (!isPersistedJobId(state.currentJobId)) return keys.some((key) => values[key]);
+  return keys.some((key) => values[key] !== String(state.vehicle[key] || "").trim());
+}
+
+// state.complaint/state.notes only ever change on this form's own submit, so
+// any difference from the live fields is exactly what Continue hasn't saved yet.
+function problemFormIsDirty() {
+  const form = document.querySelector("#problem-form");
+  if (!form) return false;
+  const data = new FormData(form);
+  const complaint = String(data.get("complaint") || "").trim();
+  const notes = String(data.get("notes") || "").trim();
+  return complaint !== String(state.complaint || "").trim() || notes !== String(state.notes || "").trim();
+}
+
+// Step 3 only involves picking an already-loaded match, which lives in state
+// rather than a form -- there is nothing typed there to lose by navigating
+// away, so it isn't covered here.
+function hasUnsavedStepInput() {
+  if (state.route !== "new") return false;
+  if (state.step === 1) return vehicleFormIsDirty();
+  if (state.step === 2) return problemFormIsDirty();
+  return false;
+}
+
+let pendingNavRoute = null;
+
+function leaveWorkflowConfirmation(targetRoute) {
+  pendingNavRoute = targetRoute;
   const vehicle = vehicleName().trim();
+  const isNew = targetRoute === "new";
+  const jobDescription = vehicle ? ` for ${escapeHTML(vehicle)}` : "";
   openSheet(`<div class="confirmation-content">
-    <h2>Start a new job?</h2>
-    <p>${vehicle ? `This discards the job in progress for ${escapeHTML(vehicle)}.` : "This discards the job in progress."} ${isPersistedJobId(state.currentJobId) ? "It stays saved under Jobs if you'd rather come back to it." : "It hasn't been saved yet, so it can't be recovered."}</p>
+    <h2>${isNew ? "Start a new job?" : "Leave without saving?"}</h2>
+    <p>${isNew
+      ? `${vehicle ? `This discards the job in progress${jobDescription}.` : "This discards the job in progress."} ${isPersistedJobId(state.currentJobId) ? "It stays saved under Jobs if you'd rather come back to it." : "It hasn't been saved yet, so it can't be recovered."}`
+      : `The details you've entered${jobDescription} haven't been saved yet. Leaving now loses them.`}</p>
     <div class="confirmation-actions">
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep working</button>
-      <button class="danger-button full" type="button" data-action="confirm-new-job-from-nav">${icon("plus")} Start new job</button>
+      <button class="danger-button full" type="button" data-action="confirm-leave-workflow">${isNew ? `${icon("plus")} Start new job` : `${icon("arrow")} Leave anyway`}</button>
     </div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm starting a new job" });
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: isNew ? "Confirm starting a new job" : "Confirm leaving without saving" });
 }
 
 function cancelJobConfirmation() {
@@ -5651,18 +5694,21 @@ document.addEventListener("click", (event) => {
   const routeButton = event.target.closest("[data-route]");
   if (routeButton) {
     const targetRoute = routeButton.dataset.route;
-    const inJobWorkflow = state.route === "repair" || (state.route === "new" && state.step > 1);
-    // The nav's own New button doubles as "you are here" while a job is open
-    // (see updateNavigation), so tapping it read as a way back into the job --
-    // instead it silently wiped the draft. Anything destructive now confirms.
-    if (targetRoute === "new" && inJobWorkflow) return newJobFromNavConfirmation();
-    if (inJobWorkflow) {
-      // Every other in-workflow exit (a journey tab, Save job) flushes the
-      // draft before leaving; the bottom nav was the one door that skipped it.
+    if (state.route === "repair") {
+      // The repair step autosaves, so leaving it is safe on its own -- except
+      // for New, which doubles as "you are here" while a job is open (see
+      // updateNavigation) and discards the whole draft via resetJobDraft.
+      if (targetRoute === "new") return leaveWorkflowConfirmation(targetRoute);
       const repairForm = document.querySelector("#repair-form");
       if (repairForm) syncRepairRecord(repairForm);
       queueRepairAutosave(0);
+      return setRoute(targetRoute);
     }
+    // Steps 1-3 have no autosave at all -- the vehicle and assessment forms
+    // only reach the server on their own Continue button. Leaving via the nav
+    // used to drop whatever was typed with no warning.
+    if (targetRoute === "new" && (state.step > 1 || vehicleFormIsDirty())) return leaveWorkflowConfirmation(targetRoute);
+    if (targetRoute !== "new" && hasUnsavedStepInput()) return leaveWorkflowConfirmation(targetRoute);
     return setRoute(targetRoute);
   }
 
@@ -5703,17 +5749,19 @@ document.addEventListener("click", (event) => {
     if (action === "workflow-back") return state.step > 1 ? setStep(state.step - 1) : setRoute("home");
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
-    if (action === "confirm-new-job-from-nav") {
-      // The confirmation promises the outgoing job "stays saved under Jobs" --
-      // that only holds if whatever's still sitting in the form actually lands
-      // on the server before the draft state gets wiped.
-      if (isPersistedJobId(state.currentJobId)) {
+    if (action === "confirm-leave-workflow") {
+      const targetRoute = pendingNavRoute || "home";
+      pendingNavRoute = null;
+      // The New confirmation promises a persisted outgoing job "stays saved
+      // under Jobs" -- that only holds if whatever's still in the repair form
+      // actually lands on the server before the draft state gets wiped.
+      if (targetRoute === "new" && state.route === "repair" && isPersistedJobId(state.currentJobId)) {
         const repairForm = document.querySelector("#repair-form");
         if (repairForm) syncRepairRecord(repairForm);
         queueRepairAutosave(0);
       }
       closeSheet();
-      return setRoute("new");
+      return setRoute(targetRoute);
     }
     // The header exposes one delete entry point across every workflow step
     // (not just the first and last tabs) -- it picks whichever confirmation
