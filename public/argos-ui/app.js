@@ -4883,6 +4883,18 @@ function completeJobConfirmation() {
   </div>`, { sheetClass: "confirmation-sheet complete-job-sheet", ariaLabel: "Confirm job completion" });
 }
 
+function newJobFromNavConfirmation() {
+  const vehicle = vehicleName().trim();
+  openSheet(`<div class="confirmation-content">
+    <h2>Start a new job?</h2>
+    <p>${vehicle ? `This discards the job in progress for ${escapeHTML(vehicle)}.` : "This discards the job in progress."} ${isPersistedJobId(state.currentJobId) ? "It stays saved under Jobs if you'd rather come back to it." : "It hasn't been saved yet, so it can't be recovered."}</p>
+    <div class="confirmation-actions">
+      <button class="secondary-button full" type="button" data-action="close-sheet">Keep working</button>
+      <button class="danger-button full" type="button" data-action="confirm-new-job-from-nav">${icon("plus")} Start new job</button>
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm starting a new job" });
+}
+
 function cancelJobConfirmation() {
   openSheet(`<div class="confirmation-content">
     <h2>Cancel this job?</h2>
@@ -5637,7 +5649,22 @@ document.addEventListener("click", (event) => {
   }
 
   const routeButton = event.target.closest("[data-route]");
-  if (routeButton) return setRoute(routeButton.dataset.route);
+  if (routeButton) {
+    const targetRoute = routeButton.dataset.route;
+    const inJobWorkflow = state.route === "repair" || (state.route === "new" && state.step > 1);
+    // The nav's own New button doubles as "you are here" while a job is open
+    // (see updateNavigation), so tapping it read as a way back into the job --
+    // instead it silently wiped the draft. Anything destructive now confirms.
+    if (targetRoute === "new" && inJobWorkflow) return newJobFromNavConfirmation();
+    if (inJobWorkflow) {
+      // Every other in-workflow exit (a journey tab, Save job) flushes the
+      // draft before leaving; the bottom nav was the one door that skipped it.
+      const repairForm = document.querySelector("#repair-form");
+      if (repairForm) syncRepairRecord(repairForm);
+      queueRepairAutosave(0);
+    }
+    return setRoute(targetRoute);
+  }
 
   const stepButton = event.target.closest("[data-step]");
   if (stepButton && !stepButton.disabled) return setStep(Number(stepButton.dataset.step));
@@ -5676,6 +5703,18 @@ document.addEventListener("click", (event) => {
     if (action === "workflow-back") return state.step > 1 ? setStep(state.step - 1) : setRoute("home");
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
+    if (action === "confirm-new-job-from-nav") {
+      // The confirmation promises the outgoing job "stays saved under Jobs" --
+      // that only holds if whatever's still sitting in the form actually lands
+      // on the server before the draft state gets wiped.
+      if (isPersistedJobId(state.currentJobId)) {
+        const repairForm = document.querySelector("#repair-form");
+        if (repairForm) syncRepairRecord(repairForm);
+        queueRepairAutosave(0);
+      }
+      closeSheet();
+      return setRoute("new");
+    }
     // The header exposes one delete entry point across every workflow step
     // (not just the first and last tabs) -- it picks whichever confirmation
     // actually matches the current step's state: the repair step has a
