@@ -1731,7 +1731,7 @@ button.journey-item:active {
 }
 
 .repair-section-head {
-  padding: 0 0 10px;
+  padding: 0 0 16px;
 }
 
 .add-parts-button {
@@ -1777,7 +1777,6 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: var(--card-gap);
-  margin-top: 2px;
 }
 
 .repair-part-card {
