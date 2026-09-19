@@ -1171,12 +1171,16 @@ function cancelDictation() {
   showToast("Dictation cancelled.");
 }
 
+// Dark is the app's default look regardless of the device's OS-level
+// preference -- first login always lands on it. Once someone actually picks
+// a theme (the toggle or Settings), that choice is what persists and wins
+// from then on, on this device.
 function preferredTheme() {
   try {
     const saved = localStorage.getItem("argos-theme");
     if (saved === "light" || saved === "dark") return saved;
   } catch (_) {}
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return "dark";
 }
 
 function setTheme(theme, persist = true) {
