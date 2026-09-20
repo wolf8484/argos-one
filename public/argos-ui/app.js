@@ -4383,14 +4383,35 @@ function repairPartsTable() {
 }
 
 // The editor is a modal, not an inline panel: the fields commit on Save rather
-// than as you type, so a half-typed name never reaches the record.
+// than as you type, so a half-typed name never reaches the record. The top
+// summary always shows the item exactly as it was found (name, supplier, the
+// original offer link) -- it never repeats the price a second time, since
+// that already lives in the Total price box below.
 function openPartModal(index) {
   const part = state.repair.parts[index];
   if (!part) return;
   const form = document.querySelector("#repair-form");
   if (form) syncRepairRecord(form);
-  openSheet(`<div class="confirmation-content">
-    <h2>Edit item</h2>
+  const thumb = part.offerImageUrl
+    ? `<img class="part-edit-thumb" src="${escapeHTML(part.offerImageUrl)}" alt="" loading="lazy" />`
+    : `<span class="part-edit-thumb part-edit-thumb-empty">${icon("wrench")}</span>`;
+  const offerRow = part.offerUrl
+    ? `<a class="part-edit-offer-row" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")}<span>View offer</span>${icon("arrow")}</a>`
+    : `<button class="part-edit-offer-row" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")}<span>Find price</span>${icon("arrow")}</button>`;
+  const totalPrice = part.supplier ? multiplyPrice(part.price, part.quantity) : "";
+  openSheet(`<div class="confirmation-content part-edit-modal">
+    <div class="part-edit-head">
+      <h2>Edit item</h2>
+      <button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button>
+    </div>
+    <div class="part-edit-summary">
+      ${thumb}
+      <div class="part-edit-summary-body">
+        <strong>${escapeHTML(part.name)}</strong>
+        ${part.supplier ? `<span>${escapeHTML(part.supplier)}</span>` : ""}
+      </div>
+    </div>
+    ${offerRow}
     <form class="settings-edit-form" id="part-form" autocomplete="off" data-part-index="${index}">
       <label class="form-field"><div class="field-header"><span class="field-label">Name on the record</span></div><input class="input" name="name" value="${escapeHTML(part.name)}" placeholder="e.g. Oil filter" required /></label>
       <div class="repair-part-detail-pair">
@@ -4403,13 +4424,16 @@ function openPartModal(index) {
           </div>
         </div>
       </div>
-      <div class="repair-part-modal-links">
-        ${part.offerUrl
-          ? `<a class="repair-part-offer-link" href="${escapeHTML(part.offerUrl)}" target="_blank" rel="noopener noreferrer">${icon("externalLink")} View offer</a>`
-          : `<button class="repair-part-offer-link" type="button" data-part="${escapeHTML(part.key || "custom")}" data-part-name="${escapeHTML(part.name)}">${icon("search")} Find price</button>`}
+      <div class="part-edit-total">
+        <span class="field-label">Total price</span>
+        <strong data-part-total data-part-unit-price="${escapeHTML(part.price || "")}" class="${totalPrice ? "" : "is-unpriced"}">${totalPrice ? escapeHTML(totalPrice) : "Not priced"}</strong>
+      </div>
+      <div class="part-edit-note">
+        ${icon("info")}
+        <p>You can update the item name or part number if needed. This only changes it for this repair record.</p>
       </div>
       <div class="profile-note-actions">
-        <button class="danger-outline-button" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove</button>
+        <button class="danger-outline-button" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove from list</button>
         <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
@@ -6157,7 +6181,12 @@ document.addEventListener("click", (event) => {
       // the text fields, so nothing commits until Save is tapped.
       const value = actionButton.parentElement.querySelector("[data-part-qty-value]");
       if (!value) return;
-      value.textContent = String(Math.max(1, (Number(value.textContent) || 1) + Number(actionButton.dataset.partDelta)));
+      const nextQty = Math.max(1, (Number(value.textContent) || 1) + Number(actionButton.dataset.partDelta));
+      value.textContent = String(nextQty);
+      // An item added without a price has nothing to multiply -- leave
+      // "Not priced" alone rather than overwrite it with an empty string.
+      const total = document.querySelector("[data-part-total]");
+      if (total && total.dataset.partUnitPrice) total.textContent = multiplyPrice(total.dataset.partUnitPrice, nextQty);
       return;
     }
     if (action === "offer-qty") {
