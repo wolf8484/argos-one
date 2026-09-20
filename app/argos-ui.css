@@ -2037,14 +2037,11 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 14px 16px;
-  border-radius: var(--card-radius);
-  background: var(--surface-2);
 }
 
 .part-edit-total strong {
   color: var(--accent);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
