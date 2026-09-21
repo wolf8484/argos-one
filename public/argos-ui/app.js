@@ -4390,7 +4390,7 @@ function repairPartsTable() {
             ${supplierLine ? `<span class="repair-part-supplier">${escapeHTML(supplierLine)}</span>` : ""}
           </span>
           <span class="repair-part-foot">
-            <span class="repair-part-qty">Qty <strong>${escapeHTML(part.quantity || "1")}</strong></span>
+            <span class="repair-part-qty-tag">Qty <strong>${escapeHTML(part.quantity || "1")}</strong></span>
             <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(multiplyPrice(part.price, part.quantity))}</strong>` : `<em>Not priced</em>`}</span>
           </span>
           <span class="repair-part-chevron">${icon("arrow")}</span>

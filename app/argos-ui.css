@@ -1779,7 +1779,8 @@ button.journey-item:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
+  margin-top: 16px;
+  margin-bottom: 16px;
   color: var(--muted);
   font-size: var(--copy-size);
 }
@@ -1821,7 +1822,7 @@ button.journey-item:active {
 .repair-part-copy {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -1849,13 +1850,17 @@ button.journey-item:active {
   flex: none;
 }
 
-.repair-part-qty {
+.repair-part-qty-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
   color: var(--muted);
   font-size: 14px;
   white-space: nowrap;
 }
 
-.repair-part-qty strong {
+.repair-part-qty-tag strong {
   color: var(--text);
   font-weight: 500;
 }
@@ -5743,7 +5748,7 @@ body.dictation-active .toast {
       "thumb copy chevron"
       ".     foot  foot";
     align-items: center;
-    row-gap: 4px;
+    row-gap: 8px;
   }
 
   .repair-part-thumb {
@@ -5762,6 +5767,7 @@ body.dictation-active .toast {
   .repair-part-foot {
     grid-area: foot;
     justify-content: space-between;
+    padding-right: 28px;
   }
 
   .nav-item,
