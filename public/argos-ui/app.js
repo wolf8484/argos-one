@@ -4364,9 +4364,21 @@ function repairPartsTable() {
   // Each item is its own card, stacked with a gap -- the same row treatment as
   // the staff list. Tapping a row opens the editor as a centred modal rather
   // than expanding in place, which kept pushing the rest of the form around.
+  const totalQty = state.repair.parts.reduce((sum, part) => sum + Math.max(1, Number(part.quantity) || 1), 0);
+  const totalPrice = state.repair.parts.reduce((sum, part) => {
+    if (!part.supplier) return sum;
+    const match = String(part.price || "").match(/[\d.,]+/);
+    if (!match) return sum;
+    const value = Number(match[0].replace(/,/g, "")) * Math.max(1, Number(part.quantity) || 1);
+    return Number.isFinite(value) ? sum + value : sum;
+  }, 0);
+
   return `<div class="repair-parts-list">
     ${state.repair.parts.map((part, index) => {
-      const meta = [part.type, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" \u00b7 ");
+      // The part-number/type label only appears once someone has actually
+      // entered a number -- otherwise it's just noise repeating "Part" on
+      // every row. The type still shows in the item's own modal regardless.
+      const meta = [part.number ? part.type : null, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" \u00b7 ");
       const thumb = part.offerImageUrl
         ? `<img class="repair-part-thumb" src="${escapeHTML(part.offerImageUrl)}" alt="" loading="lazy" />`
         : `<span class="repair-part-thumb repair-part-thumb-empty">${icon("wrench")}</span>`;
@@ -4379,7 +4391,8 @@ function repairPartsTable() {
         </button>
       </div>`;
     }).join("")}
-  </div>`;
+  </div>
+  <div class="repair-parts-total"><span>Total \u00b7 ${totalQty} item${totalQty === 1 ? "" : "s"}</span><strong>AUD ${totalPrice.toFixed(2)}</strong></div>`;
 }
 
 // The editor is a modal, not an inline panel: the fields commit on Save rather
