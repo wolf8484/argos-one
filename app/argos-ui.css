@@ -5770,6 +5770,10 @@ body.dictation-active .toast {
     padding-right: 28px;
   }
 
+  .repair-parts-total {
+    font-size: 14px;
+  }
+
   .nav-item,
   .nav-new {
     font-size: 12px;
