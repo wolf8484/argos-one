@@ -1836,10 +1836,28 @@ button.journey-item:active {
   line-height: 1.35;
 }
 
-.repair-part-copy > span {
+.repair-part-supplier {
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.35;
+}
+
+.repair-part-foot {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: none;
+}
+
+.repair-part-qty {
+  color: var(--muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.repair-part-qty strong {
+  color: var(--text);
+  font-weight: 500;
 }
 
 .repair-part-value {
@@ -5723,7 +5741,7 @@ body.dictation-active .toast {
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
       "thumb copy chevron"
-      ".     price price";
+      ".     foot  foot";
     align-items: center;
     row-gap: 4px;
   }
@@ -5741,9 +5759,9 @@ body.dictation-active .toast {
     grid-area: chevron;
   }
 
-  .repair-part-value {
-    grid-area: price;
-    justify-content: flex-start;
+  .repair-part-foot {
+    grid-area: foot;
+    justify-content: space-between;
   }
 
   .nav-item,

@@ -4375,18 +4375,24 @@ function repairPartsTable() {
 
   return `<div class="repair-parts-list">
     ${state.repair.parts.map((part, index) => {
-      // The part-number/type label only appears once someone has actually
-      // entered a number -- otherwise it's just noise repeating "Part" on
-      // every row. The type still shows in the item's own modal regardless.
-      const meta = [part.number ? part.type : null, part.number, `Qty ${part.quantity || "1"}`].filter(Boolean).join(" \u00b7 ");
+      // The part number only appears once someone has actually entered one --
+      // otherwise it's just noise. The type still shows in the item's own
+      // modal regardless.
+      const supplierLine = [part.supplier, part.number || null].filter(Boolean).join(" | ");
       const thumb = part.offerImageUrl
         ? `<img class="repair-part-thumb" src="${escapeHTML(part.offerImageUrl)}" alt="" loading="lazy" />`
         : `<span class="repair-part-thumb repair-part-thumb-empty">${icon("wrench")}</span>`;
       return `<div class="repair-part-card">
         <button class="repair-part-row" type="button" data-action="open-part-modal" data-part-index="${index}">
           ${thumb}
-          <span class="repair-part-copy"><strong>${escapeHTML(part.name)}</strong><span>${escapeHTML(meta)}</span></span>
-          <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(multiplyPrice(part.price, part.quantity))}</strong>` : `<em>Not priced</em>`}</span>
+          <span class="repair-part-copy">
+            <strong>${escapeHTML(part.name)}</strong>
+            ${supplierLine ? `<span class="repair-part-supplier">${escapeHTML(supplierLine)}</span>` : ""}
+          </span>
+          <span class="repair-part-foot">
+            <span class="repair-part-qty">Qty <strong>${escapeHTML(part.quantity || "1")}</strong></span>
+            <span class="repair-part-value">${part.supplier ? `<strong>${escapeHTML(multiplyPrice(part.price, part.quantity))}</strong>` : `<em>Not priced</em>`}</span>
+          </span>
           <span class="repair-part-chevron">${icon("arrow")}</span>
         </button>
       </div>`;
