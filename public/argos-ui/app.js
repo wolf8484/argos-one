@@ -5385,7 +5385,6 @@ function addRepairPart(part) {
 // repair are added on the Similar repairs step instead, so this sheet stays
 // one job.
 function partsEditorSheet() {
-  const count = state.repair.parts.length;
   // Counted as units rather than lines: two of the same filter is two items to
   // the mechanic buying them, and stepping an already-logged part up counts too.
   const addedHere = state.repair.parts.reduce((total, part) => {
@@ -5422,7 +5421,7 @@ function partsEditorSheet() {
       <div class="disclaimer">Confirm fitment against the VIN and supplier catalogue before ordering. Price and availability can change.</div>`;
   }
 
-  openSheet(`<div class="sheet-head"><div><span class="field-label"><strong>Repair record</strong> \u00b7 ${count} added</span><h2>Add parts & consumables</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`<div class="sheet-head"><h2>Add parts & consumables</h2><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
     <div class="sheet-body parts-editor-body">
       <form id="parts-search-form" class="parts-search">
         <span class="parts-search-field">
