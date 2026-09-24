@@ -18,7 +18,7 @@
   --accent: #FFC001;
   --accent-fill: #FFC001;
   --accent-border: #FFC001;
-  --secondary-border: #2d2d2d;
+  --secondary-border: #565656;
   --on-accent: #111111;
   --accent-deep: #D19F00;
   --accent-on-inverse: #1e1e1e;
@@ -234,7 +234,7 @@ h3 {
   font-size: var(--copy-size);
   white-space: nowrap;
   background: none;
-  border: 1px solid #2d2d2d;
+  border: 1px solid #565656;
   border-radius: var(--card-radius);
   flex-wrap: nowrap;
   align-items: center;
@@ -333,7 +333,7 @@ h3 {
 
 .topbar .icon-button {
   color: #e0e0dc;
-  border-color: #2d2d2d;
+  border-color: #565656;
 }
 
 .topbar .icon-button:hover {
@@ -2935,7 +2935,7 @@ button.journey-item:active {
 .filter-button {
   min-height: 52px;
   padding: 0 16px;
-  border: 1px solid #2d2d2d;
+  border: 1px solid #565656;
   border-radius: var(--card-radius);
   background: 0 0;
   color: var(--muted-strong);
