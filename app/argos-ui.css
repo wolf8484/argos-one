@@ -1730,7 +1730,7 @@ button.journey-item:active {
 }
 
 .repair-section-head {
-  padding: 0 0 16px;
+  padding: 0 0 12px;
 }
 
 .add-parts-button {
@@ -1921,7 +1921,7 @@ button.journey-item:active {
    attached to its label rather than being pushed to the far edge. */
 .repair-part-detail-pair .field-header {
   justify-content: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .repair-part-detail-pair .field-label {
@@ -2073,7 +2073,7 @@ button.journey-item:active {
 .part-edit-total {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
 .part-edit-total strong {
