@@ -2777,7 +2777,7 @@ button.journey-item:active {
 .vin-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 56px;
-  gap: 4px;
+  gap: 12px;
 }
 
 .vin-row .input {
@@ -2819,7 +2819,7 @@ button.journey-item:active {
   border: 1px solid var(--secondary-border);
   border-radius: var(--card-radius);
   background: none;
-  background-color: #2d2d2d;
+  /* background: #2d2d2d; */
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -3132,9 +3132,8 @@ button.journey-item:active {
 
 .secondary-button {
   border: 1px solid var(--secondary-border);
-  background: transparent;
-  background-color: #2d2d2d;
   color: var(--text);
+  /* background: #2d2d2d; */
 }
 
 .secondary-button.add-parts-button {
@@ -3160,7 +3159,7 @@ button.journey-item:active {
 .part-button svg {
   width: 20px;
   height: 20px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .web-button {
