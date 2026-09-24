@@ -2795,7 +2795,7 @@ button.journey-item:active {
 
 .helper {
   display: block;
-  margin-top: 8px;
+  margin-top: 12px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.5;
@@ -2977,7 +2977,7 @@ button.journey-item:active {
 }
 
 .photo-upload-hint {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   color: var(--muted);
   font-size: 14px;
   font-weight: 400;
@@ -4730,6 +4730,7 @@ button.settings-toggle-row {
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
+  background: var(--surface-2);
 }
 
 .profile-card .settings-list {
@@ -6343,7 +6344,7 @@ body.dictation-active .toast {
 /* Sits directly under a section heading and above that section's content, so
    the source is read before the content it qualifies rather than after it. */
 .section-source {
-  margin: -8px 0 12px;
+  margin: 0 0 12px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.45;
