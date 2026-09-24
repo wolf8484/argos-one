@@ -2647,7 +2647,7 @@ button.journey-item:active {
   display: block;
   width: 100%;
   border-radius: var(--card-radius);
-  background: var(--surface-2);
+  background: #1c1c1c;
   color: var(--muted);
   font-size: var(--copy-size);
   line-height: 1.35;
@@ -3032,9 +3032,9 @@ button.journey-item:active {
 
 .photo-slot {
   display: block;
-  border: 2px dashed var(--line-strong);
+  border: 2px dashed #2d2d2d;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-3) 42%, var(--surface-2));
+  background: #1d1d1d;
 }
 
 .photo-strip.is-empty {
@@ -4669,6 +4669,17 @@ button.settings-toggle-row {
     var(--accent-fill) 360deg
   );
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-fill) 48%, transparent));
+}
+
+:root[data-theme="light"] .input,
+:root[data-theme="light"] .select,
+:root[data-theme="light"] .textarea,
+:root[data-theme="light"] .photo-slot {
+  background: var(--surface-2);
+}
+
+:root[data-theme="light"] .photo-slot {
+  border-color: var(--line-strong);
 }
 
 :root[data-theme="light"] .input:focus,
