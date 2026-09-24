@@ -687,7 +687,7 @@ main:focus {
   justify-content: space-between;
   align-items: end;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   display: flex;
 }
 
@@ -719,11 +719,10 @@ main:focus {
   align-items: center;
   gap: 8px;
   color: var(--heading);
-  font-size: var(--caps-size);
+  font-size: 16px;
   font-weight: 600;
   line-height: 18px;
   letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .text-button {
@@ -2916,6 +2915,7 @@ button.journey-item:active {
   padding: 0 16px;
   gap: 8px;
   border: 1px solid var(--secondary-border);
+  border-radius: var(--card-radius);
   background: 0 0;
   color: var(--text);
   font-size: var(--copy-size);
