@@ -3809,7 +3809,7 @@ button.settings-row:focus-visible {
 
 .settings-row-text strong {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 22px;
 }
 
@@ -4765,6 +4765,10 @@ button.settings-toggle-row {
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
+}
+
+.profile-menu-button span {
+  line-height: 22px;
 }
 
 .profile-menu-button > svg:first-child,
