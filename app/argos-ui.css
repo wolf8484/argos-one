@@ -1738,10 +1738,10 @@ button.journey-item:active {
   margin-top: 12px;
 }
 
-.add-parts-button svg {
+.secondary-button.add-parts-button svg {
   width: 18px;
   height: 18px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .repair-parts-empty {
@@ -2831,7 +2831,7 @@ button.journey-item:active {
 .enhance-button svg {
   width: 20px;
   height: 20px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .dictate-button.is-listening {
@@ -2926,7 +2926,7 @@ button.journey-item:active {
 .add-dtc-button svg {
   width: 20px;
   height: 20px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .add-dtc-button:active {
@@ -3792,7 +3792,7 @@ button.settings-row:focus-visible {
   justify-content: center;
   width: 20px;
   height: 20px;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .settings-row-icon svg {
@@ -4786,9 +4786,16 @@ button.settings-toggle-row {
 
 .profile-menu-button > svg:first-child,
 .profile-menu-button > svg:last-child {
-  color: var(--accent);
   width: 20px;
   height: 20px;
+}
+
+.profile-menu-button > svg:first-child {
+  color: var(--text);
+}
+
+.profile-menu-button > svg:last-child {
+  color: var(--accent);
 }
 
 /* The third column is sized for the chevron, so the row that carries a badge
