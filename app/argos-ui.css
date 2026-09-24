@@ -687,7 +687,7 @@ main:focus {
   justify-content: space-between;
   align-items: end;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   display: flex;
 }
 
@@ -1730,7 +1730,7 @@ button.journey-item:active {
 }
 
 .repair-section-head {
-  padding: 0 0 12px;
+  padding: 0 0 16px;
 }
 
 .add-parts-button {
@@ -1786,7 +1786,7 @@ button.journey-item:active {
 }
 
 .repair-parts-total strong {
-  color: var(--text);
+  color: #ffc001;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
@@ -1806,7 +1806,7 @@ button.journey-item:active {
   gap: 12px;
   width: 100%;
   min-height: 72px;
-  padding: 16px 16px 16px 0;
+  padding: 16px 0 16px 0;
   border: 0;
   background: none;
   color: var(--text);
@@ -1876,6 +1876,7 @@ button.journey-item:active {
 }
 
 .repair-part-value strong {
+  color: #ffc001;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   font-size: 14px;
@@ -2082,7 +2083,7 @@ button.journey-item:active {
 }
 
 .part-edit-total strong {
-  color: var(--accent);
+  color: #ffc001;
   font-size: 20px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -2424,7 +2425,7 @@ button.journey-item:active {
 }
 
 .parts-offer-price strong {
-  color: var(--accent);
+  color: #ffc001;
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -2811,8 +2812,7 @@ button.journey-item:active {
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .dictate-button,
@@ -5021,7 +5021,7 @@ button.settings-toggle-row {
 }
 
 .price {
-  color: var(--accent);
+  color: #ffc001;
   font-size: 23px;
   font-weight: 300;
 }
