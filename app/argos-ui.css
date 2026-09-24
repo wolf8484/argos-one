@@ -2526,13 +2526,6 @@ button.journey-item:active {
   gap: 12px;
 }
 
-/* Both the CTA and the whole bar come and go as the field is typed into, so
-   they need to beat the display rules their classes set. */
-.parts-editor-footer[hidden],
-.parts-editor-footer .primary-button[hidden] {
-  display: none;
-}
-
 .parts-added-summary {
   color: var(--muted);
   font-size: 13px;

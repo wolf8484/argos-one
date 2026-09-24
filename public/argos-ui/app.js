@@ -485,7 +485,7 @@ function databaseJobToUi(row) {
   const dtcs = (row.dtcs || []).map((entry) => typeof entry === "string" ? entry : entry.code).filter(Boolean);
   const repairedItems = (repair.items || []).map((item) => ({
     name: item.name, type: item.kind === "consumable" ? "Consumable" : "Part", number: item.part_number || "",
-    quantity: String(item.quantity || 1), supplier: item.supplier || "", price: item.price_amount == null ? "" : `${item.currency || "AUD"} ${Number(item.price_amount).toFixed(2)}`,
+    quantity: String(item.quantity || 1), supplier: item.supplier || "", price: item.price_amount == null ? "" : `$${Number(item.price_amount).toFixed(2)}`,
     offerUrl: item.offer_url || "", offerImageUrl: item.offer_image_url || "",
   }));
   const timestamp = row.resolved_at || row.updated_at || row.created_at;
@@ -4398,7 +4398,7 @@ function repairPartsTable() {
       </div>`;
     }).join("")}
   </div>
-  <div class="repair-parts-total"><span>Total \u00b7 ${totalQty} item${totalQty === 1 ? "" : "s"}</span><strong>AUD ${totalPrice.toFixed(2)}</strong></div>`;
+  <div class="repair-parts-total"><span>Total \u00b7 ${totalQty} item${totalQty === 1 ? "" : "s"}</span><strong>$${totalPrice.toFixed(2)}</strong></div>`;
 }
 
 // The editor is a modal, not an inline panel: the fields commit on Save rather
@@ -5452,9 +5452,11 @@ function partsEditorSheet() {
       </form>
       ${body}
     </div>
-    <div class="sheet-footer parts-editor-footer"${addedHere ? "" : " hidden"} id="parts-editor-footer">
-      <p class="parts-added-summary"><strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.</p>
-      <button class="primary-button full" type="button" data-action="close-sheet">${icon("check")} Add ${addedHere} item${addedHere === 1 ? "" : "s"}</button>
+    <div class="sheet-footer parts-editor-footer" id="parts-editor-footer">
+      <p class="parts-added-summary">${addedHere
+        ? `<strong>${addedHere} item${addedHere === 1 ? "" : "s"} added</strong>Adjust quantities or set to 0 to remove.`
+        : `Search above to add parts or consumables to this repair.`}</p>
+      <button class="primary-button full" type="button" data-action="close-sheet">${addedHere ? `${icon("check")} Add ${addedHere} item${addedHere === 1 ? "" : "s"}` : "Done"}</button>
     </div>`, { sheetClass: "parts-editor-sheet", ariaLabel: "Add parts and consumables" });
 }
 
