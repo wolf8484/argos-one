@@ -1771,7 +1771,6 @@ button.journey-item:active {
 .repair-parts-list {
   display: flex;
   flex-direction: column;
-  gap: var(--card-gap);
 }
 
 .repair-parts-total {
@@ -1791,9 +1790,11 @@ button.journey-item:active {
 }
 
 .repair-part-card {
-  border-radius: var(--card-radius);
-  background: var(--surface-2);
-  overflow: hidden;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.repair-part-card:last-child {
+  border-bottom: 0;
 }
 
 .repair-part-row {
@@ -1803,7 +1804,7 @@ button.journey-item:active {
   gap: 12px;
   width: 100%;
   min-height: 72px;
-  padding: 16px;
+  padding: 16px 16px 16px 0;
   border: 0;
   background: none;
   color: var(--text);
