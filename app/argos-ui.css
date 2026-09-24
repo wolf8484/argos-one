@@ -1771,6 +1771,8 @@ button.journey-item:active {
 .repair-parts-list {
   display: flex;
   flex-direction: column;
+  border-top: 1px solid #2d2d2d;
+  border-bottom: 1px solid #2d2d2d;
 }
 
 .repair-parts-total {
@@ -1790,7 +1792,7 @@ button.journey-item:active {
 }
 
 .repair-part-card {
-  border-bottom: 1px solid var(--line-strong);
+  border-bottom: 1px solid #2d2d2d;
 }
 
 .repair-part-card:last-child {
