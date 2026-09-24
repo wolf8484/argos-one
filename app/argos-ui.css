@@ -1810,6 +1810,7 @@ button.journey-item:active {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background 160ms ease;
 }
 
 .repair-part-row:active {
@@ -2822,6 +2823,7 @@ button.journey-item:active {
   border: 1px solid var(--secondary-border);
   border-radius: var(--card-radius);
   background: none;
+  background-color: #2d2d2d;
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -3135,6 +3137,7 @@ button.journey-item:active {
 .secondary-button {
   border: 1px solid var(--secondary-border);
   background: transparent;
+  background-color: #2d2d2d;
   color: var(--text);
 }
 
@@ -4842,6 +4845,14 @@ button.settings-toggle-row {
   button.journey-item:hover {
     background: var(--surface-3);
   }
+
+  .known-issues-accordion summary:hover {
+    background: var(--surface-3);
+  }
+
+  .repair-part-row:hover {
+    background: var(--surface-3);
+  }
 }
 
 .part-search-summary {
@@ -6475,6 +6486,7 @@ body.dictation-active .toast {
   padding: 16px;
   list-style: none;
   display: flex;
+  transition: background 160ms ease;
 }
 
 .known-issues-system-icon {
