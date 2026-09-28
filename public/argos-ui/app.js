@@ -23,6 +23,7 @@ let vinDecodeTimer;
 let repairAutosaveTimer;
 let libraryRepairSearchTimer;
 let repairAutosaveInFlight = false;
+let lastSavedRepairSnapshot = null;
 let animateNextScreen = false;
 let pendingMatchCarouselRestore = null;
 let lastResearchResult = null;
@@ -1017,12 +1018,28 @@ function repairPayload(resolve = false) {
   };
 }
 
+// Compares against the payload shape (not raw state.repair) so an autosave
+// that only reordered/normalized fields doesn't read as still-dirty.
+function repairSnapshot() {
+  return JSON.stringify(repairPayload(false));
+}
+
+function markRepairSaved() {
+  lastSavedRepairSnapshot = repairSnapshot();
+}
+
+function repairFormIsDirty() {
+  if (state.route !== "repair") return false;
+  return lastSavedRepairSnapshot !== null && repairSnapshot() !== lastSavedRepairSnapshot;
+}
+
 async function persistRepair(resolve = false) {
   if (!state.currentJobId) await persistVehicleDetails();
   const { job } = await apiRequest(`/api/jobs/${state.currentJobId}/repair`, { method: "PUT", body: JSON.stringify(repairPayload(resolve)) });
   const mapped = databaseJobToUi(job);
   const index = jobRecords.findIndex((record) => record.id === mapped.id);
   if (index >= 0) jobRecords[index] = mapped;
+  markRepairSaved();
   return mapped;
 }
 
@@ -1231,6 +1248,7 @@ function resetJobDraft() {
   state.dtcs = [];
   state.photos = [];
   state.repair = { workNotes: "", verificationNotes: "", extraNotes: "", system: "", parts: [], photos: [] };
+  lastSavedRepairSnapshot = repairSnapshot();
   state.catalog.models = [];
 }
 
@@ -4766,6 +4784,7 @@ function openJob(jobId, { reopenSheet = null } = {}) {
     parts: (job.parts || []).map((part) => ({ ...part, key: part.id || part.number || part.name })),
     photos: [],
   };
+  lastSavedRepairSnapshot = repairSnapshot();
   const result = resumeSavedJob();
   if (/^[0-9a-f-]{36}$/i.test(job.id)) loadJobPhotos(job.id);
   return result;
@@ -4961,23 +4980,31 @@ function jobNeverSaved() {
   return state.route === "new" && state.step === 1 && !isPersistedJobId(state.currentJobId) && vehicleFormIsDirty();
 }
 
-let pendingNavRoute = null;
+let pendingNavAction = null;
+let pendingNavReason = null;
 
 // Neither reason here is a permanent-delete kind of action -- worst case is a
 // few typed fields, never the job itself once it has reached the server -- so
-// this stays a plain primary action, not a red/danger one.
-function leaveWorkflowConfirmation(targetRoute, reason) {
-  pendingNavRoute = targetRoute;
+// this stays a plain primary action, not a red/danger one. `onConfirm` runs
+// after the sheet closes; for "unsaved-repair" that's after an explicit save
+// (the repair step autosaves, so there's a real draft to flush, not just data
+// to discard) -- for the other reasons it's just the navigation itself.
+function leaveWorkflowConfirmation(onConfirm, reason) {
+  pendingNavAction = onConfirm;
+  pendingNavReason = reason;
   const jobDescription = vehicleName().trim() ? ` for ${escapeHTML(vehicleName().trim())}` : "";
   const body = reason === "unsaved-job"
     ? `The details you've entered${jobDescription} haven't reached the workshop cloud yet. Leaving now loses them for good.`
-    : `The changes you've made${jobDescription} haven't been saved. Leaving now loses them.`;
+    : reason === "unsaved-repair"
+      ? `The changes you've made to this repair${jobDescription} haven't been saved yet.`
+      : `The changes you've made${jobDescription} haven't been saved. Leaving now loses them.`;
+  const confirmLabel = reason === "unsaved-repair" ? `${icon("save")} Save & continue` : `${icon("arrow")} Leave anyway`;
   openSheet(`<div class="confirmation-content">
-    <h2>Leave without saving?</h2>
+    <h2>${reason === "unsaved-repair" ? "Save changes before leaving?" : "Leave without saving?"}</h2>
     <p>${body}</p>
     <div class="confirmation-actions">
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep working</button>
-      <button class="primary-button full" type="button" data-action="confirm-leave-workflow">${icon("arrow")} Leave anyway</button>
+      <button class="primary-button full" type="button" data-action="confirm-leave-workflow">${confirmLabel}</button>
     </div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm leaving without saving" });
 }
@@ -5739,22 +5766,26 @@ document.addEventListener("click", (event) => {
   const routeButton = event.target.closest("[data-route]");
   if (routeButton) {
     const targetRoute = routeButton.dataset.route;
+    const goToRoute = () => setRoute(targetRoute);
     if (state.route === "repair") {
-      // The repair step always autosaves, so leaving it -- New included --
-      // never risks losing anything real; just flush whatever's pending and go.
+      // The repair step autosaves, but a mechanic must not be able to bounce
+      // to Home/Jobs/etc. while an edit is still sitting on the debounce
+      // timer -- flush it, and if it's genuinely still dirty (or the flush
+      // is mid-flight), make them confirm before leaving.
       const repairForm = document.querySelector("#repair-form");
       if (repairForm) syncRepairRecord(repairForm);
+      if (repairFormIsDirty()) return leaveWorkflowConfirmation(goToRoute, "unsaved-repair");
       queueRepairAutosave(0);
-      return setRoute(targetRoute);
+      return goToRoute();
     }
     // Steps 1-3 have no autosave at all -- the vehicle and assessment forms
     // only reach the server on their own Continue button. Only interrupt when
     // something would genuinely be lost; a clean or already-saved job (e.g.
     // sitting on step 3, or just looking at step 1/2 without editing) leaves
     // the same way Home/Jobs/Library already do -- no dialog needed.
-    if (jobNeverSaved()) return leaveWorkflowConfirmation(targetRoute, "unsaved-job");
-    if (hasUnsavedStepInput()) return leaveWorkflowConfirmation(targetRoute, "unsaved-edit");
-    return setRoute(targetRoute);
+    if (jobNeverSaved()) return leaveWorkflowConfirmation(goToRoute, "unsaved-job");
+    if (hasUnsavedStepInput()) return leaveWorkflowConfirmation(goToRoute, "unsaved-edit");
+    return goToRoute();
   }
 
   const stepButton = event.target.closest("[data-step]");
@@ -5762,13 +5793,18 @@ document.addEventListener("click", (event) => {
 
   const journeyButton = event.target.closest("[data-journey-step]");
   if (journeyButton) {
-    const repairForm = document.querySelector("#repair-form");
-    if (repairForm) {
-      syncRepairRecord(repairForm);
-      queueRepairAutosave(0);
-    }
     const journeyStep = Number(journeyButton.dataset.journeyStep);
-    return journeyStep === 4 ? openRepairRecord() : setStep(journeyStep);
+    const goToJourneyStep = () => (journeyStep === 4 ? openRepairRecord() : setStep(journeyStep));
+    if (state.route === "repair") {
+      const repairForm = document.querySelector("#repair-form");
+      if (repairForm) syncRepairRecord(repairForm);
+      if (repairFormIsDirty()) return leaveWorkflowConfirmation(goToJourneyStep, "unsaved-repair");
+      queueRepairAutosave(0);
+      return goToJourneyStep();
+    }
+    if (jobNeverSaved()) return leaveWorkflowConfirmation(goToJourneyStep, "unsaved-job");
+    if (hasUnsavedStepInput()) return leaveWorkflowConfirmation(goToJourneyStep, "unsaved-edit");
+    return goToJourneyStep();
   }
 
   const repairChoice = event.target.closest("[data-repair-match]");
@@ -5795,10 +5831,18 @@ document.addEventListener("click", (event) => {
     if (action === "cancel-job") return cancelJobConfirmation();
     if (action === "confirm-cancel-job") return cancelJob();
     if (action === "confirm-leave-workflow") {
-      const targetRoute = pendingNavRoute || "home";
-      pendingNavRoute = null;
+      const proceed = pendingNavAction || (() => setRoute("home"));
+      const reason = pendingNavReason;
+      pendingNavAction = null;
+      pendingNavReason = null;
       closeSheet();
-      return setRoute(targetRoute);
+      if (reason === "unsaved-repair") {
+        clearTimeout(repairAutosaveTimer);
+        return persistRepair(false)
+          .catch(() => showToast("Repair draft could not be saved."))
+          .finally(() => proceed());
+      }
+      return proceed();
     }
     // The header exposes one delete entry point across every workflow step
     // (not just the first and last tabs) -- it picks whichever confirmation
