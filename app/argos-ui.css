@@ -351,7 +351,7 @@ main:focus {
 
 .screen {
   margin: 0 auto;
-  padding: 16px 16px;
+  padding: 0px 16px 16px 16px;
 }
 
 .screen.screen-enter {
@@ -738,8 +738,8 @@ main:focus {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 8px 0 16px;
+  padding: 24px 0 40px;
+  /* margin-bottom: 24px; */
 }
 
 .page-header h1 {
@@ -1363,8 +1363,8 @@ main:focus {
   display: grid;
   align-items: center;
   gap: 16px;
-  padding-top: 8px;
   margin-bottom: 40px;
+  /* padding-top: 8px; */
 }
 
 .task-header.has-back {
