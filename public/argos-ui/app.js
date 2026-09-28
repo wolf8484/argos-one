@@ -1597,7 +1597,7 @@ function renderHome() {
     <div class="home-jobs-section">
       <div class="field-header">
         <div><h2>Currently active</h2></div>
-        <button class="secondary-button view-all-button" type="button" data-action="view-active-jobs">View all ${icon("arrow")}</button>
+        <button class="tertiary-button view-all-button" type="button" data-action="view-active-jobs">View all ${icon("arrow")}</button>
       </div>
       <div class="job-list">
         ${openJobs.slice(0, 3).map(jobCard).join("")}
@@ -4342,7 +4342,7 @@ function renderRepairRecord() {
       <section class="repair-parts-section" aria-labelledby="repair-parts-heading">
         <div class="repair-section-head"><span class="field-label" id="repair-parts-heading">Parts & consumables <span class="optional-label">(optional)</span></span></div>
         ${repairPartsTable()}
-        <button class="secondary-button add-parts-button" type="button" data-action="open-parts-editor">${icon("plus")} Add parts & consumables</button>
+        <button class="tertiary-button add-parts-button" type="button" data-action="open-parts-editor">${icon("plus")} Add parts & consumables</button>
       </section>
 
       <div class="form-field">

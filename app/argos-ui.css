@@ -1732,7 +1732,7 @@ button.journey-item:active {
   margin-top: 12px;
 }
 
-.secondary-button.add-parts-button svg {
+.tertiary-button.add-parts-button svg {
   width: 18px;
   height: 18px;
   color: var(--text);
@@ -2810,7 +2810,7 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid #2d2d2d;
+  border: 1px solid #7c7c7c;
   border-radius: var(--card-radius);
   background: none;
   color: var(--text);
@@ -3138,17 +3138,13 @@ button.journey-item:active {
   background-color: #2d2d2d;
 }
 
-.secondary-button.add-parts-button {
+.tertiary-button.add-parts-button {
   height: 52px;
-  min-height: 52px;
 }
 
-.secondary-button.view-all-button {
-  /* border-color: #565656; */
+.tertiary-button.view-all-button {
   height: 52px;
-  min-height: 52px;
   padding: 0 24px;
-  font-weight: 500;
 }
 
 .view-all-button svg {
@@ -3176,6 +3172,8 @@ button.journey-item:active {
 .part-button:active,
 .dictate-button:not(.is-listening):active,
 .enhance-button:not(.is-enhancing):active,
+.tertiary-button.add-parts-button:active,
+.tertiary-button.view-all-button:active,
 .vin-camera:active {
   background: var(--surface-3);
 }
@@ -4835,7 +4833,9 @@ button.settings-toggle-row {
   .part-button:hover,
   .calendar-nav:hover,
   .quick-chip:not(.is-selected):hover,
-  .filter-button:not(.is-active):hover {
+  .filter-button:not(.is-active):hover,
+  .tertiary-button.add-parts-button:hover,
+  .tertiary-button.view-all-button:hover {
     background: var(--surface-3);
   }
 
