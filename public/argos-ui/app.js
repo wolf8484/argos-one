@@ -1652,7 +1652,7 @@ function renderJobs() {
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="job-search" type="search" value="${escapeHTML(state.jobSearch)}" placeholder="Vehicle or customer" autocomplete="off" /></span>
     </label>
     <div class="quick-row job-filters" role="group" aria-label="Filter jobs">
-      ${[["all", "All"], ["open", "Active"], ["resolved", "Resolved"], ["deleted", "Deleted"]].map(([filter, label]) => `<button class="quick-chip${state.jobFilter === filter ? " is-selected" : ""}" type="button" data-action="filter-jobs" data-job-filter="${filter}" aria-pressed="${state.jobFilter === filter}">${label} ${counts[filter]}</button>`).join("")}
+      ${[["all", "All"], ["open", "Active"], ["resolved", "Resolved"], ["deleted", "Deleted"]].map(([filter, label]) => `<button class="quick-chip tertiary-button${state.jobFilter === filter ? " is-selected" : ""}" type="button" data-action="filter-jobs" data-job-filter="${filter}" aria-pressed="${state.jobFilter === filter}">${label} ${counts[filter]}</button>`).join("")}
     </div>
     <div class="job-list">
       ${visibleJobs.map((job) => jobCard(job, { hidden: Boolean(normalizedSearch && !jobSearchText(job).includes(normalizedSearch)) })).join("")}
@@ -2331,8 +2331,8 @@ function renderCarProfile() {
     ${taskHeader({ context: profile.make || "Car profile", title: trimTitle, backAction: "back-to-library", backLabel: "Back to the repair library" })}
 
     <div class="quick-row profile-tabs" role="tablist" aria-label="Car profile sections">
-      <button class="quick-chip${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
-      <button class="quick-chip${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
+      <button class="quick-chip tertiary-button${isNotesTab ? " is-selected" : ""}" type="button" role="tab" aria-selected="${isNotesTab}" data-action="set-profile-tab" data-profile-tab="notes">Notes &amp; insights</button>
+      <button class="quick-chip tertiary-button${isNotesTab ? "" : " is-selected"}" type="button" role="tab" aria-selected="${!isNotesTab}" data-action="set-profile-tab" data-profile-tab="history">Repair history ${repairs.length}</button>
     </div>
 
     <div class="profile-panel"${isNotesTab ? "" : " hidden"} role="tabpanel" aria-label="Notes and insights">
@@ -2572,7 +2572,7 @@ function openAddNoteModal() {
       <textarea class="textarea" id="profile-note-input" name="body" rows="5" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
       <div class="profile-note-actions">
         <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
-        <button class="dictate-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
+        <button class="dictate-button tertiary-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
         <button class="primary-button" type="submit">${icon("save")} Save note</button>
       </div>
     </form>
@@ -4202,7 +4202,7 @@ function photoStrip(photos, scope, label) {
 }
 
 function photoActionButtons() {
-  return `<div class="field-actions photo-actions"><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="camera">${icon("camera")}<span>Take photo</span></button><button class="dictate-button" type="button" data-action="add-photo" data-photo-mode="upload">${icon("upload")}<span>Upload file</span></button></div>`;
+  return `<div class="field-actions photo-actions"><button class="dictate-button tertiary-button" type="button" data-action="add-photo" data-photo-mode="camera">${icon("camera")}<span>Take photo</span></button><button class="dictate-button tertiary-button" type="button" data-action="add-photo" data-photo-mode="upload">${icon("upload")}<span>Upload file</span></button></div>`;
 }
 
 function renderProblem() {
@@ -4214,12 +4214,12 @@ function renderProblem() {
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Symptoms</label></div>
         <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea></div>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button></div>
+        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button></div>
       </div>
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="notes">Initial observations <span class="optional-label">(optional)</span></label></div>
         <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
+        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
       </div>
       <div class="form-field repair-dtc-field">
         <div class="field-header"><span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
@@ -4336,7 +4336,7 @@ function renderRepairRecord() {
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
         <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
+        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <section class="repair-parts-section" aria-labelledby="repair-parts-heading">
@@ -4348,7 +4348,7 @@ function renderRepairRecord() {
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
         <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
+        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <div class="form-field">
@@ -4362,7 +4362,7 @@ function renderRepairRecord() {
         <div class="field-header"><label class="field-label" for="repair-extra-notes">Extra notes <span class="optional-label">(optional)</span></label></div>
         <div class="text-field-shell"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button></div>
         <p class="helper">Saved to the car profile as a shop notes</p>
-        <div class="field-actions"><button class="dictate-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
+        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>

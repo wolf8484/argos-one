@@ -2803,8 +2803,7 @@ button.journey-item:active {
   margin-top: 16px;
 }
 
-.dictate-button,
-.enhance-button {
+.tertiary-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2820,8 +2819,7 @@ button.journey-item:active {
   line-height: 1;
 }
 
-.dictate-button svg,
-.enhance-button svg {
+.tertiary-button svg {
   width: 20px;
   height: 20px;
   color: var(--text);
@@ -2926,7 +2924,11 @@ button.journey-item:active {
   background: var(--surface-3);
 }
 
-.quick-chip,
+.quick-chip {
+  padding: 0 24px;
+  color: var(--muted-strong);
+}
+
 .filter-button {
   min-height: 52px;
   padding: 0 24px;
