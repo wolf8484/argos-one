@@ -1611,11 +1611,11 @@ button.journey-item:active {
 
 /* Repair record */
 .repair-record-shell .journey-nav {
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
 .repair-job-strip {
-  margin-bottom: 24px;
+  margin-bottom: 40px;
 }
 
 .repair-job-strip {
@@ -2643,9 +2643,12 @@ button.journey-item:active {
   appearance: none;
 }
 
-.input,
-.textarea {
+.input {
   border: 0;
+}
+
+.textarea {
+  border: 1px solid #2d2d2d;
 }
 
 .input,
@@ -2808,9 +2811,9 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid #565656;
+  /* border: 1px solid #565656; */
   border-radius: var(--card-radius);
-  background: none;
+  background: #232323;
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -2926,10 +2929,10 @@ button.journey-item:active {
 .quick-chip,
 .filter-button {
   min-height: 52px;
-  padding: 0 20px;
-  border: 1px solid #565656;
+  padding: 0 24px;
+  /* border: 1px solid #565656; */
   border-radius: var(--card-radius);
-  background: none;
+  background: #2d2d2d;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -3129,7 +3132,8 @@ button.journey-item:active {
 
 .secondary-button {
   color: var(--text);
-  border: 1px solid #565656;
+  /* border: 1px solid #565656; */
+  background-color: #2d2d2d;
 }
 
 .secondary-button.add-parts-button {
