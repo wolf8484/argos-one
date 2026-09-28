@@ -956,6 +956,7 @@ async function persistVehicleDetails() {
   const existingIndex = jobRecords.findIndex((record) => record.id === job.id);
   if (existingIndex >= 0) jobRecords[existingIndex] = mapped;
   else jobRecords.unshift(mapped);
+  markVehicleSaved();
   return mapped;
 }
 
@@ -1249,6 +1250,7 @@ function resetJobDraft() {
   state.photos = [];
   state.repair = { workNotes: "", verificationNotes: "", extraNotes: "", system: "", parts: [], photos: [] };
   lastSavedRepairSnapshot = repairSnapshot();
+  lastSavedVehicleSnapshot = null;
   state.catalog.models = [];
 }
 
@@ -4770,6 +4772,7 @@ function openJob(jobId, { reopenSheet = null } = {}) {
   state.currentJobId = job.id;
   rememberActiveJob(job.id);
   state.vehicle = { ...job.vehicle };
+  markVehicleSaved();
   state.complaint = job.complaint || "";
   state.notes = job.observations || "";
   state.dtcs = [...(job.dtcs || [])];
@@ -4940,6 +4943,24 @@ function completeJobConfirmation() {
   </div>`, { sheetClass: "confirmation-sheet complete-job-sheet", ariaLabel: "Confirm job completion" });
 }
 
+const VEHICLE_DIRTY_KEYS = ["vin", "year", "make", "model", "mileage", "trim", "engine", "drivetrain", "transmission", "registration", "customerFirstName", "customerLastName", "customerPhone", "customerEmail"];
+
+function vehicleFormValues(form) {
+  const data = new FormData(form);
+  return Object.fromEntries(VEHICLE_DIRTY_KEYS.map((key) => [key, String(data.get(key) || "").trim()]));
+}
+
+// The Make/Model/Trim selects (and mileage/VIN formatting) write straight into
+// state.vehicle as soon as they change -- comparing the form against
+// state.vehicle would always read "clean" for those fields since both sides
+// update together. Compare against a snapshot taken only when the vehicle was
+// actually last saved instead.
+let lastSavedVehicleSnapshot = null;
+
+function markVehicleSaved() {
+  lastSavedVehicleSnapshot = JSON.stringify(Object.fromEntries(VEHICLE_DIRTY_KEYS.map((key) => [key, String(state.vehicle[key] || "").trim()])));
+}
+
 // Before a job exists, decoding a VIN writes straight into state.vehicle
 // without a submit, so a plain diff against state would call that "clean" --
 // any real value here is unsaved until the vehicle form is actually submitted.
@@ -4948,11 +4969,9 @@ function completeJobConfirmation() {
 function vehicleFormIsDirty() {
   const form = document.querySelector("#vehicle-form");
   if (!form) return false;
-  const data = new FormData(form);
-  const keys = ["vin", "year", "make", "model", "mileage", "trim", "registration", "customerFirstName", "customerLastName", "customerPhone", "customerEmail"];
-  const values = Object.fromEntries(keys.map((key) => [key, String(data.get(key) || "").trim()]));
-  if (!isPersistedJobId(state.currentJobId)) return keys.some((key) => values[key]);
-  return keys.some((key) => values[key] !== String(state.vehicle[key] || "").trim());
+  const values = vehicleFormValues(form);
+  if (!isPersistedJobId(state.currentJobId)) return VEHICLE_DIRTY_KEYS.some((key) => values[key]);
+  return lastSavedVehicleSnapshot !== null && JSON.stringify(values) !== lastSavedVehicleSnapshot;
 }
 
 // state.complaint/state.notes only ever change on this form's own submit, so
