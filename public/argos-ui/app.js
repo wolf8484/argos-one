@@ -2795,7 +2795,10 @@ function renderSettingsHome() {
       settingsRow({ iconName: "sparkles", title: "What's new", description: "See recent updates", page: "whats-new" }),
     ].join(""))}
 
-    ${updateAvailable ? "" : settingsGroup("About", settingsRow({ iconName: "check", title: "You're up to date", description: `Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}` }))}
+    ${updateAvailable ? "" : `<section class="settings-group">
+      <span class="settings-group-label">About</span>
+      <p class="settings-about-line">${icon("check")} You're up to date &mdash; Build ${escapeHTML(BUILD_VERSION === "dev-local" ? BUILD_VERSION : BUILD_VERSION.slice(0, 7))}</p>
+    </section>`}
   </section>`;
 }
 

@@ -1377,7 +1377,7 @@ main:focus {
   width: 52px;
   height: 52px;
   border-radius: var(--card-radius);
-  background: var(--surface-2);
+  background: #2d2d2d;
   color: var(--accent);
   transition: background-color 160ms ease;
 }
@@ -2813,7 +2813,7 @@ button.journey-item:active {
   gap: 8px;
   /* border: 1px solid #565656; */
   border-radius: var(--card-radius);
-  background: #232323;
+  background: #2d2d2d;
   color: var(--text);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -3142,10 +3142,10 @@ button.journey-item:active {
 }
 
 .secondary-button.view-all-button {
-  border-color: #565656;
+  /* border-color: #565656; */
   height: 52px;
   min-height: 52px;
-  padding: 0 16px;
+  padding: 0 24px;
   font-weight: 500;
 }
 
@@ -3758,6 +3758,20 @@ button.journey-item:active {
   flex-direction: column;
   gap: 12px;
   background: transparent;
+}
+
+.settings-about-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-strong);
+  font-size: var(--copy-size);
+}
+
+.settings-about-line svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 
 .settings-row {
@@ -4631,11 +4645,8 @@ button.settings-toggle-row {
   line-height: 1.45;
 }
 
-:root[data-theme="light"] .secondary-button,
 :root[data-theme="light"] .web-button,
 :root[data-theme="light"] .part-button,
-:root[data-theme="light"] .dictate-button:not(.is-listening),
-:root[data-theme="light"] .enhance-button:not(.is-enhancing),
 :root[data-theme="light"] .add-dtc-button,
 :root[data-theme="light"] .vin-camera,
 :root[data-theme="light"] .calendar-nav {
@@ -4644,11 +4655,8 @@ button.settings-toggle-row {
   color: #1e1e1e;
 }
 
-:root[data-theme="light"] .secondary-button svg,
 :root[data-theme="light"] .web-button svg,
 :root[data-theme="light"] .part-button svg,
-:root[data-theme="light"] .dictate-button:not(.is-listening) svg,
-:root[data-theme="light"] .enhance-button:not(.is-enhancing) svg,
 :root[data-theme="light"] .add-dtc-button svg,
 :root[data-theme="light"] .vin-camera svg,
 :root[data-theme="light"] .calendar-nav svg {
@@ -4684,11 +4692,8 @@ button.settings-toggle-row {
   outline-color: var(--accent-fill);
 }
 
-:root[data-theme="light"] .secondary-button:active,
 :root[data-theme="light"] .web-button:active,
 :root[data-theme="light"] .part-button:active,
-:root[data-theme="light"] .dictate-button:not(.is-listening):active,
-:root[data-theme="light"] .enhance-button:not(.is-enhancing):active,
 :root[data-theme="light"] .add-dtc-button:active,
 :root[data-theme="light"] .vin-camera:active,
 :root[data-theme="light"] .calendar-nav:active {
