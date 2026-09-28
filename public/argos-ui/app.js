@@ -4121,8 +4121,8 @@ function renderVehicle() {
   const firstName = state.vehicle.customerFirstName ?? savedName.firstName;
   const lastName = state.vehicle.customerLastName ?? savedName.lastName;
   app.innerHTML = `<section class="screen workflow-shell">
-    ${vehicleTaskHeader()}
     ${workflowJourney(1)}
+    ${vehicleTaskHeader()}
     ${assignmentBar()}
     ${jobSetupBar()}
     <form id="vehicle-form" class="form-grid two-col">
@@ -4192,8 +4192,8 @@ function photoActionButtons() {
 
 function renderProblem() {
   app.innerHTML = `<section class="screen workflow-shell">
-    ${problemTaskHeader()}
     ${workflowJourney(2)}
+    ${problemTaskHeader()}
     ${assignmentBar()}
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
@@ -4237,8 +4237,8 @@ function renderResults() {
   const repairedLabel = selected.repairedDateLabel ? `Repaired ${selected.repairedDateLabel}` : "";
   const repairCountClass = repairMatches.length === 1 ? "has-one" : repairMatches.length === 2 ? "has-two" : "has-many";
   app.innerHTML = `<section class="screen workflow-shell">
-    ${resultsTaskHeader()}
     ${workflowJourney(3)}
+    ${resultsTaskHeader()}
     ${assignmentBar()}
 
     <div class="match-selector ${repairCountClass}" role="group" aria-label="Choose a repair record">
@@ -4294,8 +4294,8 @@ function renderRepairRecord() {
   ].filter(Boolean);
   const activeJobRecord = jobRecords.find((record) => String(record.id) === String(state.currentJobId));
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
-    ${repairRecordHeader()}
     ${workflowJourney(4)}
+    ${repairRecordHeader()}
     ${assignmentBar()}
     <div class="repair-job-strip">
       <div class="repair-job-info">
