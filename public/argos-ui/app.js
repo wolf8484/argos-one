@@ -1437,14 +1437,6 @@ function updateScrollCue() {
   scrollCue.tabIndex = -1;
 }
 
-function updateStickyJourney() {
-  const journey = app.querySelector(".journey-nav");
-  if (!journey) return;
-  const topbar = document.querySelector(".topbar");
-  const stickyTop = topbar?.getBoundingClientRect().height || 68;
-  journey.classList.toggle("is-stuck", window.scrollY > 0 && journey.getBoundingClientRect().top <= stickyTop + 1);
-}
-
 function scrollJourneyIntoView() {
   const journey = app.querySelector(".journey-nav");
   if (!journey) return;
@@ -4617,7 +4609,6 @@ function render() {
   requestAnimationFrame(() => {
     restoreMatchCarouselPosition();
     updateScrollCue();
-    updateStickyJourney();
     scrollJourneyIntoView();
   });
 }
@@ -6756,15 +6747,12 @@ sheetLayer.addEventListener("pointercancel", endSheetDrag);
 
 window.addEventListener("scroll", () => {
   updateScrollCue();
-  updateStickyJourney();
 }, { passive: true });
 window.addEventListener("resize", () => {
   updateScrollCue();
-  updateStickyJourney();
 });
 window.addEventListener("load", () => {
   updateScrollCue();
-  updateStickyJourney();
 });
 
 // Lets a browser opt into the Honda Civic demo fixtures via a one-time URL

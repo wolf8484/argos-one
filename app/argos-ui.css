@@ -1479,22 +1479,16 @@ main:focus {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 2px;
-  margin: -12px 0 40px;
+  width: calc(100% + (var(--gutter) * 2));
+  margin: 0 0 40px calc(var(--gutter) * -1);
   background: var(--bg);
+  box-shadow: var(--journey-shadow);
   scrollbar-width: none;
-  transition: box-shadow 160ms ease;
   -webkit-overflow-scrolling: touch;
 }
 
 .journey-nav::-webkit-scrollbar {
   display: none;
-}
-
-.journey-nav.is-stuck {
-  width: calc(100% + (var(--gutter) * 2));
-  margin-right: calc(var(--gutter) * -1);
-  margin-left: calc(var(--gutter) * -1);
-  box-shadow: var(--journey-shadow);
 }
 
 .journey-item {
@@ -6056,7 +6050,7 @@ body.dictation-active .toast {
     margin-right: calc(var(--gutter) * -1);
     margin-left: calc(var(--gutter) * -1);
     padding-left: var(--gutter);
-    scroll-padding-left: var(--gutter);
+    scroll-padding-left: 0;
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
@@ -6079,11 +6073,6 @@ body.dictation-active .toast {
 
   .workflow-shell > .journey-nav > .journey-item > span {
     white-space: nowrap;
-  }
-
-  .workflow-shell > .journey-nav.is-stuck {
-    scroll-padding-left: 0;
-    box-shadow: var(--journey-shadow);
   }
 }
 
