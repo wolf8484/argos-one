@@ -841,7 +841,7 @@ main:focus {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -853,7 +853,7 @@ main:focus {
 }
 
 .job-bay + .job-date::before {
-  margin-right: 10px;
+  margin-right: 8px;
   color: var(--muted);
   content: "|";
 }
@@ -894,6 +894,7 @@ main:focus {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.35;
+  white-space: nowrap;
 }
 
 .job-issue {
@@ -1082,7 +1083,7 @@ main:focus {
   justify-content: flex-start;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px;
+  padding: 20px;
   transition: background 0.16s;
   display: flex;
 }

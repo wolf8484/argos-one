@@ -251,12 +251,23 @@ function rememberActiveJob(id) {
   } catch (_) {}
 }
 
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Intl's en-AU "short" style renders September as "Sept" (4 letters) while every
+// other month gets 3 -- a fixed lookup keeps all months the same length.
 function shortDate(iso) {
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" }).format(new Date(iso));
+  const date = new Date(iso);
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`;
 }
 
 function mediumDate(iso) {
-  return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(iso));
+  const date = new Date(iso);
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function mediumDateTime(iso) {
+  const time = new Intl.DateTimeFormat("en-AU", { timeStyle: "short" }).format(new Date(iso));
+  return `${mediumDate(iso)}, ${time}`;
 }
 
 function jobVehicleName(job) {
@@ -507,8 +518,8 @@ function databaseJobToUi(row) {
     createdAtShort: row.created_at ? shortDate(row.created_at) : "",
     resolvedAtShort: row.resolved_at ? shortDate(row.resolved_at) : "",
     updatedAtShort: row.updated_at ? shortDate(row.updated_at) : "",
-    resolvedAt: row.resolved_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.resolved_at)) : "",
-    updatedAt: row.updated_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.updated_at)) : "",
+    resolvedAt: row.resolved_at ? mediumDateTime(row.resolved_at) : "",
+    updatedAt: row.updated_at ? mediumDateTime(row.updated_at) : "",
     assignedTo: row.assigned_to || null,
     assigneeName: relatedRecord(row.assignee)?.full_name || null,
     technician: relatedRecord(row.assignee)?.full_name || "Unassigned",
@@ -546,7 +557,7 @@ function databaseMatchToUi(row, index) {
     engine: row.vehicle_engine || "",
     transmission: row.vehicle_transmission || "",
     mileageLabel: row.vehicle_mileage ? formatKilometres(row.vehicle_mileage) : "",
-    repairedDateLabel: row.repaired_at ? new Intl.DateTimeFormat("en-AU", { dateStyle: "medium" }).format(new Date(row.repaired_at)) : "",
+    repairedDateLabel: row.repaired_at ? mediumDate(row.repaired_at) : "",
     repairSummary: row.cause || "",
     complaint: row.complaint || "",
     observations: row.observations || "",
@@ -1815,7 +1826,7 @@ function formatShortDate(value) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 // Repairs are shown only when there are some. A model reaches the library by
@@ -2479,8 +2490,8 @@ function fixtureResolvedJob({ key, year, mileage, resolvedAt, complaint, dtc, wo
     createdAtShort: shortDate(resolvedIso),
     resolvedAtShort: shortDate(resolvedIso),
     updatedAtShort: shortDate(resolvedIso),
-    resolvedAt: new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(resolvedIso)),
-    updatedAt: new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short" }).format(new Date(resolvedIso)),
+    resolvedAt: mediumDateTime(resolvedIso),
+    updatedAt: mediumDateTime(resolvedIso),
     technician: "Workshop technician",
     complaint,
     observations: "",
@@ -5290,7 +5301,10 @@ function updateWorkshopClock() {
   const time = document.querySelector("#workshop-time");
   const date = document.querySelector("#workshop-date");
   if (time) time.textContent = new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
-  if (date) date.textContent = new Intl.DateTimeFormat("en-AU", { weekday: "short", day: "2-digit", month: "short" }).format(now).replace(",", "");
+  if (date) {
+    const weekday = new Intl.DateTimeFormat("en-AU", { weekday: "short" }).format(now);
+    date.textContent = `${weekday} ${String(now.getDate()).padStart(2, "0")} ${SHORT_MONTHS[now.getMonth()]}`;
+  }
 }
 
 function calendarSheet() {
