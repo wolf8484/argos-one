@@ -2934,12 +2934,17 @@ button.journey-item:active {
 .filter-button {
   min-height: 52px;
   padding: 0 20px;
-  border: 1px solid #565656;
+  border: 1px solid #FFC001;
   border-radius: var(--card-radius);
   background: 0 0;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   font-weight: 500;
+}
+
+:root[data-theme="light"] .quick-chip,
+:root[data-theme="light"] .filter-button {
+  border-color: #565656;
 }
 
 .quick-chip.caps-text {
@@ -3130,7 +3135,7 @@ button.journey-item:active {
 }
 
 .secondary-button {
-  border: 1px solid var(--secondary-border);
+  border: 1px solid #FFC001;
   color: var(--text);
   /* background: #2d2d2d; */
 }
@@ -3144,7 +3149,7 @@ button.journey-item:active {
   height: 52px;
   min-height: 52px;
   padding: 0 16px;
-  border-color: var(--secondary-border);
+  border-color: #FFC001;
   font-weight: 500;
 }
 
