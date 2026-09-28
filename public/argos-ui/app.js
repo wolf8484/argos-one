@@ -1622,16 +1622,16 @@ function jobCard(job, { hidden = false } = {}) {
       <span class="job-card-top">
         <span class="job-status-group">
           <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
+          <span class="job-bay">${job.bay.toUpperCase()}</span>
           ${dateLabel ? `<span class="job-date">${escapeHTML(dateLabel)}</span>` : ""}
         </span>
-        <span class="job-bay">${job.bay.toUpperCase()}</span>
       </span>
       <span class="job-vehicle">${jobVehicleName(job)}</span>
       <span class="job-card-context"><span>${escapeHTML(vehicleSpecLine(job.vehicle))}</span></span>
       <span class="job-issue">${jobSummary(job)}</span>
     </button>
-    <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
     ${showMenu ? `<button class="job-card-menu" type="button" data-action="delete-job-from-list" data-job-id="${job.id}" aria-label="Delete job for ${jobVehicleName(job)}">${icon("more")}</button>` : `<span class="job-card-menu-spacer" aria-hidden="true"></span>`}
+    <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
   </div>`;
 }
 

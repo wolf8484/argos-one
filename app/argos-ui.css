@@ -770,7 +770,7 @@ main:focus {
 
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px 44px;
+  grid-template-columns: minmax(0, 1fr) 44px 24px;
   align-items: center;
   gap: 16px;
   width: 100%;
@@ -850,6 +850,12 @@ main:focus {
   font-size: 14px;
   line-height: 1.35;
   white-space: nowrap;
+}
+
+.job-bay + .job-date::before {
+  margin-right: 10px;
+  color: var(--muted);
+  content: "|";
 }
 
 .job-vehicle {
@@ -6013,21 +6019,21 @@ body.dictation-active .toast {
   }
 
   .job-card {
-    grid-template-columns: minmax(0, 1fr) 24px 44px;
+    grid-template-columns: minmax(0, 1fr) 44px 24px;
     gap: 12px;
     padding: 16px;
   }
 
-  .job-card-action {
-    grid-column: 2;
-    grid-row: 1;
-    width: 24px;
-  }
-
   .job-card-menu,
   .job-card-menu-spacer {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .job-card-action {
     grid-column: 3;
     grid-row: 1;
+    width: 24px;
   }
 
   .stat {
