@@ -3180,6 +3180,7 @@ button.journey-item:active {
 .enhance-button:not(.is-enhancing):active,
 .tertiary-button.add-parts-button:active,
 .tertiary-button.view-all-button:active,
+.tertiary-button.catalog-add-button:active,
 .vin-camera:active {
   background: var(--surface-3);
 }
@@ -4842,7 +4843,8 @@ button.settings-toggle-row {
   .quick-chip:not(.is-selected):hover,
   .filter-button:not(.is-active):hover,
   .tertiary-button.add-parts-button:hover,
-  .tertiary-button.view-all-button:hover {
+  .tertiary-button.view-all-button:hover,
+  .tertiary-button.catalog-add-button:hover {
     background: var(--surface-3);
   }
 
