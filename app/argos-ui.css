@@ -1518,7 +1518,7 @@ main:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin: -16px 0 24px;
+  margin: -16px 0 40px;
   padding: 16px var(--gutter);
   border-radius: 12px;
   background: var(--surface-2);
@@ -1622,8 +1622,8 @@ button.journey-item:active {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: 18px;
+  gap: 16px;
+  padding: 16px;
   border-radius: var(--card-radius);
   background: var(--surface-2);
 }
@@ -3741,12 +3741,11 @@ button.journey-item:active {
 .settings-group-label {
   display: block;
   margin-bottom: 16px;
-  color: var(--muted-strong);
-  font-size: var(--caps-size);
+  color: var(--heading);
+  font-size: 16px;
   font-weight: 600;
   line-height: 18px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .settings-group-label-spaced {
@@ -3822,9 +3821,11 @@ button.settings-row:focus-visible {
 }
 
 .settings-row-text strong {
-  color: var(--text);
-  font-weight: 500;
-  line-height: 22px;
+  color: var(--heading);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0;
 }
 
 .settings-row-text small {
