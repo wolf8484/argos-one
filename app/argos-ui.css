@@ -1870,7 +1870,7 @@ button.journey-item:active {
 }
 
 .repair-part-value strong {
-  color: #ffc001;
+  color: #e0e0dc;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   font-size: 14px;
@@ -2046,7 +2046,7 @@ button.journey-item:active {
   border: 1px solid var(--line-strong);
   border-radius: var(--card-radius);
   background: none;
-  color: var(--accent);
+  color: #e0e0dc;
   font: inherit;
   font-size: var(--copy-size);
   text-decoration: none;
@@ -2065,9 +2065,7 @@ button.journey-item:active {
 }
 
 .part-edit-offer-row svg:last-child {
-  width: 16px;
-  height: 16px;
-  color: var(--muted-strong);
+  color: #ffc001;
 }
 
 .part-edit-total {
@@ -2077,7 +2075,7 @@ button.journey-item:active {
 }
 
 .part-edit-total strong {
-  color: #ffc001;
+  color: #e0e0dc;
   font-size: 20px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -3150,6 +3148,7 @@ button.journey-item:active {
 .view-all-button svg {
   width: 20px;
   height: 20px;
+  color: #ffc001;
 }
 
 .secondary-button svg,
