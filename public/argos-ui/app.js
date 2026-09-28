@@ -6189,17 +6189,18 @@ document.addEventListener("click", (event) => {
       const repairForm = document.querySelector("#repair-form");
       if (repairForm) syncRepairRecord(repairForm);
       // Drafts already autosave (queueRepairAutosave), so this is an explicit
-      // "save and step away" -- flush now rather than waiting out the timer,
-      // then leave the job open in the jobs list to come back to.
+      // flush-now-rather-than-wait-out-the-timer save -- it stays on the
+      // repair step afterward instead of navigating away.
       clearTimeout(repairAutosaveTimer);
+      showTopProgressBar({ blocking: true });
+      setButtonLoading(actionButton, "Saving…");
       return persistRepair(false)
-        .then(() => {
-          state.route = "jobs";
-          updateNavigation();
-          render();
-          showToast("Job saved. Pick it back up from Jobs.");
-        })
-        .catch((error) => showToast(error.message));
+        .then(() => showToast("Job saved."))
+        .catch((error) => showToast(error.message))
+        .finally(() => {
+          resetButtonLoading(actionButton);
+          hideTopProgressBar();
+        });
     }
     if (action === "delete-repair") {
       const form = document.querySelector("#repair-form");

@@ -1364,7 +1364,7 @@ main:focus {
   align-items: center;
   gap: 16px;
   margin-bottom: 40px;
-  /* padding-top: 8px; */
+  margin-top: 24px;
 }
 
 .task-header.has-back {
@@ -1611,11 +1611,11 @@ button.journey-item:active {
 
 /* Repair record */
 .repair-record-shell .journey-nav {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .repair-job-strip {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .repair-job-strip {
@@ -2810,7 +2810,7 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid #ffc001;
+  border: 1px solid #565656;
   border-radius: var(--card-radius);
   background: none;
   color: var(--text);
@@ -2929,9 +2929,9 @@ button.journey-item:active {
 .filter-button {
   min-height: 52px;
   padding: 0 20px;
-  border: 1px solid #FFC001;
+  border: 1px solid #565656;
   border-radius: var(--card-radius);
-  background: 0 0;
+  background: none;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   font-weight: 500;
@@ -3130,9 +3130,8 @@ button.journey-item:active {
 }
 
 .secondary-button {
-  border: 1px solid #FFC001;
   color: var(--text);
-  /* background: #2d2d2d; */
+  border: 1px solid #565656;
 }
 
 .secondary-button.add-parts-button {
@@ -3141,10 +3140,10 @@ button.journey-item:active {
 }
 
 .secondary-button.view-all-button {
+  border-color: #565656;
   height: 52px;
   min-height: 52px;
   padding: 0 16px;
-  border-color: #FFC001;
   font-weight: 500;
 }
 
