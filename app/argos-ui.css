@@ -30,7 +30,7 @@
   --sheet-backdrop: rgba(8, 8, 8, 0.42);
   --sheet-shadow: 0 -24px 70px rgba(0, 0, 0, 0.62);
   --shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
-  --journey-shadow: 0 1px 0 var(--line), 0 14px 26px rgba(0, 0, 0, 0.72);
+  --journey-shadow: 0 1px 0 var(--line), 0 6px 14px rgba(0, 0, 0, 0.4);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-safe-bottom: min(env(safe-area-inset-bottom, 0px), 20px);
@@ -82,7 +82,7 @@
   --sheet-backdrop: rgba(10, 10, 10, 0.32);
   --sheet-shadow: 0 -22px 62px rgba(0, 0, 0, 0.28);
   --shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
-  --journey-shadow: 0 1px 0 var(--line), 0 14px 24px rgba(0, 0, 0, 0.24);
+  --journey-shadow: 0 1px 0 var(--line), 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -2657,7 +2657,7 @@ button.journey-item:active {
 }
 
 .textarea {
-  border: 1px solid var(--line);
+  /* border: 1px solid var(--line); */
 }
 
 .input,
@@ -3834,7 +3834,7 @@ button.settings-row:focus-visible {
 }
 
 .settings-row-text small {
-  color: #c3c3c3;
+  color: var(--muted);
   font-size: var(--caps-size);
   line-height: 20px;
 }
@@ -4070,8 +4070,8 @@ button.settings-toggle-row {
 }
 
 .switch.is-on {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: #3acd00;
+  background: #3acd00;
 }
 
 .switch.is-on .switch-thumb {
@@ -4702,7 +4702,31 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .photo-slot {
-  border-color: var(--line-strong);
+  border-color: #e0e0dc;
+}
+
+/* Gray hairlines on the light-grey card surfaces (profile card, home
+   metrics, repair parts list, profile note/repair/recall lists) read as
+   too heavy -- white reads as a clean inset seam instead. */
+:root[data-theme="light"] .switch.is-on {
+  border-color: #15a045;
+  background: #15a045;
+}
+
+:root[data-theme="light"] .switch.is-on .switch-thumb {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .home-metric + .home-metric,
+:root[data-theme="light"] .repair-parts-list,
+:root[data-theme="light"] .repair-part-card,
+:root[data-theme="light"] .profile-card .settings-list,
+:root[data-theme="light"] .profile-card .settings-row,
+:root[data-theme="light"] .profile-note-list,
+:root[data-theme="light"] .profile-repair-list,
+:root[data-theme="light"] .profile-repair-row-button,
+:root[data-theme="light"] .profile-recall-list {
+  border-color: #ffffff;
 }
 
 :root[data-theme="light"] .input:focus,
@@ -4773,7 +4797,7 @@ button.settings-toggle-row {
    hence a single hairline and radius around the whole card rather than
    between its two parts, and a gap before the menu that follows it. */
 .profile-card {
-  border-top: 1px solid var(--line);
+  /* border-top: 1px solid var(--line); */
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -5370,19 +5394,19 @@ button.settings-toggle-row {
 .update-overlay-bar {
   width: 100%;
   height: 6px;
-  background: var(--surface-2);
+  background: #1d1d1d;
   overflow: hidden;
 }
 
 .update-overlay-bar-fill {
   width: 0%;
   height: 100%;
-  background: var(--accent-fill);
+  background: #FFC001;
   transition: width 2200ms ease;
 }
 
 .update-overlay-message {
-  color: var(--heading);
+  color: #e0e0dc;
   font-size: var(--copy-size);
   font-weight: 600;
   text-align: center;
