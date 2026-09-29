@@ -3504,10 +3504,11 @@ button.journey-item:active {
 }
 
 .selected-repair-card {
-  padding: 20px;
-  border-top: 1px solid var(--accent-fill);
-  border-bottom: 1px solid var(--accent-fill);
+  border: 1px solid var(--accent-fill);
+  /* border-bottom: 1px solid var(--accent-fill); */
   background: var(--surface-2);
+  padding: 20px;
+  border-radius: var(--card-radius);
 }
 
 .selected-repair-card > .result-detail-section {
@@ -3596,6 +3597,9 @@ button.journey-item:active {
 }
 
 .parts-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 0;
 }
 
@@ -3627,9 +3631,9 @@ button.journey-item:active {
   align-items: center;
   gap: 12px;
   min-height: 82px;
-  margin-top: 8px;
-  padding: 12px 14px;
+  padding: 16px 16px;
   background: var(--surface-3);
+  border-radius: var(--card-radius);
 }
 
 .part-name {
@@ -3643,12 +3647,12 @@ button.journey-item:active {
 }
 
 .part-button {
-  min-height: 52px;
-  padding: 0 10px;
   border: 1px solid var(--secondary-border);
-  background: transparent;
+  min-height: 52px;
   color: var(--text);
   font-size: var(--copy-size);
+  background: 0 0;
+  padding: 0 12px;
 }
 
 .part-button svg {
@@ -6705,8 +6709,7 @@ a.profile-recall:focus-visible {
    drops the accent rules that frame the similar-repair card on the results
    screen. Those borders stay put there. */
 .selected-repair-card.resolved-repair-card {
-  border-top: 0;
-  border-bottom: 0;
+  border: 0;
 }
 
 /* Resolved report header: identity on the left, job number / bay / mechanic
