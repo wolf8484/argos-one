@@ -19,6 +19,7 @@
   --accent-fill: #FFC001;
   --accent-border: #FFC001;
   --secondary-border: #565656;
+  --tertiary-border: #7c7c7c;
   --on-accent: #111111;
   --accent-deep: #D19F00;
   --accent-on-inverse: #1e1e1e;
@@ -70,6 +71,7 @@
   --accent-fill: #FFC001;
   --accent-border: #1e1e1e;
   --secondary-border: #1e1e1e;
+  --tertiary-border: #92928e;
   --on-accent: #111111;
   --accent-deep: #D19F00;
   --accent-on-inverse: #FFC001;
@@ -1588,7 +1590,7 @@ button.journey-item {
 
 .journey-item.is-current {
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
-  color: #e0e0dc;
+  color: var(--heading);
   font-weight: 400;
 }
 
@@ -1787,7 +1789,7 @@ button.journey-item:active {
 }
 
 .repair-parts-total strong {
-  color: #ffc001;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
@@ -1877,7 +1879,7 @@ button.journey-item:active {
 }
 
 .repair-part-value strong {
-  color: #e0e0dc;
+  color: var(--heading);
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   font-size: 14px;
@@ -2053,7 +2055,7 @@ button.journey-item:active {
   border: 1px solid var(--line-strong);
   border-radius: var(--card-radius);
   background: none;
-  color: #e0e0dc;
+  color: var(--heading);
   font: inherit;
   font-size: var(--copy-size);
   text-decoration: none;
@@ -2072,7 +2074,7 @@ button.journey-item:active {
 }
 
 .part-edit-offer-row svg:last-child {
-  color: #ffc001;
+  color: var(--accent);
 }
 
 .part-edit-total {
@@ -2082,7 +2084,7 @@ button.journey-item:active {
 }
 
 .part-edit-total strong {
-  color: #e0e0dc;
+  color: var(--heading);
   font-size: 20px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -2424,7 +2426,7 @@ button.journey-item:active {
 }
 
 .parts-offer-price strong {
-  color: #ffc001;
+  color: var(--accent);
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -2655,7 +2657,7 @@ button.journey-item:active {
 }
 
 .textarea {
-  border: 1px solid #2d2d2d;
+  border: 1px solid var(--line);
 }
 
 .input,
@@ -2817,7 +2819,7 @@ button.journey-item:active {
   min-height: 52px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid #7c7c7c;
+  border: 1px solid var(--tertiary-border);
   border-radius: var(--card-radius);
   background: none;
   color: var(--text);
@@ -2939,17 +2941,12 @@ button.journey-item:active {
 .filter-button {
   min-height: 52px;
   padding: 0 24px;
-  border: 1px solid #2d2d2d;
+  border: 1px solid var(--tertiary-border);
   border-radius: var(--card-radius);
   background: none;
   color: var(--muted-strong);
   font-size: var(--copy-size);
   font-weight: 500;
-}
-
-:root[data-theme="light"] .quick-chip,
-:root[data-theme="light"] .filter-button {
-  border-color: #2d2d2d;
 }
 
 .quick-chip.caps-text {
@@ -3157,7 +3154,7 @@ button.journey-item:active {
 .view-all-button svg {
   width: 20px;
   height: 20px;
-  color: #ffc001;
+  color: var(--accent);
 }
 
 .secondary-button svg,
@@ -5031,7 +5028,7 @@ button.settings-toggle-row {
 }
 
 .price {
-  color: #ffc001;
+  color: var(--accent);
   font-size: 23px;
   font-weight: 300;
 }
@@ -6131,7 +6128,7 @@ body.dictation-active .toast {
 
 .profile-tabs .quick-chip.is-selected {
   background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
-  color: #e0e0dc;
+  color: var(--heading);
 }
 
 .profile-tabs .quick-chip.is-selected::after {
@@ -6640,7 +6637,7 @@ a.profile-recall:focus-visible {
 }
 
 .profile-recall-link {
-  color: #ffc001;
+  color: var(--accent);
   align-items: center;
   gap: 4px;
   font-size: 14px;
