@@ -3338,6 +3338,7 @@ button.journey-item:active {
   flex-direction: column;
   padding: 20px;
   border: 0;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
@@ -3354,6 +3355,7 @@ button.journey-item:active {
   background: var(--surface-2);
   color: var(--text);
   box-shadow: 0 0 0 1px var(--accent-fill) inset;
+  border-radius: var(--card-radius);
 }
 
 .match-option.is-selected:hover,
@@ -3417,6 +3419,7 @@ button.journey-item:active {
   background: color-mix(in srgb, var(--text) 7%, var(--surface-2));
   color: var(--accent);
   transition: background-color 160ms ease;
+  border-radius: 8px;
 }
 
 .match-option:hover .match-option-action,
@@ -3428,6 +3431,7 @@ button.journey-item:active {
 .match-option.is-selected .match-option-action {
   background: var(--accent-fill);
   color: var(--on-accent);
+  border-radius: 8px;
 }
 
 .match-option-action svg {
