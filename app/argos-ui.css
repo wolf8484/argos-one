@@ -1559,6 +1559,19 @@ main:focus {
   gap: 8px;
 }
 
+button.assignment-bar-label {
+  background: 0 0;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.assignment-bar-label strong {
+  color: var(--heading);
+}
+
 .assignment-bar-label svg {
   width: 18px;
   height: 18px;

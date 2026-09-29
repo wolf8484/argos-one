@@ -864,15 +864,23 @@ function lockWorkflowForm() {
 }
 
 // Shown under the journey nav on every workflow step so it's clear who owns
-// the job. The reassign action follows the same rule as edit access: the
-// assigned technician (handing off their own job) or an owner/manager.
+// the job and which bay it's in. The reassign actions follow the same rule
+// as edit access: the assigned technician (handing off their own job) or an
+// owner/manager -- both can move it to a different bay too.
 function assignmentBar() {
   const job = currentJobRecord();
   if (!job || !isPersistedJobId(job.id)) return "";
   const editable = canEditJob(job);
   const assigneeName = job.assigneeName || "Unassigned";
-  return `<div class="assignment-bar${editable ? "" : " is-locked"}">
-    <span class="assignment-bar-label">${editable ? "" : icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></span>
+  const bayName = job.bay || "Unassigned";
+  if (!editable) {
+    return `<div class="assignment-bar is-locked">
+      <span class="assignment-bar-label">${icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong> &middot; <strong>${escapeHTML(bayName)}</strong></span></span>
+    </div>`;
+  }
+  return `<div class="assignment-bar">
+    <button class="assignment-bar-label" type="button" data-action="reassign-job"><span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></button>
+    <button class="assignment-bar-label" type="button" data-action="reassign-bay"><span>Bay <strong>${escapeHTML(bayName)}</strong></span></button>
   </div>`;
 }
 
@@ -3884,6 +3892,40 @@ function reassignCurrentJob(technicianId) {
     .catch((error) => showToast(error.message || "Could not reassign that job"));
 }
 
+// Only bays the shop actually has are offered -- a job can't legitimately
+// sit in a bay Bay management doesn't know about.
+function openReassignBayModal(job) {
+  if (!job) return;
+  const activeBays = state.bays.filter((bay) => bay.active);
+  const rows = activeBays.map((bay) => `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="${escapeHTML(bay.name)}">
+      <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
+      ${bay.name === job.bay ? `<span class="settings-row-value">Current</span>` : ""}
+    </button>`).join("");
+  const unassignedRow = `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="">
+      <span class="settings-row-text"><strong>${NO_BAY}</strong></span>
+      ${job.bay ? "" : `<span class="settings-row-value">Current</span>`}
+    </button>`;
+  openSheet(`<div class="confirmation-content">
+    <h2>Reassign bay</h2>
+    <div class="settings-list">${activeBays.length ? `${unassignedRow}${rows}` : `<p class="empty-hint">No bays set up yet. Add one in Bay management first.</p>`}</div>
+    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign bay" });
+}
+
+function reassignCurrentJobBay(bayName) {
+  if (!isPersistedJobId(state.currentJobId)) return closeSheet();
+  return apiRequest(`/api/jobs/${state.currentJobId}/bay`, { method: "PATCH", body: JSON.stringify({ bay: bayName || null }) })
+    .then(({ job }) => {
+      const updated = databaseJobToUi(job);
+      const index = jobRecords.findIndex((record) => record.id === updated.id);
+      if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
+      closeSheet();
+      showToast("Bay reassigned");
+      render();
+    })
+    .catch((error) => showToast(error.message || "Could not reassign that bay"));
+}
+
 async function saveShopField(form) {
   const value = String(new FormData(form).get("value") || "").trim();
   const field = form.dataset.field;
@@ -5891,6 +5933,8 @@ document.addEventListener("click", (event) => {
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
     if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
     if (action === "reassign-job-to") return reassignCurrentJob(actionButton.dataset.technicianId);
+    if (action === "reassign-bay") return openReassignBayModal(currentJobRecord());
+    if (action === "reassign-bay-to") return reassignCurrentJobBay(actionButton.dataset.bayName);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");

@@ -5,6 +5,6 @@
 // will flag itself as stale the same way a stale production tab would,
 // letting the update-available flow (nav blip + Settings reload) be
 // exercised without a real deploy.
-const DEV_BUILD_LABEL = "20260929-selected-repair-card-part-row-secondary-tips"
+const DEV_BUILD_LABEL = "20260929-reassign-bay-action"
 
 export const BUILD_VERSION = process.env.VERCEL_GIT_COMMIT_SHA || DEV_BUILD_LABEL

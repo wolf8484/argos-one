@@ -217,6 +217,27 @@ export class WorkshopRepository {
     return this.getJob(jobId)
   }
 
+  // Same handoff rule as reassignJob: a technician may only move their own
+  // job between bays, owners and managers can move anything. bay is free
+  // text (see jobs.bay), matched against shop_bays.name by the client, so
+  // null just clears it back to unassigned rather than needing a bay id.
+  async reassignJobBay(jobId: string, bay: string | null) {
+    const { data: job, error: jobError } = await this.supabase
+      .from('jobs')
+      .select('id,assigned_to')
+      .eq('id', jobId)
+      .eq('shop_id', this.profile.shop_id)
+      .single()
+    if (jobError) throw jobError
+    if (this.profile.role === 'technician' && job.assigned_to !== this.profile.id) {
+      throw new ApiError('You can only reassign jobs assigned to you.', 403)
+    }
+
+    const { error } = await this.supabase.from('jobs').update({ bay }).eq('id', jobId)
+    if (error) throw error
+    return this.getJob(jobId)
+  }
+
   async archiveJob(jobId: string) {
     const { error } = await this.supabase
       .from('jobs')
