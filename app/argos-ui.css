@@ -78,7 +78,7 @@
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
-  --sheet-surface: #ffffff;
+  --sheet-surface: #f5f5f3;
   --sheet-backdrop: rgba(10, 10, 10, 0.32);
   --sheet-shadow: 0 -22px 62px rgba(0, 0, 0, 0.28);
   --shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
@@ -1782,20 +1782,23 @@ button.journey-item:active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16px;
+  /* margin-top: 16px; */
   margin-bottom: 16px;
-  color: #f5f5f5;
   font-size: var(--copy-size);
+  font-weight: 600;
 }
 
 :root[data-theme="light"] .repair-parts-total {
   color: #1e1e1e;
+  background-color: #e0e0dc;
+  padding: 16px;
+  border-radius: var(--card-radius);
 }
 
 .repair-parts-total strong {
   color: var(--accent);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .repair-part-card {
@@ -2959,7 +2962,7 @@ button.journey-item:active {
 
 .quick-chip.is-selected,
 .filter-button.is-active {
-  border-color: var(--accent);
+  border-color: var(--accent-fill);
   background: var(--accent-fill);
   color: var(--on-accent);
 }
@@ -4665,19 +4668,14 @@ button.settings-toggle-row {
   color: #1e1e1e;
 }
 
-/* .secondary-button and .task-back keep a solid fill in both themes (unlike
-   the outline buttons above), so they need their own light-mode fill --
-   otherwise the dark mode background (#2d2d2d) stays dark while var(--text)
-   flips to a dark color for light mode, making the label/icon unreadable
-   against its own button. */
 :root[data-theme="light"] .secondary-button,
 :root[data-theme="light"] .task-back {
-  background-color: var(--surface-2);
-  color: var(--heading);
+  background-color: #090909;
+  color: #e0e0dc;
 }
 
 :root[data-theme="light"] .secondary-button svg {
-  color: var(--heading);
+  color: #e0e0dc;
 }
 
 :root[data-theme="light"] .web-button svg,
@@ -4732,7 +4730,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .profile-repair-list,
 :root[data-theme="light"] .profile-repair-row-button,
 :root[data-theme="light"] .profile-recall-list {
-  border-color: #c3c3c3;
+  border-color: #d4d3d0;
 }
 
 :root[data-theme="light"] .input:focus,
@@ -4889,6 +4887,8 @@ button.settings-toggle-row {
     background: var(--surface-3);
   }
 
+  :root[data-theme="light"] .secondary-button:hover,
+  :root[data-theme="light"] .task-back:hover,
   :root[data-theme="light"] .web-button:hover,
   :root[data-theme="light"] .part-button:hover,
   :root[data-theme="light"] .dictate-button:not(.is-listening):hover,
