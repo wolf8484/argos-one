@@ -78,7 +78,7 @@
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
-  --sheet-surface: #e0e0dc;
+  --sheet-surface: #ffffff;
   --sheet-backdrop: rgba(10, 10, 10, 0.32);
   --sheet-shadow: 0 -22px 62px rgba(0, 0, 0, 0.28);
   --shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
@@ -555,7 +555,7 @@ main:focus {
 }
 
 .home-metric + .home-metric {
-  border-left: 1px solid #2d2d2d;
+  border-left: 1px solid var(--line);
   padding-left: 16px;
 }
 
@@ -1387,7 +1387,7 @@ main:focus {
   height: 52px;
   border-radius: var(--card-radius);
   background: #2d2d2d;
-  color: var(--accent);
+  color: var(--accent-fill);
   transition: background-color 160ms ease;
 }
 
@@ -1774,8 +1774,8 @@ button.journey-item:active {
 .repair-parts-list {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid #2d2d2d;
-  border-bottom: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .repair-parts-total {
@@ -1795,7 +1795,7 @@ button.journey-item:active {
 }
 
 .repair-part-card {
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--line);
 }
 
 .repair-part-card:last-child {
@@ -4661,6 +4661,19 @@ button.settings-toggle-row {
   color: #1e1e1e;
 }
 
+/* .secondary-button keeps a solid fill in both themes (unlike the outline
+   buttons above), so it needs its own light-mode fill -- otherwise the dark
+   mode background (#2d2d2d) stays dark while var(--text) flips to a dark
+   color for light mode, making the label unreadable against its own button. */
+:root[data-theme="light"] .secondary-button {
+  background-color: var(--surface-2);
+  color: var(--heading);
+}
+
+:root[data-theme="light"] .secondary-button svg {
+  color: var(--heading);
+}
+
 :root[data-theme="light"] .web-button svg,
 :root[data-theme="light"] .part-button svg,
 :root[data-theme="light"] .add-dtc-button svg,
@@ -4760,7 +4773,7 @@ button.settings-toggle-row {
    hence a single hairline and radius around the whole card rather than
    between its two parts, and a gap before the menu that follows it. */
 .profile-card {
-  border-top: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -4769,12 +4782,12 @@ button.settings-toggle-row {
 
 .profile-card .settings-list {
   gap: 0;
-  border-top: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
 }
 
 .profile-card .settings-row {
   border-radius: 0;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--line);
   background: transparent;
 }
 
@@ -4846,7 +4859,6 @@ button.settings-toggle-row {
     background: var(--surface-3);
   }
 
-  :root[data-theme="light"] .secondary-button:hover,
   :root[data-theme="light"] .web-button:hover,
   :root[data-theme="light"] .part-button:hover,
   :root[data-theme="light"] .dictate-button:not(.is-listening):hover,
@@ -6178,7 +6190,7 @@ body.dictation-active .toast {
   display: flex;
   flex-direction: column;
   margin-bottom: 16px;
-  border-top: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
 }
 
 .profile-note {
@@ -6186,7 +6198,7 @@ body.dictation-active .toast {
   flex-direction: column;
   gap: 6px;
   padding: 20px 0;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--line);
 }
 
 .profile-note-list > *:last-child {
@@ -6291,7 +6303,7 @@ body.dictation-active .toast {
 }
 
 .profile-repair-list {
-  border-top: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
   flex-direction: column;
   gap: 0;
   padding: 0;
@@ -6371,7 +6383,7 @@ body.dictation-active .toast {
 
 .profile-repair-row-button {
   border: none;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--line);
   width: 100%;
   font: inherit;
   text-align: left;
@@ -6592,7 +6604,7 @@ body.dictation-active .toast {
   display: flex;
   flex-direction: column;
   margin-bottom: 40px;
-  border-top: 1px solid #2d2d2d;
+  border-top: 1px solid var(--line);
 }
 
 .profile-recall {
@@ -6601,7 +6613,7 @@ body.dictation-active .toast {
   flex-direction: column;
   gap: 16px;
   padding: 24px 0;
-  border-bottom: 1px solid #2d2d2d;
+  border-bottom: 1px solid var(--line);
   text-decoration: none;
   display: flex;
 }
