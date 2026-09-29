@@ -1387,7 +1387,7 @@ main:focus {
   height: 52px;
   border-radius: var(--card-radius);
   background: #2d2d2d;
-  color: var(--accent-fill);
+  color: var(--text);
   transition: background-color 160ms ease;
 }
 
@@ -1784,8 +1784,12 @@ button.journey-item:active {
   justify-content: space-between;
   margin-top: 16px;
   margin-bottom: 16px;
-  color: var(--muted);
+  color: #f5f5f5;
   font-size: var(--copy-size);
+}
+
+:root[data-theme="light"] .repair-parts-total {
+  color: #1e1e1e;
 }
 
 .repair-parts-total strong {
@@ -4661,11 +4665,13 @@ button.settings-toggle-row {
   color: #1e1e1e;
 }
 
-/* .secondary-button keeps a solid fill in both themes (unlike the outline
-   buttons above), so it needs its own light-mode fill -- otherwise the dark
-   mode background (#2d2d2d) stays dark while var(--text) flips to a dark
-   color for light mode, making the label unreadable against its own button. */
-:root[data-theme="light"] .secondary-button {
+/* .secondary-button and .task-back keep a solid fill in both themes (unlike
+   the outline buttons above), so they need their own light-mode fill --
+   otherwise the dark mode background (#2d2d2d) stays dark while var(--text)
+   flips to a dark color for light mode, making the label/icon unreadable
+   against its own button. */
+:root[data-theme="light"] .secondary-button,
+:root[data-theme="light"] .task-back {
   background-color: var(--surface-2);
   color: var(--heading);
 }
@@ -4726,7 +4732,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .profile-repair-list,
 :root[data-theme="light"] .profile-repair-row-button,
 :root[data-theme="light"] .profile-recall-list {
-  border-color: #ffffff;
+  border-color: #c3c3c3;
 }
 
 :root[data-theme="light"] .input:focus,
