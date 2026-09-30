@@ -3668,12 +3668,12 @@ async function loadTechnicianBranches(technicianId) {
 
   const others = branches.filter((branch) => !branch.isCurrent);
   const available = state.branches.filter((branch) => !branches.some((held) => held.shopId === branch.id));
-  const list = others.length
-    ? `<div class="settings-list">${others.map((branch) => profileFactRow(branch.name, branch.active ? roleLabel(branch.role) : "Inactive")).join("")}</div>`
-    : `<p class="muted">Only this branch.</p>`;
-  host.innerHTML = `<span class="settings-group-label">Registered at</span>
-    ${list}
-    ${available.length ? `<button class="text-button" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to another branch</button>` : ""}`;
+  const addLink = available.length ? `<button class="text-button" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to another branch</button>` : "";
+  host.innerHTML = others.length
+    ? `<span class="settings-group-label">Registered at</span>
+    <div class="settings-list">${others.map((branch) => profileFactRow(branch.name, branch.active ? roleLabel(branch.role) : "Inactive")).join("")}</div>
+    ${addLink}`
+    : addLink;
 }
 
 // Placing someone in a second branch reuses their existing login, so their

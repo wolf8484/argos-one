@@ -689,7 +689,7 @@ main:focus {
   justify-content: space-between;
   align-items: end;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   display: flex;
 }
 
@@ -1413,7 +1413,7 @@ main:focus {
   display: flex;
   align-items: flex-start;
   gap: 4px;
-  margin-top: 8px;
+  margin-top: 4px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 18px;
@@ -3776,7 +3776,7 @@ button.journey-item:active {
    known-issues-accordion row pattern used elsewhere in the library). */
 .settings-group-label {
   display: block;
-  /* margin-bottom: 16px; */
+  margin-bottom: 16px;
   color: var(--heading);
   font-size: 16px;
   font-weight: 600;
@@ -3786,6 +3786,7 @@ button.journey-item:active {
 
 .settings-group-label-spaced {
   margin-top: 40px;
+  margin-bottom: 16px;
 }
 
 .settings-list {
