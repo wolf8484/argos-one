@@ -2975,9 +2975,9 @@ button.journey-item:active {
 
 .quick-chip.is-selected,
 .filter-button.is-active {
-  border-color: var(--accent-fill);
-  background: var(--accent-fill);
-  color: var(--on-accent);
+  border-color: #2d2d2d;
+  background: #2d2d2d;
+  color: var(--text);
 }
 
 .quick-chip.caps-text.is-selected {
@@ -4098,12 +4098,12 @@ button.settings-toggle-row {
 }
 
 .switch.is-on {
-  border-color: #3acd00;
-  background: #3acd00;
+  border-color: #15a045;
+  background: #15a045;
 }
 
 .switch.is-on .switch-thumb {
-  background: #111111;
+  background: #f5f5f3;
   transform: translateX(18px);
 }
 
@@ -4690,8 +4690,11 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .secondary-button,
-:root[data-theme="light"] .task-back {
+:root[data-theme="light"] .task-back,
+:root[data-theme="light"] .quick-chip.is-selected,
+:root[data-theme="light"] .filter-button.is-active {
   background-color: #090909;
+  border-color: #090909;
   color: #e0e0dc;
 }
 
