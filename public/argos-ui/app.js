@@ -5090,7 +5090,7 @@ function cancelJobConfirmation() {
     <h2>Cancel this job?</h2>
     <p>This moves the job to Deleted jobs, where the workshop can still review its saved details.</p>
     <div class="confirmation-actions">
-      <button class="tertiary-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Cancel job</button>
+      <button class="danger-outline-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Cancel job</button>
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep job</button>
     </div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm job cancellation" });
