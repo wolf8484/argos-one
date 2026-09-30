@@ -689,7 +689,7 @@ main:focus {
   justify-content: space-between;
   align-items: end;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   display: flex;
 }
 
@@ -1021,7 +1021,7 @@ main:focus {
 }
 
 .jobs-search-field-tight {
-  margin-bottom: 16px;
+  margin-bottom: 40px;
 }
 
 .jobs-search-control {
@@ -3978,8 +3978,8 @@ button.settings-toggle-row {
 }
 
 .settings-page-action {
-  margin-top: 16px;
-  margin-bottom: 40px;
+  /* margin-top: 16px; */
+  margin-bottom: 12px;
 }
 
 .settings-edit-form {
@@ -4197,7 +4197,7 @@ button.settings-toggle-row {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 20px 20px 20px;
+  padding: 24px 20px;
   background: var(--sheet-surface);
   touch-action: none;
   cursor: grab;
@@ -4215,7 +4215,7 @@ button.settings-toggle-row {
 }
 
 .sheet-head h2 {
-  margin-top: 6px;
+  /* margin-top: 6px; */
 }
 
 /* The close button floats over the header rather than sitting in its flex
@@ -6776,10 +6776,14 @@ a.profile-recall:focus-visible {
 .branch-membership {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid var(--line);
+}
+
+.branch-membership .text-button {
+  align-self: flex-start;
 }
 
 /* The section's own 8px gap already sits under the label, so trim the label's
