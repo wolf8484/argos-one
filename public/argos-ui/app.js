@@ -4330,7 +4330,7 @@ function renderResults() {
         <div class="parts-panel always-visible">${selected.parts.map(([name, number, key]) => partRow(name, number, key)).join("")}</div>
       </div>
     </section>
-    <div class="result-actions"><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button><button class="secondary-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button></div>
+    <div class="result-actions"><button class="secondary-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button></div>
   </section>`;
   if (!canEditCurrentJob()) lockWorkflowForm();
 }
