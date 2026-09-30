@@ -198,8 +198,8 @@ h1 {
 }
 
 h2 {
-  font-size: clamp(20px, 3.4vw, 22px);
-  line-height: 1.08;
+  font-size: 22px;
+  line-height: 1.4;
   letter-spacing: 0;
 }
 
