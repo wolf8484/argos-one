@@ -3119,8 +3119,8 @@ function renderBranchesPage() {
     <div class="settings-list">${branchRow(head, { title: state.business?.name || head.name })}</div>` : ""}
     <span class="settings-group-label${head ? " settings-group-label-spaced" : ""}">Branches</span>
     <p class="settings-detail-intro settings-detail-intro-tight">A branch is a separate site trading under one business. <button class="text-link" type="button" data-action="explain-branches">Learn more</button></p>
-    ${others.length ? `<div class="settings-list">${others.map((branch) => branchRow(branch)).join("")}</div>` : ""}
-    ${isOrgOwner() ? `<div class="settings-page-action${others.length ? "" : " settings-page-action-tight"}"><button class="primary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}`;
+    ${isOrgOwner() ? `<div class="settings-page-action"><button class="primary-button full" type="button" data-action="add-branch">${icon("plus")} Add branch</button></div>` : ""}
+    ${others.length ? `<div class="settings-list">${others.map((branch) => branchRow(branch)).join("")}</div>` : ""}`;
 }
 
 // Everything the page used to state up front and again at the bottom. It is
