@@ -2836,7 +2836,7 @@ button.journey-item:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
+  min-height: 56px;
   padding: 0 20px;
   gap: 8px;
   border: 1px solid var(--tertiary-border);
@@ -3811,6 +3811,7 @@ button.journey-item:active {
   align-items: center;
   gap: 16px;
   width: 100%;
+  min-height: 56px;
   padding: 16px;
   border: 0;
   border-radius: 12px;
@@ -4228,7 +4229,7 @@ button.settings-toggle-row {
 }
 
 .sheet-body {
-  padding: 20px 20px 20px;
+  padding: 0px 20px 20px 20px;
 }
 
 /* While a sheet's own save is in flight, nothing inside it (or the backdrop
@@ -6785,11 +6786,6 @@ a.profile-recall:focus-visible {
    margin to land on the 16px the details block uses. */
 .branch-membership .settings-group-label {
   margin-bottom: 8px;
-}
-
-.branch-membership .text-button {
-  align-self: flex-start;
-  min-height: 52px;
 }
 
 /* The switcher and the "which branch are you at" prompt both list branches as

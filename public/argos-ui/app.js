@@ -3211,8 +3211,8 @@ function renderBaysPage() {
       </button>
     </div>
     <span class="settings-group-label settings-group-label-spaced">All bays</span>
-    <div class="settings-list">${rows}</div>
-    <div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>`;
+    <div class="settings-page-action"><button class="primary-button full" type="button" data-action="add-bay">${icon("plus")} Add bay</button></div>
+    <div class="settings-list">${rows}</div>`;
 }
 
 function technicianSearchText(technician) {
@@ -3256,8 +3256,8 @@ function renderTechniciansPage() {
     <label class="form-field jobs-search-field jobs-search-field-tight" for="staff-search">
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="staff-search" type="search" value="${escapeHTML(state.staffSearch || "")}" placeholder="Search by name or role" autocomplete="off" /></span>
     </label>
-    ${isTechnicianRole ? "" : `<div class="settings-page-action"><button class="secondary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>`}
     <div class="field-header"><span class="field-label">Staff</span><span class="settings-row-value">${state.technicians.length ? staffBreakdown(state.technicians) : "No staff yet"}</span></div>
+    ${isTechnicianRole ? "" : `<div class="settings-page-action"><button class="primary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>`}
     <div class="settings-list">${rows}</div>
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
 }
@@ -3672,7 +3672,7 @@ async function loadTechnicianBranches(technicianId) {
     : `<p class="muted">Only this branch.</p>`;
   host.innerHTML = `<span class="settings-group-label">Also works at</span>
     ${list}
-    ${available.length ? `<button class="text-button" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to another branch</button>` : ""}`;
+    ${available.length ? `<button class="tertiary-button full" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to another branch</button>` : ""}`;
 }
 
 // Placing someone in a second branch reuses their existing login, so their
