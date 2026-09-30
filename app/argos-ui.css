@@ -728,7 +728,10 @@ main:focus {
 }
 
 .text-button {
-  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
   padding: 0;
   background: transparent;
   color: var(--accent);
@@ -3773,11 +3776,11 @@ button.journey-item:active {
    known-issues-accordion row pattern used elsewhere in the library). */
 .settings-group-label {
   display: block;
-  margin-bottom: 16px;
+  /* margin-bottom: 16px; */
   color: var(--heading);
   font-size: 16px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 20px;
   letter-spacing: 0;
 }
 
@@ -6778,8 +6781,8 @@ a.profile-recall:focus-visible {
   flex-direction: column;
   gap: 12px;
   margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
 }
 
 .branch-membership .text-button {
@@ -6789,7 +6792,7 @@ a.profile-recall:focus-visible {
 /* The section's own 8px gap already sits under the label, so trim the label's
    margin to land on the 16px the details block uses. */
 .branch-membership .settings-group-label {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 /* The switcher and the "which branch are you at" prompt both list branches as
