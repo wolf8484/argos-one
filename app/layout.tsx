@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'Argos One — Mechanic Diagnostic Assistant',
   description: 'Speed up diagnostics with repair intelligence built from your shop\'s history.',
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Argos One' },
+  appleWebApp: { capable: true, statusBarStyle: 'black', title: 'Argos One' },
   icons: {
     icon: [{ url: '/icons/argos-one-app-icon.svg', type: 'image/svg+xml' }, { url: '/icons/argos-one-192.png', sizes: '192x192', type: 'image/png' }],
     apple: '/icons/argos-one-192.png',
