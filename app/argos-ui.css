@@ -1755,7 +1755,7 @@ button.journey-item:active {
 
 .add-parts-button {
   width: max-content;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 .tertiary-button.add-parts-button svg {
@@ -2847,7 +2847,7 @@ button.journey-item:active {
   min-height: 56px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid var(--tertiary-border);
+  border: 2px solid var(--tertiary-border);
   border-radius: var(--card-radius);
   background: none;
   color: var(--text);
@@ -3100,7 +3100,7 @@ button.journey-item:active {
 .part-row-actions,
 .result-actions,
 .confirmation-actions {
-  gap: 12px;
+  gap: 16px;
 }
 
 .primary-button,
