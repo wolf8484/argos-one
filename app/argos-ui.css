@@ -344,7 +344,11 @@ h3 {
 
 main {
   flex: 1 1 auto;
-  padding-bottom: calc(88px + var(--nav-safe-bottom));
+  /* Matches .bottom-nav's actual rendered height now that it sizes to its
+     content (icon + label + 12px padding) instead of a fixed min-height --
+     see the mobile breakpoint below, which does the same against its own
+     72px nav. */
+  padding-bottom: calc(73px + var(--nav-safe-bottom));
 }
 
 main:focus {
@@ -380,7 +384,7 @@ main:focus {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: 100%;
-  min-height: calc(88px + var(--nav-safe-bottom));
+  /* min-height: calc(88px + var(--nav-safe-bottom)); */
   /* Not the full safe-area inset. On a Face ID iPhone that is 34px, but the
      home indicator itself is a ~5px bar sitting ~8px off the edge -- most of
      the inset is slack, and spending all of it left a visible dead band under
@@ -402,10 +406,10 @@ main:focus {
   display: grid;
   place-content: center;
   justify-items: center;
-  min-width: 0;
-  width: 100%;
-  min-height: 88px;
-  padding: 10px 2px;
+  /* width: 100%; */
+  /* min-width: 0; */
+  /* min-height: 88px; */
+  padding: 12px 2px;
   gap: 8px;
   background: transparent;
   color: #c3c3c3;
@@ -476,8 +480,8 @@ main:focus {
   width: 8px;
   height: 8px;
   position: absolute;
-  top: 16px;
-  left: calc(50% + 8px);
+  top: 11px;
+  left: calc(50% + 9px);
 }
 
 .nav-item.has-update .nav-update-dot {
