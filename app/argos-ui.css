@@ -3823,6 +3823,11 @@ button.settings-row:focus-visible {
   justify-content: center;
   width: 20px;
   height: 20px;
+  /* .settings-row's own 8px gap covers icon -> text for every other pair in
+     the row (text -> value, value -> chevron); stacking 8px of margin on top
+     of it just for this one pair is what gets icon -> text to 16px without
+     touching those other, already-correct 8px gaps. */
+  margin-right: 8px;
   color: var(--text);
 }
 
