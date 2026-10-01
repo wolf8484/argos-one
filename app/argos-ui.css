@@ -5284,6 +5284,12 @@ button.settings-toggle-row {
   font-weight: 400;
 }
 
+@media (max-width: 500px) {
+  .settings-update-banner-text {
+    font-size: 14px;
+  }
+}
+
 .top-progress-bar {
   position: fixed;
   top: 0;
