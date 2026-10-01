@@ -3092,10 +3092,10 @@ function registrationIdRow(code) {
 
 // Profile sheets list their facts as the same read-only row the branch details
 // block uses: label left, value right, one per line.
-function profileFactRow(title, value) {
+function profileFactRow(title, value, valueClass = "") {
   return `<div class="settings-row">
       <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
-      <span class="settings-row-value">${escapeHTML(value)}</span>
+      <span class="settings-row-value${valueClass ? ` ${valueClass}` : ""}">${escapeHTML(value)}</span>
     </div>`;
 }
 
@@ -5424,7 +5424,7 @@ function technicianProfileSheet() {
         </section>
         <div class="settings-list" role="group" aria-label="Technician work details">
           ${branchFacts()}
-          ${profileFactRow("Assigned bay", bayLabel)}
+          ${profileFactRow("Assigned bay", bayLabel, bayLabel === NO_BAY ? "no-bay-value" : "")}
           ${profileFactRow("Employee ID", employeeId || "Not registered")}
         </div>
       </div>
