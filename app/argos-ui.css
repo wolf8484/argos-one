@@ -3773,7 +3773,6 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 12px;
   margin-bottom: 12px;
   background: transparent;
 }
@@ -3795,7 +3794,7 @@ button.journey-item:active {
 .settings-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   width: 100%;
   min-height: 56px;
   padding: 16px;
@@ -3838,6 +3837,7 @@ button.settings-row:focus-visible {
   flex: 1;
   flex-direction: column;
   gap: 4px;
+  margin-left: 8px;
 }
 
 .settings-row-text strong {
@@ -6751,8 +6751,6 @@ a.profile-recall:focus-visible {
   flex-direction: column;
   gap: 12px;
   margin-top: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--line);
 }
 
 /* The directory's "Add to more branches" link reads as an action tucked

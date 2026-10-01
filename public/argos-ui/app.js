@@ -3057,9 +3057,9 @@ function currentBranchProfileBody() {
   // to match a rename made here.
   return `<span class="settings-group-label">${isHead ? "Business details" : (isMultiBranch() ? "Branch details" : "Workshop details")}</span>
     <div class="settings-list">
-      ${isHead ? businessNameField() : settingsEditRow({ title: isMultiBranch() ? "Branch name" : "Workshop name", value: shop.name || "Not set", field: "name" })}
-      ${settingsEditRow({ title: isHead ? "Business phone" : (isMultiBranch() ? "Branch phone" : "Workshop phone"), value: shop.phone || "Not set", field: "phone", optional: true })}
-      ${settingsEditRow({ title: isHead ? "Business email" : (isMultiBranch() ? "Branch email" : "Workshop email"), value: shop.email || "Not set", field: "email", optional: true })}
+      ${isHead ? businessNameField() : settingsEditRow({ title: isMultiBranch() ? "Name" : "Workshop name", value: shop.name || "Not set", field: "name" })}
+      ${settingsEditRow({ title: isHead ? "Business phone" : (isMultiBranch() ? "Phone" : "Workshop phone"), value: shop.phone || "Not set", field: "phone", optional: true })}
+      ${settingsEditRow({ title: isHead ? "Business email" : (isMultiBranch() ? "Email" : "Workshop email"), value: shop.email || "Not set", field: "email", optional: true })}
       ${settingsEditRow({ title: "ABN", value: shop.abn || "Not set", field: "abn", optional: true })}
       ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
@@ -3165,9 +3165,9 @@ function renderBranchDetailPage() {
   return `${settingsPageHeader(branch.name, "Workshop & branches")}
     <span class="settings-group-label">${isHead ? "Business details" : "Branch details"}</span>
     <div class="settings-list">
-      ${isHead ? businessNameField() : row("Branch name", branch.name, "name")}
-      ${row(isHead ? "Business phone" : "Branch phone", branch.phone, "phone", true)}
-      ${row(isHead ? "Business email" : "Branch email", branch.email, "email", true)}
+      ${isHead ? businessNameField() : row("Name", branch.name, "name")}
+      ${row(isHead ? "Business phone" : "Phone", branch.phone, "phone", true)}
+      ${row(isHead ? "Business email" : "Email", branch.email, "email", true)}
       ${row("ABN", branch.abn, "abn", true)}
       ${row("Business / branch ID", branch.branch_id, "branchId", true)}
       ${row("Region", branch.region, "region")}
