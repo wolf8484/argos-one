@@ -225,7 +225,7 @@ h3 {
   align-items: center;
   min-height: var(--topbar-height);
   padding: calc(var(--safe-top) + 16px) var(--gutter) 16px;
-  border-bottom: 1px solid #2d2d2d;
+  /* border-bottom: 1px solid #2d2d2d; */
   background: #090909;
 }
 
@@ -391,7 +391,7 @@ main:focus {
      the labels. 20px clears the indicator and keeps buttons out of the
      home-swipe zone; going to 0 would put them under both. */
   padding: 0 0 var(--nav-safe-bottom);
-  border-top: 1px solid #2d2d2d;
+  /* border-top: 1px solid #2d2d2d; */
   background: #090909;
 }
 
@@ -425,17 +425,6 @@ main:focus {
   text-align: center;
 }
 
-.nav-item::before,
-.nav-new::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 3px;
-  content: "";
-  background: transparent;
-}
-
 .nav-item:hover,
 .nav-new:hover,
 .nav-new:focus-visible {
@@ -444,18 +433,12 @@ main:focus {
 
 /* The accent here is --accent-fill, not --accent: the bar keeps a hardcoded
    dark background in both themes, and --accent resolves to near-black under
-   the light theme, which would make the selected tab vanish. Background stays
-   transparent like every other tab -- the top stroke and the colour are what
-   mark the selection. */
+   the light theme, which would make the selected tab vanish. The colour
+   change is the only thing marking the selection now -- the top stroke this
+   used to pair with (::before) has been removed. */
 .nav-item.is-active,
 .nav-new.is-active {
   color: var(--accent-fill);
-}
-
-.nav-item.is-active::before,
-.nav-new.is-active::before,
-.nav-new:focus-visible::before {
-  background: var(--accent-fill);
 }
 
 .nav-icon,
