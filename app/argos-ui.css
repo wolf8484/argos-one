@@ -344,7 +344,7 @@ h3 {
 
 main {
   flex: 1 1 auto;
-  padding-bottom: calc(104px + var(--nav-safe-bottom));
+  padding-bottom: calc(88px + var(--nav-safe-bottom));
 }
 
 main:focus {
@@ -5738,6 +5738,10 @@ body.dictation-active .toast {
      spending nearly a third of its height on chrome. */
   .bottom-nav {
     min-height: calc(72px + var(--nav-safe-bottom));
+  }
+
+  main {
+    padding-bottom: calc(72px + var(--nav-safe-bottom));
   }
 
   .nav-item,
