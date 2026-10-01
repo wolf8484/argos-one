@@ -780,7 +780,7 @@ main:focus {
   gap: 16px;
   width: 100%;
   min-height: 132px;
-  padding: 20px;
+  padding: 16px;
   border: 0;
   border-radius: var(--card-radius);
   background: var(--surface-2);
