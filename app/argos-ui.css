@@ -3773,6 +3773,8 @@ button.journey-item:active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 12px;
+  margin-bottom: 12px;
   background: transparent;
 }
 
@@ -6748,9 +6750,18 @@ a.profile-recall:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 20px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
+}
+
+/* The directory's "Add to more branches" link reads as an action tucked
+   under the list above it, not another full-width row -- hug its label and
+   sit at the start of the line instead of stretching and centering like the
+   rest of this flex column. */
+.branch-membership > .tertiary-button {
+  align-self: flex-start;
+  width: auto;
 }
 
 /* The section's own 8px gap already sits under the label, so trim the label's

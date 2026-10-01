@@ -3240,14 +3240,19 @@ function renderTechniciansPage() {
   const rows = state.technicians.length
     ? state.technicians.map((technician) => {
       const pending = isInvitePending(technician);
-      const expired = pending && inviteExpired(technicianInvite(technician));
+      // "Pending" is a snapshot of the roster row (no linked login yet); the
+      // invite itself may since have been revoked or already redeemed, so the
+      // two are checked separately -- only a technician with both unresolved
+      // opens the invite-code screen instead of the staff details page.
+      const invite = pending ? technicianInvite(technician) : null;
+      const expired = pending && inviteExpired(invite);
       const status = pending ? (expired ? "Expired" : "Pending") : technician.active ? "Active" : "Inactive";
       const text = `<span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong><small>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}${technician.employee_id ? ` &middot; ${escapeHTML(technician.employee_id)}` : ""}</small></span>
         <span class="settings-row-value${pending ? (expired ? " is-expired" : " is-invited") : ""}">${status}</span>`;
       if (isTechnicianRole) {
         return `<div class="settings-row" data-staff-search="${escapeHTML(technicianSearchText(technician))}">${text}</div>`;
       }
-      return `<button class="settings-row" type="button" data-action="${pending ? "view-technician" : "open-technician"}" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
+      return `<button class="settings-row" type="button" data-action="${invite ? "view-technician" : "open-technician"}" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
         ${text}
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`;
@@ -3263,12 +3268,20 @@ function renderTechniciansPage() {
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
 }
 
+function openTechnicianDetailPage(technicianId) {
+  state.technicianDetailId = technicianId;
+  settingsOpenPage("technician-detail");
+  render();
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
 // Tapping a name in the staff directory drills into this full page rather
 // than the "Staff details" bottom sheet -- that sheet still exists, unchanged,
 // for the avatar-driven "Your profile" flow (technicianProfileSheet), but a
 // row picked from a list reads better as a page you can navigate away from,
 // matching the branch directory's own row -> detail page pattern
-// (renderBranchDetailPage).
+// (renderBranchDetailPage) -- right down to each field being its own
+// edit-in-place row rather than one combined "Edit" form.
 function renderTechnicianDetailPage() {
   const technician = state.technicians.find((item) => item.id === state.technicianDetailId);
   if (!technician) return renderTechniciansPage();
@@ -3280,28 +3293,45 @@ function renderTechnicianDetailPage() {
   const showBranchMembership = isMultiBranch() && isOrgOwner() && Boolean(technician.profile_id);
   const canAct = canActOnTechnician(technician);
 
+  const field = (title, value, fieldName, optional = false) => canAct
+    ? `<button class="settings-row" type="button" data-action="edit-technician-field" data-technician-id="${technician.id}" data-field="${fieldName}" data-title="${escapeHTML(title)}" data-optional="${optional}">
+        <span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span>
+        <span class="settings-row-value">${escapeHTML(value || "Not set")}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>`
+    : `<div class="settings-row"><span class="settings-row-text"><strong>${escapeHTML(title)}</strong></span><span class="settings-row-value">${escapeHTML(value || "Not set")}</span></div>`;
+
+  const canEditRole = canAct && !isLastOwner;
+  const roleRow = canEditRole
+    ? `<button class="settings-row" type="button" data-action="pick-technician-role" data-technician-id="${technician.id}">
+        <span class="settings-row-text"><strong>Role</strong></span>
+        <span class="settings-row-value">${escapeHTML(roleLabel(technician.role))}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>`
+    : `<div class="settings-row"><span class="settings-row-text"><strong>Role</strong></span><span class="settings-row-value">${escapeHTML(roleLabel(technician.role))}</span></div>`;
+
   return `${settingsPageHeader(technicianName(technician), "Staff directory")}
     <span class="settings-group-label">Staff details</span>
     <div class="settings-list">
-      ${profileFactRow("Role", `${technician.role === "owner" ? "★ " : ""}${roleLabel(technician.role)}`)}
-      ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
-      ${profileFactRow("Email", contact.email || "Not set")}
-      ${profileFactRow("Works at", state.shop?.name || "Not set")}
+      ${field("Name", technicianName(technician), "name")}
+      ${roleRow}
+      ${field("Mobile", formatPhoneForDisplay(contact.phone), "mobile")}
+      ${field("Email", contact.email, "email", true)}
+      <div class="settings-row"><span class="settings-row-text"><strong>Works at</strong></span><span class="settings-row-value">${escapeHTML(state.shop?.name || "Not set")}</span></div>
       <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
         <span class="settings-row-text"><strong>Assigned bay</strong></span>
         <span class="settings-row-value${bay ? "" : " no-bay-value"}">${escapeHTML(bay?.name || NO_BAY)}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>
-      ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
+      ${field("Employee ID", technician.employee_id, "employeeId", true)}
     </div>
     <div class="settings-list">
       ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
     </div>
     ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Registered at</span><p class="muted">Loading branches...</p></section>` : ""}
-    ${canAct ? `<div class="settings-page-action confirmation-actions">
-        <button class="danger-button full" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
-        <button class="primary-button full" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
-      </div>` : `<p class="settings-detail-intro">Only an Owner can change another Owner's details.</p>`}`;
+    ${canAct ? `<span class="settings-group-label settings-group-label-spaced">Danger zone</span>
+    <p class="settings-detail-intro settings-detail-intro-tight">Removing a staff member revokes their access to this workshop. Jobs they already worked on keep their name and history.</p>
+    <div class="settings-page-action settings-page-action-tight"><button class="danger-button full" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete this staff member</button></div>` : `<p class="settings-detail-intro">Only an Owner can change another Owner's details.</p>`}`;
 }
 
 function renderUnitsPage() {
@@ -3631,11 +3661,15 @@ function openInviteCodeModal(technician, invite) {
     </div>`, { ariaLabel: "Invitation code" });
 }
 
+// Only ever called with a technician who still has an unresolved invite --
+// see the "view-technician" vs "open-technician" split in renderTechniciansPage.
+// A resolved technician (joined, or never invited) opens the staff details
+// page instead (renderTechnicianDetailPage via the "open-technician" action).
 function openTechnicianModal(technician) {
   if (!technician) return openInviteStaffModal();
-  const pendingInvite = isInvitePending(technician) ? technicianInvite(technician) : null;
-  if (pendingInvite) return openInviteCodeModal(technician, pendingInvite);
-  return openTechnicianDetailsSheet(technician);
+  const invite = technicianInvite(technician);
+  if (!invite) return openTechnicianDetailPage(technician.id);
+  return openInviteCodeModal(technician, invite);
 }
 
 // Mirrors the roster policies in migration 0054, which are the actual
@@ -3649,50 +3683,7 @@ function canActOnTechnician(technician) {
   return technician.role !== "owner";
 }
 
-// Tapping a name opens this read-only view first, not the edit form directly
-// -- editing is a deliberate next step from here, not the default outcome of
-// looking someone up. Reuses the same avatar-header + facts-grid shape as
-// "Your profile" (technicianProfileSheet) rather than inventing a new layout.
-function openTechnicianDetailsSheet(technician) {
-  const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
-  const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
-  const bay = state.bays.find((b) => b.id === technician.default_bay_id);
-  const contact = technicianContact(technician);
-  const initials = initialsFor(technicianName(technician), technician.initials);
-  // Only an Owner places staff across branches, and only someone who has
-  // actually joined has a login to place.
-  const showBranchMembership = isMultiBranch() && isOrgOwner() && Boolean(technician.profile_id);
-  const canAct = canActOnTechnician(technician);
-  openSheet(`<div class="sheet-head"><div><h2>Staff details</h2></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
-    <div class="sheet-body">
-      <div class="profile-card">
-        <section class="technician-profile" aria-label="Staff member">
-          <span class="technician-avatar" aria-hidden="true">${escapeHTML(initials)}</span>
-          <div><h3>${escapeHTML(technicianName(technician))}</h3><p>${technician.role === "owner" ? `<span class="role-star" aria-hidden="true">${icon("star")}</span>` : ""}${escapeHTML(roleLabel(technician.role))}</p></div>
-        </section>
-        <div class="settings-list" role="group" aria-label="Staff contact and work details">
-          ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
-          ${profileFactRow("Email", contact.email || "Not set")}
-          ${profileFactRow("Works at", state.shop?.name || "Not set")}
-          <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
-            <span class="settings-row-text"><strong>Assigned bay</strong></span>
-            <span class="settings-row-value${bay ? "" : " no-bay-value"}">${escapeHTML(bay?.name || NO_BAY)}</span>
-            <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-          </button>
-          ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
-        </div>
-      </div>
-      ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
-      ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Registered at</span><p class="muted">Loading branches...</p></section>` : ""}
-      ${canAct ? `<div class="profile-note-actions">
-        <button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
-        <button class="primary-button" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
-      </div>` : `<p class="settings-detail-intro">Only an Owner can change another Owner's details.</p>`}
-    </div>`, { ariaLabel: "Staff details" });
-  if (showBranchMembership) loadTechnicianBranches(technician.id);
-}
-
-// Fetched after the sheet is up rather than before it opens: it is one extra
+// Fetched after the page is up rather than before it opens: it is one extra
 // line on a screen whose main job is contact details, and making the whole
 // sheet wait on a second request to render would be a poor trade.
 async function loadTechnicianBranches(technicianId) {
@@ -3710,7 +3701,7 @@ async function loadTechnicianBranches(technicianId) {
 
   const others = branches.filter((branch) => !branch.isCurrent);
   const available = state.branches.filter((branch) => !branches.some((held) => held.shopId === branch.id));
-  const addLink = available.length ? `<button class="tertiary-button full" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to more branches</button>` : "";
+  const addLink = available.length ? `<button class="tertiary-button" type="button" data-action="add-technician-branch" data-technician-id="${technicianId}">${icon("plus")} Add to more branches</button>` : "";
   host.innerHTML = others.length
     ? `<span class="settings-group-label">Registered at</span>
     <div class="settings-list">${others.map((branch) => profileFactRow(branch.name, branch.active ? roleLabel(branch.role) : "Inactive")).join("")}</div>
@@ -3848,46 +3839,6 @@ async function deleteTechnician(form) {
   }
 }
 
-function openTechnicianEditModal(technician) {
-  // A shop with zero active Owners has nobody left who can reach this very
-  // screen to fix that, so editing the last one locks the controls that
-  // could strand the shop rather than only rejecting the save afterwards.
-  const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
-  const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
-  // Owner stays in the list only when editing an owner: it is not offered as a
-  // choice, but demoting the last one is blocked anyway.
-  // roleOptionsHtml now includes Owner when the viewer is one, so the special
-  // case is only still needed for an Admin looking at an existing Owner: the
-  // list has to show what they are without offering it as a choice.
-  const roleOptions = technician.role === "owner" && !isOrgOwner()
-    ? `<option value="owner" selected>${roleLabel("owner")}</option>${roleOptionsHtml(null)}`
-    : roleOptionsHtml(technician.role);
-  const contact = technicianContact(technician);
-  // No close X and no backdrop dismiss here: the only ways out are Cancel
-  // (back to the read-only view this was opened from) and a completed Save,
-  // so a mistap outside can't throw away half-typed changes.
-  openSheet(`<div class="sheet-head"><div><h2>Edit staff</h2></div></div>
-    <div class="sheet-body">
-    <form class="settings-edit-form" id="technician-form" autocomplete="off" data-technician-id="${technician.id}">
-      <div class="customer-details-grid">
-        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician.first_name || "")}" placeholder="First name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician.last_name || "")}" placeholder="Last name" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Mobile</span></div><input class="input" name="mobile" type="tel" inputmode="tel" maxlength="${PHONE_INPUT_MAX_LENGTH}" value="${escapeHTML(formatPhoneForDisplay(contact.phone))}" placeholder="0412 345 678" required /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="muted">(optional)</span></span></div><input class="input" name="email" type="email" inputmode="email" value="${escapeHTML(contact.email || "")}" placeholder="name@email.com" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician.initials || "")}" placeholder="e.g. DS" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Employee ID <span class="muted">(optional)</span></span></div><input class="input" name="employeeId" value="${escapeHTML(technician.employee_id || "")}" placeholder="e.g. EMP-1001" /></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Role</span></div><span class="select-control"><select class="select" name="role"${isLastOwner ? " disabled" : ""}>${roleOptions}</select>${icon("down")}</span></label>
-        <label class="form-field"><div class="field-header"><span class="field-label">Default bay</span></div><span class="select-control"><select class="select" name="defaultBayId">${bayOptionsHtml(technician.default_bay_id)}</select>${icon("down")}</span></label>
-      </div>
-      ${settingsSwitchRow({ title: "Active", description: "Currently working in this shop", checked: technician.active, action: "toggle-form-active", disabled: isLastOwner })}
-      <div class="profile-note-actions">
-        <button class="secondary-button" type="button" data-action="cancel-technician-edit" data-technician-id="${technician.id}">Cancel</button>
-        <button class="primary-button" type="submit">${icon("save")} Save changes</button>
-      </div>
-    </form>
-    </div>`, { ariaLabel: "Edit staff" });
-}
-
 // Default bay / default technician are a pick-one-from-the-roster choice, so
 // they share a single chooser rather than each getting a bespoke screen.
 function openDefaultPickerModal({ title, options, selectedId, action, extraAttrs = "" }) {
@@ -3906,6 +3857,117 @@ function openDefaultPickerModal({ title, options, selectedId, action, extraAttrs
     </div>
     <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+// One field at a time, the same shape as openShopFieldModal -- the staff
+// details page edits in place, row by row, rather than through one combined
+// form (see renderTechnicianDetailPage).
+function openTechnicianFieldModal({ technicianId, field, title, optional = false }) {
+  const technician = state.technicians.find((item) => item.id === technicianId);
+  if (!technician) return;
+  const contact = technicianContact(technician);
+  const current = ({
+    mobile: formatPhoneForDisplay(contact.phone),
+    email: contact.email,
+    employeeId: technician.employee_id,
+  })[field] || "";
+  openSheet(`<div class="confirmation-content">
+    <h2>${escapeHTML(title)}</h2>
+    <form class="settings-edit-form" id="technician-field-form" autocomplete="off" data-technician-id="${technicianId}" data-field="${field}">
+      <input class="input" name="value" value="${escapeHTML(current)}" placeholder="${escapeHTML(title)}"${field === "mobile" ? ` type="tel" inputmode="tel" maxlength="${PHONE_INPUT_MAX_LENGTH}"` : ""}${field === "email" ? ' type="email" inputmode="email"' : ""}${optional ? "" : " required"} />
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("save")} Save</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+async function saveTechnicianField(form) {
+  const value = String(new FormData(form).get("value") || "").trim();
+  const field = form.dataset.field;
+  const technicianId = form.dataset.technicianId;
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  setButtonLoading(submitButton, "Saving…");
+  try {
+    await apiRequest(`/api/shop/technicians/${technicianId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ [field]: value || null }),
+    });
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast("Staff details updated");
+    render();
+  } catch (error) {
+    resetButtonLoading(submitButton);
+    showToast(error.message || "Could not save that field");
+  }
+}
+
+// Name is the one field made of more than one input (first, last, and the
+// optional initials used for the avatar), so it gets its own small form
+// rather than reusing the single-input shape every other field shares.
+function openTechnicianNameModal(technicianId) {
+  const technician = state.technicians.find((item) => item.id === technicianId);
+  if (!technician) return;
+  openSheet(`<div class="confirmation-content">
+    <h2>Name</h2>
+    <form class="settings-edit-form" id="technician-name-form" autocomplete="off" data-technician-id="${technicianId}">
+      <div class="customer-details-grid">
+        <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="firstName" value="${escapeHTML(technician.first_name || "")}" placeholder="First name" required /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Last name</span></div><input class="input" name="lastName" value="${escapeHTML(technician.last_name || "")}" placeholder="Last name" /></label>
+        <label class="form-field"><div class="field-header"><span class="field-label">Initials <span class="muted">(optional)</span></span></div><input class="input" name="initials" maxlength="4" value="${escapeHTML(technician.initials || "")}" placeholder="e.g. DS" /></label>
+      </div>
+      <div class="profile-note-actions">
+        <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
+        <button class="primary-button" type="submit">${icon("save")} Save</button>
+      </div>
+    </form>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Name" });
+}
+
+async function saveTechnicianName(form) {
+  const data = new FormData(form);
+  const firstName = String(data.get("firstName") || "").trim();
+  const lastName = String(data.get("lastName") || "").trim();
+  if (!firstName) return showToast("Give the technician a first name");
+  const technicianId = form.dataset.technicianId;
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton?.disabled) return;
+  setButtonLoading(submitButton, "Saving…");
+  try {
+    await apiRequest(`/api/shop/technicians/${technicianId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ firstName, lastName: lastName || null, initials: String(data.get("initials") || "").trim() || null }),
+    });
+    closeSheet();
+    await loadWorkshopRoster();
+    showToast("Staff details updated");
+    render();
+  } catch (error) {
+    resetButtonLoading(submitButton);
+    showToast(error.message || "Could not save that name");
+  }
+}
+
+// Role is a closed set rather than free text, so it gets a picker like the
+// bay one above instead of openTechnicianFieldModal's text input. The last
+// active Owner never reaches this (renderTechnicianDetailPage keeps that row
+// read-only), and an Admin is only ever offered roles below Owner.
+function openTechnicianRolePickerModal(technicianId) {
+  const technician = state.technicians.find((item) => item.id === technicianId);
+  if (!technician) return;
+  const roles = isOrgOwner() ? ["technician", "admin", "owner"] : ["technician", "admin"];
+  const rows = roles.map((role) => `<button class="settings-row" type="button" data-action="set-technician-role" data-technician-id="${technicianId}" data-role="${role}">
+      <span class="settings-row-text"><strong>${escapeHTML(roleLabel(role))}</strong></span>
+      ${technician.role === role ? `<span class="settings-row-value">Selected</span>` : ""}
+    </button>`).join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>Role</h2>
+    <div class="settings-list">${rows}</div>
+    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Role" });
 }
 
 // Only staff with a linked login can own a job (assigned_to is a profiles.id),
@@ -4033,51 +4095,6 @@ async function saveBay(form) {
     render();
   } catch (error) {
     showToast(error.message || "Could not save that bay");
-  }
-}
-
-async function saveTechnician(form) {
-  const data = new FormData(form);
-  const payload = {
-    firstName: String(data.get("firstName") || "").trim(),
-    lastName: String(data.get("lastName") || "").trim(),
-    mobile: String(data.get("mobile") || "").trim() || null,
-    email: String(data.get("email") || "").trim() || null,
-    initials: String(data.get("initials") || "").trim() || null,
-    employeeId: String(data.get("employeeId") || "").trim() || null,
-    // A disabled <select> (the last Owner's role, locked so they can't demote
-    // themselves) is excluded from FormData entirely rather than reporting an
-    // empty value -- data.get("role") comes back null, and defaulting that to
-    // "technician" would silently demote them on every single save.
-    ...(data.get("role") !== null ? { role: String(data.get("role")) } : {}),
-    defaultBayId: String(data.get("defaultBayId") || "") || null,
-    active: formActiveState(form),
-  };
-  if (!payload.firstName) return showToast("Give the technician a first name");
-  if (!payload.lastName) return showToast("Give the technician a last name");
-  // Mobile is the one identifier every technician can sign in with -- clearing
-  // it here could strand a phone-only login the same way skipping it at join
-  // time would (see the join wizard's own mandatory mobile field).
-  if (!payload.mobile) return showToast("Give the technician a mobile number");
-  const submitButton = form.querySelector('button[type="submit"]');
-  if (submitButton?.disabled) return;
-  setButtonLoading(submitButton, "Saving\u2026");
-  sheetLayer.classList.add("is-busy");
-  try {
-    await apiRequest(`/api/shop/technicians/${form.dataset.technicianId}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
-    sheetLayer.classList.remove("is-busy");
-    closeSheet();
-    await loadWorkshopRoster();
-    showToast("Staff member updated");
-    render();
-  } catch (error) {
-    // Stay on the form so the rejected values are still there to correct.
-    sheetLayer.classList.remove("is-busy");
-    resetButtonLoading(submitButton);
-    showToast(error.message || "Could not save that technician");
   }
 }
 
@@ -6071,19 +6088,11 @@ document.addEventListener("click", (event) => {
     if (action === "add-bay") return openBayModal(null);
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
-    if (action === "edit-technician-form") return openTechnicianEditModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
-    if (action === "cancel-technician-edit") return closeSheet();
     if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
     if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "view-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
-    if (action === "open-technician") {
-      state.technicianDetailId = actionButton.dataset.technicianId;
-      settingsOpenPage("technician-detail");
-      render();
-      window.scrollTo({ top: 0, behavior: "instant" });
-      return;
-    }
+    if (action === "open-technician") return openTechnicianDetailPage(actionButton.dataset.technicianId);
     // The switch inside a bay/technician form is local state only -- it is read
     // off the DOM when the form is submitted, not saved on its own.
     if (action === "toggle-form-active") {
@@ -6135,6 +6144,31 @@ document.addEventListener("click", (event) => {
           showToast(error.message || "Could not update status");
         })
         .finally(() => { delete actionButton.dataset.pending; });
+    }
+    if (action === "edit-technician-field") {
+      const field = actionButton.dataset.field;
+      if (field === "name") return openTechnicianNameModal(actionButton.dataset.technicianId);
+      return openTechnicianFieldModal({
+        technicianId: actionButton.dataset.technicianId,
+        field,
+        title: actionButton.dataset.title,
+        optional: actionButton.dataset.optional === "true",
+      });
+    }
+    if (action === "pick-technician-role") return openTechnicianRolePickerModal(actionButton.dataset.technicianId);
+    if (action === "set-technician-role") {
+      const technicianId = actionButton.dataset.technicianId;
+      return apiRequest(`/api/shop/technicians/${technicianId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: actionButton.dataset.role }),
+      })
+        .then(async () => {
+          await loadWorkshopRoster();
+          closeSheet();
+          render();
+          showToast("Role updated");
+        })
+        .catch((error) => showToast(error.message || "Could not update that role"));
     }
     if (action === "pick-technician-bay") {
       const technician = state.technicians.find((t) => t.id === actionButton.dataset.technicianId);
@@ -6778,7 +6812,8 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "branch-form") return createBranch(event.target);
   if (event.target.id === "shop-field-form") return saveShopField(event.target);
   if (event.target.id === "bay-form") return saveBay(event.target);
-  if (event.target.id === "technician-form") return saveTechnician(event.target);
+  if (event.target.id === "technician-field-form") return saveTechnicianField(event.target);
+  if (event.target.id === "technician-name-form") return saveTechnicianName(event.target);
   if (event.target.id === "delete-technician-form") return deleteTechnician(event.target);
   if (event.target.id === "delete-branch-form") return deleteBranch(event.target);
   if (event.target.id === "invite-staff-form") return saveStaffInvite(event.target);
