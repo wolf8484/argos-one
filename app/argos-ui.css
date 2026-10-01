@@ -4120,7 +4120,10 @@ button.settings-toggle-row {
 .sheet-layer {
   position: fixed;
   z-index: 100;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100dvh;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -4168,7 +4171,7 @@ button.settings-toggle-row {
 
 .bottom-sheet {
   width: 100%;
-  max-height: calc(100vh - 44px - var(--safe-top));
+  max-height: calc(100dvh - 44px - var(--safe-top));
   padding-bottom: var(--safe-bottom);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -4256,7 +4259,7 @@ button.settings-toggle-row {
 
 .sheet-layer.is-confirmation-modal .confirmation-sheet {
   width: min(100%, 560px);
-  max-height: calc(100vh - 32px - var(--safe-top) - var(--safe-bottom));
+  max-height: calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom));
   padding-bottom: 0;
   border: 1px solid var(--line-strong);
   border-radius: 24px;
