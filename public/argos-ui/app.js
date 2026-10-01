@@ -3061,7 +3061,7 @@ function currentBranchProfileBody() {
       ${settingsEditRow({ title: isHead ? "Business phone" : (isMultiBranch() ? "Phone" : "Workshop phone"), value: shop.phone || "Not set", field: "phone", optional: true })}
       ${settingsEditRow({ title: isHead ? "Business email" : (isMultiBranch() ? "Email" : "Workshop email"), value: shop.email || "Not set", field: "email", optional: true })}
       ${settingsEditRow({ title: "ABN", value: shop.abn || "Not set", field: "abn", optional: true })}
-      ${settingsEditRow({ title: "Business / branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
+      ${settingsEditRow({ title: "Branch ID", value: shop.branch_id || "Not set", field: "branchId" })}
       ${settingsEditRow({ title: "Region", value: shop.region || "Not set", field: "region" })}
       ${settingsEditRow({ title: "Timezone", value: shop.timezone || "Not set", field: "timezone" })}
       ${registrationIdRow(shop.registration_code)}
@@ -3169,7 +3169,7 @@ function renderBranchDetailPage() {
       ${row(isHead ? "Business phone" : "Phone", branch.phone, "phone", true)}
       ${row(isHead ? "Business email" : "Email", branch.email, "email", true)}
       ${row("ABN", branch.abn, "abn", true)}
-      ${row("Business / branch ID", branch.branch_id, "branchId", true)}
+      ${row("Branch ID", branch.branch_id, "branchId", true)}
       ${row("Region", branch.region, "region")}
       ${row("Timezone", branch.timezone, "timezone")}
       ${registrationIdRow(branch.registration_code)}

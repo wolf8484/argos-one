@@ -1238,7 +1238,7 @@ main:focus {
 }
 
 .resolved-job-shell {
-  padding-bottom: 48px;
+  /* padding-bottom: 48px; */
 }
 
 .resolved-summary {
@@ -3837,7 +3837,7 @@ button.settings-row:focus-visible {
   flex: 1;
   flex-direction: column;
   gap: 4px;
-  margin-left: 8px;
+  /* margin-left: 8px; */
 }
 
 .settings-row-text strong {
@@ -3969,7 +3969,15 @@ button.settings-toggle-row {
 
 .settings-page-action {
   /* margin-top: 16px; */
-  margin-bottom: 12px;
+  /* margin-bottom: 12px; */
+}
+
+/* The 12px gap between an action button and the list under it belongs to
+   that pairing specifically -- an action button isn't always followed by a
+   list, and a list isn't always preceded by one (e.g. the "Registered at"
+   list, which already gets its spacing from branch-membership's own gap). */
+.settings-page-action + .settings-list {
+  margin-top: 12px;
 }
 
 .settings-edit-form {
@@ -6750,7 +6758,14 @@ a.profile-recall:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 40px;
+}
+
+/* branch-membership's own gap already spaces the "Registered at" list from
+   the "Add to more branches" link after it -- the list's usual trailing
+   margin would double that up on the one item that happens to sit last. */
+.branch-membership .settings-list {
+  margin-bottom: 0;
 }
 
 /* The directory's "Add to more branches" link reads as an action tucked
@@ -6899,7 +6914,7 @@ a.profile-recall:focus-visible {
 
 .settings-page-action.settings-page-action-tight {
   margin-top: 0;
-  margin-bottom: 24px;
+  /* margin-bottom: 24px; */
 }
 
 .units-preview-list {
