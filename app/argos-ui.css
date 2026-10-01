@@ -2932,31 +2932,6 @@ button.journey-item:active {
   font-size: var(--caps-size);
 }
 
-.add-dtc-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  padding: 0 16px;
-  gap: 8px;
-  border: 1px solid var(--secondary-border);
-  border-radius: var(--card-radius);
-  background: 0 0;
-  color: var(--text);
-  font-size: var(--copy-size);
-  font-weight: 500;
-}
-
-.add-dtc-button svg {
-  width: 20px;
-  height: 20px;
-  color: var(--text);
-}
-
-.add-dtc-button:active {
-  background: var(--surface-3);
-}
-
 .quick-chip {
   padding: 0 24px;
   color: var(--muted-strong);
@@ -4658,7 +4633,6 @@ button.settings-toggle-row {
 
 :root[data-theme="light"] .web-button,
 :root[data-theme="light"] .part-button,
-:root[data-theme="light"] .add-dtc-button,
 :root[data-theme="light"] .vin-camera,
 :root[data-theme="light"] .calendar-nav {
   background: transparent;
@@ -4681,7 +4655,6 @@ button.settings-toggle-row {
 
 :root[data-theme="light"] .web-button svg,
 :root[data-theme="light"] .part-button svg,
-:root[data-theme="light"] .add-dtc-button svg,
 :root[data-theme="light"] .vin-camera svg,
 :root[data-theme="light"] .calendar-nav svg {
   color: #1e1e1e;
@@ -4742,7 +4715,6 @@ button.settings-toggle-row {
 
 :root[data-theme="light"] .web-button:active,
 :root[data-theme="light"] .part-button:active,
-:root[data-theme="light"] .add-dtc-button:active,
 :root[data-theme="light"] .vin-camera:active,
 :root[data-theme="light"] .calendar-nav:active {
   background: var(--surface-3);
