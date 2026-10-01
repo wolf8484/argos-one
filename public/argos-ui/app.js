@@ -76,6 +76,7 @@ const state = {
   branches: [],
   business: null,
   branchDetailId: null,
+  technicianDetailId: null,
   // null until the sharing page has fetched them, so the list can say
   // "loading" rather than briefly claiming the business has no branches.
   branchShareTargets: null,
@@ -3246,7 +3247,7 @@ function renderTechniciansPage() {
       if (isTechnicianRole) {
         return `<div class="settings-row" data-staff-search="${escapeHTML(technicianSearchText(technician))}">${text}</div>`;
       }
-      return `<button class="settings-row" type="button" data-action="view-technician" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
+      return `<button class="settings-row" type="button" data-action="${pending ? "view-technician" : "open-technician"}" data-technician-id="${technician.id}" data-staff-search="${escapeHTML(technicianSearchText(technician))}">
         ${text}
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
       </button>`;
@@ -3260,6 +3261,47 @@ function renderTechniciansPage() {
     ${isTechnicianRole ? "" : `<div class="settings-page-action"><button class="primary-button full" type="button" data-action="add-technician">${icon("plus")} Invite staff</button></div>`}
     <div class="settings-list">${rows}</div>
     <p class="profile-empty staff-empty" hidden>No staff match "<span class="staff-empty-query"></span>".</p>`;
+}
+
+// Tapping a name in the staff directory drills into this full page rather
+// than the "Staff details" bottom sheet -- that sheet still exists, unchanged,
+// for the avatar-driven "Your profile" flow (technicianProfileSheet), but a
+// row picked from a list reads better as a page you can navigate away from,
+// matching the branch directory's own row -> detail page pattern
+// (renderBranchDetailPage).
+function renderTechnicianDetailPage() {
+  const technician = state.technicians.find((item) => item.id === state.technicianDetailId);
+  if (!technician) return renderTechniciansPage();
+
+  const activeOwnerCount = state.technicians.filter((t) => t.role === "owner" && t.active).length;
+  const isLastOwner = Boolean(technician.role === "owner" && technician.active && activeOwnerCount <= 1);
+  const bay = state.bays.find((b) => b.id === technician.default_bay_id);
+  const contact = technicianContact(technician);
+  const showBranchMembership = isMultiBranch() && isOrgOwner() && Boolean(technician.profile_id);
+  const canAct = canActOnTechnician(technician);
+
+  return `${settingsPageHeader(technicianName(technician), "Staff directory")}
+    <span class="settings-group-label">Staff details</span>
+    <div class="settings-list">
+      ${profileFactRow("Role", `${technician.role === "owner" ? "★ " : ""}${roleLabel(technician.role)}`)}
+      ${profileFactRow("Mobile", formatPhoneForDisplay(contact.phone) || "Not set")}
+      ${profileFactRow("Email", contact.email || "Not set")}
+      ${profileFactRow("Works at", state.shop?.name || "Not set")}
+      <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
+        <span class="settings-row-text"><strong>Assigned bay</strong></span>
+        <span class="settings-row-value${bay ? "" : " no-bay-value"}">${escapeHTML(bay?.name || NO_BAY)}</span>
+        <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
+      </button>
+      ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
+    </div>
+    <div class="settings-list">
+      ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
+    </div>
+    ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Registered at</span><p class="muted">Loading branches...</p></section>` : ""}
+    ${canAct ? `<div class="settings-page-action confirmation-actions">
+        <button class="danger-button full" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
+        <button class="primary-button full" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
+      </div>` : `<p class="settings-detail-intro">Only an Owner can change another Owner's details.</p>`}`;
 }
 
 function renderUnitsPage() {
@@ -3708,7 +3750,7 @@ async function addTechnicianToBranch(technicianId, branchId) {
     closeSheet();
     await loadWorkshopRoster();
     showToast(`Added to ${branch?.name || "that branch"}`);
-    openTechnicianDetailsSheet(state.technicians.find((item) => item.id === technicianId));
+    render();
   } catch (error) {
     sheetLayer.classList.remove("is-busy");
     if (button) resetButtonLoading(button);
@@ -3732,7 +3774,7 @@ function deleteTechnicianConfirmation(technician) {
         <input class="input" name="confirm" placeholder="DELETE" autocapitalize="characters" autocorrect="off" spellcheck="false" required />
       </label>
       <div class="confirmation-actions">
-        <button class="secondary-button full" type="button" data-action="view-technician" data-technician-id="${technician.id}">Cancel</button>
+        <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
         <button class="danger-button full" type="submit">${icon("trash")} Delete</button>
       </div>
     </form>
@@ -3793,6 +3835,10 @@ async function deleteTechnician(form) {
     sheetLayer.classList.remove("is-busy");
     closeSheet();
     await loadWorkshopRoster();
+    if (state.settingsPage === "technician-detail") {
+      state.technicianDetailId = null;
+      settingsGoBack();
+    }
     showToast("Staff member removed");
     render();
   } catch (error) {
@@ -4137,6 +4183,7 @@ const SETTINGS_PAGES = {
   "branch-detail": renderBranchDetailPage,
   bays: renderBaysPage,
   technicians: renderTechniciansPage,
+  "technician-detail": renderTechnicianDetailPage,
   units: renderUnitsPage,
   notifications: renderNotificationsPage,
   storage: renderStoragePage,
@@ -4175,6 +4222,9 @@ function renderSettings() {
   app.innerHTML = `<section class="screen workflow-shell settings-shell settings-detail-shell">${pageRenderer()}</section>`;
   if (state.settingsPage === "voice-dictation") updateMicPermissionLabel();
   if (state.settingsPage === "network-sharing") loadBranchShareTargets();
+  if (state.settingsPage === "technician-detail" && document.querySelector("#technician-branches")) {
+    loadTechnicianBranches(state.technicianDetailId);
+  }
 }
 
 function renderVehicle() {
@@ -6022,11 +6072,18 @@ document.addEventListener("click", (event) => {
     if (action === "edit-bay") return openBayModal(state.bays.find((bay) => bay.id === actionButton.dataset.bayId));
     if (action === "add-technician") return openTechnicianModal(null);
     if (action === "edit-technician-form") return openTechnicianEditModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
-    if (action === "cancel-technician-edit") return openTechnicianDetailsSheet(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
+    if (action === "cancel-technician-edit") return closeSheet();
     if (action === "copy-invite-code") return copyInviteCode(actionButton.dataset.code);
     if (action === "regenerate-invite") return regenerateInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "revoke-invite") return revokeInvite(actionButton.dataset.technicianId, actionButton);
     if (action === "view-technician") return openTechnicianModal(state.technicians.find((technician) => technician.id === actionButton.dataset.technicianId));
+    if (action === "open-technician") {
+      state.technicianDetailId = actionButton.dataset.technicianId;
+      settingsOpenPage("technician-detail");
+      render();
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
     // The switch inside a bay/technician form is local state only -- it is read
     // off the DOM when the form is submitted, not saved on its own.
     if (action === "toggle-form-active") {
@@ -6098,8 +6155,7 @@ document.addEventListener("click", (event) => {
       })
         .then(async () => {
           await loadWorkshopRoster();
-          const updated = state.technicians.find((t) => t.id === technicianId);
-          if (updated) openTechnicianDetailsSheet(updated);
+          closeSheet();
           render();
           showToast("Assigned bay updated");
         })
