@@ -1230,7 +1230,7 @@ function setTheme(theme, persist = true) {
     const iconSlot = toggle.querySelector("[data-theme-icon]");
     if (iconSlot) iconSlot.innerHTML = icon(theme === "dark" ? "sun" : "moon");
   }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#090909");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f5f5f3" : "#090909");
   if (persist) {
     try { localStorage.setItem("argos-theme", theme); } catch (_) {}
   }
@@ -4604,10 +4604,10 @@ function renderResolvedJob() {
             ${odometerLine ? `<span class="selected-repair-date-line">${icon("gauge")}<span>${escapeHTML(odometerLine)}</span></span>` : ""}
             ${dateLabel ? `<span class="selected-repair-date-line">${icon("calendar")}<span>${escapeHTML(dateLabel)}</span></span>` : ""}
           </div>
-        </div>
-        <div class="repair-job-meta">
-          ${job.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(job.jobNumber)}</span>` : ""}
-          ${job.technician ? `<span class="repair-job-bay">${escapeHTML(job.technician)}</span>` : ""}
+          <div class="repair-job-meta">
+            ${job.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(job.jobNumber)}</span>` : ""}
+            ${job.technician ? `<span class="repair-job-bay">${escapeHTML(job.technician)}</span>` : ""}
+          </div>
         </div>
       </div>
 

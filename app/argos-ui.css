@@ -1684,6 +1684,7 @@ button.journey-item:active {
   color: var(--accent);
   font-size: var(--caps-size);
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 .repair-job-bay {
@@ -6703,8 +6704,8 @@ a.profile-recall:focus-visible {
   border: 0;
 }
 
-/* Resolved report header: identity on the left, job number / bay / mechanic
-   right-aligned alongside it. */
+/* Resolved report header: vehicle identity, with job number / bay / mechanic
+   stacked underneath it. */
 .resolved-report-head {
   display: flex;
   align-items: flex-start;
@@ -6714,6 +6715,12 @@ a.profile-recall:focus-visible {
 
 .resolved-report-identity {
   min-width: 0;
+}
+
+.resolved-report-identity .repair-job-meta {
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 12px;
 }
 
 /* Branches
