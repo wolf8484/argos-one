@@ -3871,6 +3871,10 @@ button.settings-row:focus-visible {
   white-space: nowrap;
 }
 
+.settings-row-value.no-bay-value {
+  text-transform: uppercase;
+}
+
 /* A staff member who has not redeemed their code yet cannot be assigned jobs,
    so the roster says so plainly rather than showing them as Active. */
 .settings-row-value.is-invited {

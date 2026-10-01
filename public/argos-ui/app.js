@@ -3634,7 +3634,7 @@ function openTechnicianDetailsSheet(technician) {
           ${profileFactRow("Works at", state.shop?.name || "Not set")}
           <button class="settings-row" type="button" data-action="pick-technician-bay" data-technician-id="${technician.id}">
             <span class="settings-row-text"><strong>Assigned bay</strong></span>
-            <span class="settings-row-value">${escapeHTML(bay?.name || NO_BAY)}</span>
+            <span class="settings-row-value${bay ? "" : " no-bay-value"}">${escapeHTML(bay?.name || NO_BAY)}</span>
             <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
           </button>
           ${profileFactRow("Employee ID", technician.employee_id || "Not registered")}
