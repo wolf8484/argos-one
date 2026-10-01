@@ -6741,10 +6741,6 @@ a.profile-recall:focus-visible {
   border-bottom: 1px solid var(--line);
 }
 
-.branch-membership .text-button {
-  align-self: flex-start;
-}
-
 /* The section's own 8px gap already sits under the label, so trim the label's
    margin to land on the 16px the details block uses. */
 .branch-membership .settings-group-label {
