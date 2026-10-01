@@ -3176,7 +3176,7 @@ function renderBranchDetailPage() {
     <div class="settings-page-action"><button class="primary-button full" type="button" data-action="switch-branch" data-branch-id="${branch.id}">${icon("arrow")} Switch to this ${isHead ? "business" : "branch"}</button></div>
     ${isOrgOwner() && !isHead ? `<span class="settings-group-label settings-group-label-spaced">Danger zone</span>
     <p class="settings-detail-intro settings-detail-intro-tight">Deleting a branch removes its jobs, customers, vehicles and bays for good.</p>
-    <div class="settings-page-action settings-page-action-tight"><button class="danger-outline-button full" type="button" data-action="delete-branch" data-branch-id="${branch.id}">${icon("trash")} Delete this branch</button></div>` : ""}`;
+    <div class="settings-page-action settings-page-action-tight"><button class="danger-button full" type="button" data-action="delete-branch" data-branch-id="${branch.id}">${icon("trash")} Delete this branch</button></div>` : ""}`;
 }
 
 // One row that opens a prompt-style editor for a single shop field. Kept as a
@@ -3519,7 +3519,7 @@ function openBayModal(bay) {
       <div class="profile-note-actions">
         ${isNew
           ? `<button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>`
-          : `<button class="danger-outline-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
+          : `<button class="danger-button" type="button" data-action="delete-bay" data-bay-id="${bay.id}">${icon("trash")} Delete bay</button>`}
         <button class="primary-button" type="submit">${icon("save")} ${isNew ? "Save" : "Save changes"}</button>
       </div>
     </form>
@@ -3643,7 +3643,7 @@ function openTechnicianDetailsSheet(technician) {
       ${settingsSwitchRow({ title: "Active", description: isMultiBranch() ? "Currently working in this branch" : "Currently working in this shop", checked: technician.active, action: "toggle-technician-active", disabled: isLastOwner || !canAct, extraAttrs: ` data-technician-id="${technician.id}"` })}
       ${showBranchMembership ? `<section class="branch-membership" id="technician-branches" data-technician-id="${technician.id}"><span class="settings-group-label">Registered at</span><p class="muted">Loading branches...</p></section>` : ""}
       ${canAct ? `<div class="profile-note-actions">
-        <button class="danger-outline-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
+        <button class="danger-button" type="button" data-action="delete-technician" data-technician-id="${technician.id}"${isLastOwner ? " disabled" : ""}>${icon("trash")} Delete</button>
         <button class="primary-button" type="button" data-action="edit-technician-form" data-technician-id="${technician.id}">${icon("edit")} Edit</button>
       </div>` : `<p class="settings-detail-intro">Only an Owner can change another Owner's details.</p>`}
     </div>`, { ariaLabel: "Staff details" });
@@ -4222,7 +4222,7 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Phone <span class="optional-label">(optional)</span></span></div><input class="input" name="customerPhone" autocomplete="tel" inputmode="tel" value="${escapeHTML(state.vehicle.customerPhone)}" placeholder="Mobile number" maxlength="${PHONE_INPUT_MAX_LENGTH}" /></label>
         <label class="form-field"><div class="field-header"><span class="field-label">Email <span class="optional-label">(optional)</span></span></div><input class="input" name="customerEmail" autocomplete="email" inputmode="email" type="email" value="${escapeHTML(state.vehicle.customerEmail || "")}" placeholder="Email address" /></label>
       </div>
-      <div class="action-dock vehicle-actions span-2"><button class="danger-outline-button full" type="button" data-action="cancel-job">${icon("trash")} Delete job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
+      <div class="action-dock vehicle-actions span-2"><button class="danger-button full" type="button" data-action="cancel-job">${icon("trash")} Delete job</button><button class="primary-button full" type="submit">Save & continue ${icon("arrow")}</button></div>
     </form>
   </section>`;
   if (!canEditCurrentJob()) lockWorkflowForm();
@@ -4521,7 +4521,7 @@ function openPartModal(index) {
         <p>You can update the item name or part number if needed. This only changes it for this repair record.</p>
       </div>
       <div class="profile-note-actions">
-        <button class="danger-outline-button" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove from list</button>
+        <button class="danger-button" type="button" data-action="remove-recorded-part" data-recorded-part-index="${index}">${icon("trash")} Remove from list</button>
         <button class="primary-button" type="submit">${icon("save")} Save changes</button>
       </div>
     </form>
@@ -5090,7 +5090,7 @@ function cancelJobConfirmation() {
     <h2>Cancel this job?</h2>
     <p>This moves the job to Deleted jobs, where the workshop can still review its saved details.</p>
     <div class="confirmation-actions">
-      <button class="danger-outline-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Cancel job</button>
+      <button class="danger-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Cancel job</button>
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep job</button>
     </div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm job cancellation" });
