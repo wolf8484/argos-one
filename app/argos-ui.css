@@ -413,7 +413,7 @@ main:focus {
   gap: 8px;
   background: transparent;
   color: #c3c3c3;
-  font-size: var(--caps-size);
+  font-size: 12px;
   line-height: 1;
   letter-spacing: 0;
   text-transform: uppercase;
