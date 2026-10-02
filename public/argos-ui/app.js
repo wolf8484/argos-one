@@ -514,7 +514,7 @@ function databaseJobToUi(row) {
       customerPhone: customer.phone || "", customerEmail: customer.email || "",
       trim: vehicle.trim || "", engine: vehicle.engine || "", drivetrain: vehicle.drivetrain || "", transmission: vehicle.transmission || "",
     },
-    bay: row.bay || "Unassigned",
+    bay: row.bay || NO_BAY,
     time: timestamp ? new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(timestamp)) : "",
     createdAtShort: row.created_at ? shortDate(row.created_at) : "",
     resolvedAtShort: row.resolved_at ? shortDate(row.resolved_at) : "",

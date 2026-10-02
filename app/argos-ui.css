@@ -701,6 +701,10 @@ main:focus {
     flex: 1 0 100%;
     justify-content: center;
   }
+
+  .tile-copy small {
+    font-size: 14px;
+  }
 }
 
 .field-label {
