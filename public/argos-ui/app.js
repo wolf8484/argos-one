@@ -873,15 +873,15 @@ function assignmentBar() {
   if (!job || !isPersistedJobId(job.id)) return "";
   const editable = canEditJob(job);
   const assigneeName = job.assigneeName || "Unassigned";
-  const bayName = job.bay || "Unassigned";
+  const bayName = job.bay || NO_BAY;
   if (!editable) {
     return `<div class="assignment-bar is-locked">
-      <span class="assignment-bar-label">${icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong> &middot; <strong>${escapeHTML(bayName)}</strong></span></span>
+      <span class="assignment-bar-label">${icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong> &middot; <strong>${escapeHTML(bayName.toUpperCase())}</strong></span></span>
     </div>`;
   }
   return `<div class="assignment-bar">
     <button class="assignment-bar-label" type="button" data-action="reassign-job"><span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></button>
-    <button class="assignment-bar-label" type="button" data-action="reassign-bay"><span>Bay <strong>${escapeHTML(bayName)}</strong></span></button>
+    <button class="assignment-bar-label" type="button" data-action="reassign-bay"><span><strong>${escapeHTML(bayName.toUpperCase())}</strong></span></button>
   </div>`;
 }
 
@@ -5154,13 +5154,13 @@ function leaveWorkflowConfirmation(onConfirm, reason) {
 
 function cancelJobConfirmation() {
   openSheet(`<div class="confirmation-content">
-    <h2>Cancel this job?</h2>
+    <h2>Delete this job?</h2>
     <p>This moves the job to Deleted jobs, where the workshop can still review its saved details.</p>
     <div class="confirmation-actions">
-      <button class="danger-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Cancel job</button>
       <button class="secondary-button full" type="button" data-action="close-sheet">Keep job</button>
+      <button class="danger-button full" type="button" data-action="confirm-cancel-job">${icon("trash")} Delete job</button>
     </div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm job cancellation" });
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Confirm job deletion" });
 }
 
 function cancelJob() {

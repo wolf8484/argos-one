@@ -762,9 +762,9 @@ main:focus {
 
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px 24px;
+  grid-template-columns: minmax(0, 1fr) 40px 24px;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   width: 100%;
   min-height: 132px;
   padding: 16px;
@@ -798,8 +798,8 @@ main:focus {
 .job-card-menu-spacer {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
 }
 
 .job-card-menu {
@@ -6054,8 +6054,8 @@ body.dictation-active .toast {
   }
 
   .job-card {
-    grid-template-columns: minmax(0, 1fr) 44px 24px;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 40px 24px;
+    gap: 8px;
     padding: 16px;
   }
 
