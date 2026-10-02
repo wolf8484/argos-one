@@ -2968,9 +2968,9 @@ button.journey-item:active {
 }
 
 .job-filters .quick-chip.is-selected {
-  border-color: var(--accent-border);
-  background: var(--accent-fill);
-  color: var(--on-accent);
+  border-color: #565656;
+  background: #565656;
+  color: #f5f5f5;
 }
 
 .quick-chip:not(.is-selected):active,
@@ -4673,12 +4673,6 @@ button.settings-toggle-row {
   background-color: #090909;
   border-color: #090909;
   color: #e0e0dc;
-}
-
-:root[data-theme="light"] .job-filters .quick-chip.is-selected {
-  background-color: var(--accent-fill);
-  border-color: var(--accent-border);
-  color: var(--on-accent);
 }
 
 :root[data-theme="light"] .secondary-button svg {
