@@ -2848,6 +2848,12 @@ button.journey-item:active {
   line-height: 1;
 }
 
+:root[data-theme="light"] .tertiary-button {
+  border-color: #e0e0dc;
+  background-color: #e0e0dc;
+  color: #1d1d1d;
+}
+
 .tertiary-button svg {
   width: 20px;
   height: 20px;
@@ -2961,6 +2967,12 @@ button.journey-item:active {
   color: var(--text);
 }
 
+.job-filters .quick-chip.is-selected {
+  border-color: var(--accent-border);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
 .quick-chip:not(.is-selected):active,
 .filter-button:not(.is-active):active {
   background: var(--surface-3);
@@ -3068,7 +3080,6 @@ button.journey-item:active {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 12px;
-  padding-top: 8px;
 }
 
 .action-dock.single {
@@ -3343,7 +3354,7 @@ button.journey-item:active {
 .match-option.is-selected {
   background: var(--surface-2);
   color: var(--text);
-  box-shadow: 0 0 0 1px var(--accent-fill) inset;
+  border: 2px solid #c3c3c3;
   border-radius: var(--card-radius);
 }
 
@@ -3493,8 +3504,7 @@ button.journey-item:active {
 }
 
 .selected-repair-card {
-  border: 1px solid var(--accent-fill);
-  /* border-bottom: 1px solid var(--accent-fill); */
+  border: 2px solid #c3c3c3;
   background: var(--surface-2);
   padding: 20px;
   border-radius: var(--card-radius);
@@ -4663,6 +4673,12 @@ button.settings-toggle-row {
   background-color: #090909;
   border-color: #090909;
   color: #e0e0dc;
+}
+
+:root[data-theme="light"] .job-filters .quick-chip.is-selected {
+  background-color: var(--accent-fill);
+  border-color: var(--accent-border);
+  color: var(--on-accent);
 }
 
 :root[data-theme="light"] .secondary-button svg {
