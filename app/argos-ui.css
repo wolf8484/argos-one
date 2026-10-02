@@ -15,9 +15,9 @@
   --journey-incomplete: #a6a6a2;
   --line: #2d2d2d;
   --line-strong: #565656;
-  --accent: #FFC001;
-  --accent-fill: #FFC001;
-  --accent-border: #FFC001;
+  --accent: #fcd535;
+  --accent-fill: #fcd535;
+  --accent-border: #fcd535;
   --secondary-border: #565656;
   --tertiary-border: #7c7c7c;
   --on-accent: #111111;
@@ -68,13 +68,13 @@
   --line: #d3d3d0;
   --line-strong: #92928e;
   --accent: #1e1e1e;
-  --accent-fill: #FFC001;
+  --accent-fill: #fcd535;
   --accent-border: #1e1e1e;
   --secondary-border: #1e1e1e;
   --tertiary-border: #92928e;
   --on-accent: #111111;
   --accent-deep: #D19F00;
-  --accent-on-inverse: #FFC001;
+  --accent-on-inverse: #fcd535;
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
@@ -5293,7 +5293,7 @@ button.settings-toggle-row {
   width: 100%;
   padding: 16px var(--gutter);
   border: 0;
-  background: #ffc001;
+  background: #fcd535;
   color: #111111;
   text-align: left;
   cursor: pointer;
@@ -5412,7 +5412,7 @@ button.settings-toggle-row {
 .update-overlay-bar-fill {
   width: 0%;
   height: 100%;
-  background: #FFC001;
+  background: #fcd535;
   transition: width 2200ms ease;
 }
 
