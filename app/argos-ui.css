@@ -3080,6 +3080,7 @@ button.journey-item:active {
 
 .action-dock.vehicle-actions {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-top: 32px;
 }
 
 .action-dock.resolved-actions {
