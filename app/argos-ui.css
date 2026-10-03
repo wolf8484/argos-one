@@ -4166,7 +4166,7 @@ button.settings-toggle-row {
   touch-action: pan-y;
   border: 1px solid var(--line-strong);
   border-bottom: 0;
-  border-radius: 24px 24px 0px 0px;
+  border-radius: 16px 16px 0px 0px;
   background: #111111;
   box-shadow: var(--sheet-shadow);
   scrollbar-width: none;
@@ -4174,9 +4174,13 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .bottom-sheet {
-  border: 1px solid #f5f5f3;
-  background: #f5f5f3;
+  border: 1px solid #f6f6f6;
+  background: #f6f6f6;
   /* box-shadow: var(--sheet-shadow); */
+}
+
+:root[data-theme="light"] .sheet-head {
+  background: #f6f6f6;
 }
 
 .bottom-sheet::-webkit-scrollbar {
@@ -4733,7 +4737,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .profile-repair-list,
 :root[data-theme="light"] .profile-repair-row-button,
 :root[data-theme="light"] .profile-recall-list {
-  border-color: #d4d3d0;
+  border-color: #e5e7eb;
 }
 
 :root[data-theme="light"] .input:focus,
@@ -4816,7 +4820,7 @@ button.settings-toggle-row {
    between its two parts, and a gap before the menu that follows it. */
 .profile-card {
   /* border-top: 1px solid var(--line); */
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   overflow: hidden;
   margin-bottom: 12px;
   background: var(--surface-2);
@@ -4850,7 +4854,7 @@ button.settings-toggle-row {
   min-height: 56px;
   padding: 0 16px;
   gap: 12px;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
