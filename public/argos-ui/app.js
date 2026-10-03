@@ -1235,20 +1235,33 @@ function preferredTheme() {
   return "dark";
 }
 
-function setTheme(theme, persist = true) {
-  document.documentElement.dataset.theme = theme;
-  const toggle = document.querySelector("#theme-toggle");
-  const nextTheme = theme === "dark" ? "light" : "dark";
-  if (toggle) {
-    toggle.setAttribute("aria-label", `Switch to ${nextTheme} theme`);
-    toggle.setAttribute("aria-pressed", String(theme === "light"));
-    const iconSlot = toggle.querySelector("[data-theme-icon]");
-    if (iconSlot) iconSlot.innerHTML = icon(theme === "dark" ? "sun" : "moon");
-  }
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f5f5f3" : "#090909");
-  if (persist) {
-    try { localStorage.setItem("argos-theme", theme); } catch (_) {}
-  }
+function setTheme(theme, persist = true, afterApply) {
+  const applyTheme = () => {
+    document.documentElement.dataset.theme = theme;
+    const toggle = document.querySelector("#theme-toggle");
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    if (toggle) {
+      toggle.setAttribute("aria-label", `Switch to ${nextTheme} theme`);
+      toggle.setAttribute("aria-pressed", String(theme === "light"));
+      const iconSlot = toggle.querySelector("[data-theme-icon]");
+      if (iconSlot) iconSlot.innerHTML = icon(theme === "dark" ? "sun" : "moon");
+    }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f5f5f3" : "#090909");
+    if (persist) {
+      try { localStorage.setItem("argos-theme", theme); } catch (_) {}
+    }
+    if (afterApply) afterApply();
+  };
+  // document.startViewTransition cross-fades the old and new states natively
+  // -- no per-element CSS transitions needed to animate a dataset flip that
+  // touches colors across the whole page. Its update callback runs on the
+  // next rendering opportunity, not synchronously, so anything that needs to
+  // see the new theme (like re-rendering the theme picker's selected row)
+  // has to go through afterApply instead of running right after setTheme()
+  // returns. Falls back to an instant switch on browsers that don't support
+  // it, where applyTheme (and afterApply) do run synchronously.
+  if (document.startViewTransition) document.startViewTransition(applyTheme);
+  else applyTheme();
 }
 
 const KM_PER_MILE = 1.609344;
@@ -2842,16 +2855,14 @@ function renderThemePage() {
   const theme = document.documentElement.dataset.theme || "dark";
   return `${settingsPageHeader("Theme", "Appearance")}
     <p class="settings-detail-intro">Choose how Argos One looks in the workshop.</p>
-    <div class="theme-options" role="group" aria-label="Choose interface theme">
-      <button class="setting-choice ${theme === "dark" ? "is-selected" : ""}" type="button" data-theme-choice="dark" aria-pressed="${theme === "dark"}">
-        <span class="theme-swatch dark-swatch" aria-hidden="true"><i></i></span>
-        <span><strong>Dark</strong><small>Reduced glare in the workshop</small></span>
-        <span class="choice-state">${theme === "dark" ? "Selected" : "Choose"}</span>
+    <div class="settings-list" role="group" aria-label="Choose interface theme">
+      <button class="settings-row theme-row ${theme === "dark" ? "is-selected" : ""}" type="button" data-theme-choice="dark" aria-pressed="${theme === "dark"}">
+        <span class="theme-radio" aria-hidden="true"></span>
+        <span class="settings-row-text"><strong>Dark</strong><small>Reduced glare in the workshop</small></span>
       </button>
-      <button class="setting-choice ${theme === "light" ? "is-selected" : ""}" type="button" data-theme-choice="light" aria-pressed="${theme === "light"}">
-        <span class="theme-swatch light-swatch" aria-hidden="true"><i></i></span>
-        <span><strong>Light</strong><small>Maximum clarity in daylight</small></span>
-        <span class="choice-state">${theme === "light" ? "Selected" : "Choose"}</span>
+      <button class="settings-row theme-row ${theme === "light" ? "is-selected" : ""}" type="button" data-theme-choice="light" aria-pressed="${theme === "light"}">
+        <span class="theme-radio" aria-hidden="true"></span>
+        <span class="settings-row-text"><strong>Light</strong><small>Maximum clarity in daylight</small></span>
       </button>
     </div>`;
 }
@@ -5913,8 +5924,7 @@ async function libraryWebResearchSheet() {
 document.addEventListener("click", (event) => {
   const themeChoice = event.target.closest("[data-theme-choice]");
   if (themeChoice) {
-    setTheme(themeChoice.dataset.themeChoice);
-    render();
+    setTheme(themeChoice.dataset.themeChoice, true, render);
     return;
   }
 
@@ -6033,7 +6043,7 @@ document.addEventListener("click", (event) => {
     }
     if (action === "scroll-next") return scrollToNextView();
     if (action === "reload-app") { showUpdateOverlay(); return; }
-    if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+    if (action === "theme-toggle") return setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light", true, render);
     if (action === "open-settings-page") {
       const page = actionButton.dataset.settingsPage || null;
       settingsOpenPage(page);
