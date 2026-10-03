@@ -473,6 +473,10 @@ main:focus {
   display: block;
 }
 
+:root[data-theme="light"] .nav-update-dot {
+  background: #000000;
+}
+
 .scroll-cue {
   position: fixed;
   z-index: 48;
@@ -1510,7 +1514,7 @@ main:focus {
   gap: 12px;
   margin: -16px 0 56px;
   padding: 16px var(--gutter);
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--muted-strong);
   font-size: var(--copy-size);
@@ -3785,7 +3789,7 @@ button.journey-item:active {
   min-height: 56px;
   padding: 16px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   font-size: var(--copy-size);
@@ -3992,7 +3996,7 @@ button.settings-toggle-row {
   gap: 12px;
   margin-top: 12px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--muted-strong);
   font-size: var(--caps-size);
@@ -4246,7 +4250,7 @@ button.settings-toggle-row {
   max-height: calc(100dvh - 32px - var(--safe-top) - var(--safe-bottom));
   padding-bottom: 0;
   border: 1px solid var(--line-strong);
-  border-radius: 24px;
+  border-radius: var(--card-radius);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
   opacity: 0;
   transition: opacity 180ms ease;
