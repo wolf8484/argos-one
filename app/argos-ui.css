@@ -54,7 +54,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f0f0f0;
+  --bg: #f7f7f7;
   --surface: #e0e0dc;
   --surface-2: #fefefe;
   --surface-3: #d8d8d5;
@@ -231,8 +231,7 @@ h3 {
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 8px;
   align-items: center;
-  min-height: var(--topbar-height);
-  padding: calc(var(--safe-top) + 16px) var(--gutter) 16px;
+  padding: calc(var(--safe-top) + 12px) var(--gutter) 12px;
   /* border-bottom: 1px solid #2d2d2d; */
   background: #090909;
 }
@@ -1070,7 +1069,7 @@ main:focus {
   justify-content: flex-start;
   align-items: flex-start;
   gap: 12px;
-  padding: 20px;
+  padding: 16px;
   transition: background 0.16s;
   display: flex;
 }
@@ -2826,7 +2825,7 @@ button.journey-item:active {
   min-height: 56px;
   padding: 0 20px;
   gap: 8px;
-  border: 1px solid #2d2d2d;
+  border: 1px solid #565656;
   border-radius: var(--card-radius);
   background: none;
   color: #f5f5f5;
@@ -4653,9 +4652,25 @@ button.settings-toggle-row {
 :root[data-theme="light"] .task-back,
 :root[data-theme="light"] .quick-chip.is-selected,
 :root[data-theme="light"] .filter-button.is-active {
-  background-color: #090909;
-  border-color: #090909;
+  background-color: #1d1d1d;
+  border-color: #1d1d1d;
   color: #e0e0dc;
+}
+
+:root[data-theme="light"] .secondary-button:active,
+:root[data-theme="light"] .web-button:active,
+:root[data-theme="light"] .part-button:active,
+:root[data-theme="light"] .dictate-button:not(.is-listening):active,
+:root[data-theme="light"] .enhance-button:not(.is-enhancing):active,
+:root[data-theme="light"] .tertiary-button.add-parts-button:active,
+:root[data-theme="light"] .tertiary-button.view-all-button:active,
+:root[data-theme="light"] .tertiary-button.catalog-add-button:active,
+:root[data-theme="light"] .vin-camera:active {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .journey-item.is-current {
+  background: color-mix(in srgb, #92928e 8%, var(--surface-2));
 }
 
 :root[data-theme="light"] .secondary-button svg {
@@ -4684,7 +4699,8 @@ button.settings-toggle-row {
 :root[data-theme="light"] .input,
 :root[data-theme="light"] .select,
 :root[data-theme="light"] .textarea,
-:root[data-theme="light"] .photo-slot {
+:root[data-theme="light"] .photo-slot,
+:root[data-theme="light"] .parts-search-input {
   background: var(--surface-2);
 }
 
@@ -4738,9 +4754,6 @@ button.settings-toggle-row {
   color: #000000;
 }
 
-:root[data-theme="light"] .web-button:active,
-:root[data-theme="light"] .part-button:active,
-:root[data-theme="light"] .vin-camera:active,
 :root[data-theme="light"] .calendar-nav:active {
   background: var(--surface-3);
 }
