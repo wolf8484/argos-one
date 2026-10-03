@@ -451,9 +451,9 @@ main:focus {
 
 .nav-icon svg,
 .nav-plus svg {
-  width: 23px;
-  height: 23px;
-  stroke-width: 1.5;
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.5px;
 }
 
 .nav-update-dot {
@@ -4739,6 +4739,20 @@ button.settings-toggle-row {
   outline-color: var(--accent-fill);
 }
 
+:root[data-theme="light"] .bottom-nav {
+  background: #fefefe;
+}
+
+:root[data-theme="light"] .nav-item,
+:root[data-theme="light"] .nav-new {
+  color: #767676;
+}
+
+:root[data-theme="light"] .nav-item.is-active,
+:root[data-theme="light"] .nav-new.is-active {
+  color: #000000;
+}
+
 :root[data-theme="light"] .web-button:active,
 :root[data-theme="light"] .part-button:active,
 :root[data-theme="light"] .vin-camera:active,
@@ -5885,6 +5899,13 @@ body.dictation-active .toast {
   .nav-item,
   .nav-new {
     font-size: 11px;
+  }
+
+  .nav-icon svg,
+  .nav-plus svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 1.5px;
   }
 
   .journey-nav {
