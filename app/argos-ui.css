@@ -244,7 +244,6 @@ h3 {
   padding: 0 12px;
 }
 
-.workshop-clock:hover,
 .workshop-clock:active {
   background: #1e1e1e;
 }
@@ -303,10 +302,6 @@ h3 {
   height: 20px;
 }
 
-.icon-button:hover {
-  border-color: var(--muted);
-}
-
 .icon-button[data-action="close-sheet"] {
   color: var(--accent);
 }
@@ -335,10 +330,6 @@ h3 {
 
 .topbar .icon-button {
   color: #e0e0dc;
-  border-color: #565656;
-}
-
-.topbar .icon-button:hover {
   border-color: #565656;
 }
 
@@ -390,9 +381,14 @@ main:focus {
      the inset is slack, and spending all of it left a visible dead band under
      the labels. 20px clears the indicator and keeps buttons out of the
      home-swipe zone; going to 0 would put them under both. */
-  padding: 0 0 var(--nav-safe-bottom);
+  padding: 0 8px;
   /* border-top: 1px solid #2d2d2d; */
   background: #090909;
+  /* iOS Safari occasionally rasterizes a fixed element into the document's
+     own scrolling layer instead of the viewport-fixed compositing layer it's
+     supposed to get, so the bar visibly scrolls with the page -- forcing its
+     own GPU layer keeps it pinned. */
+  transform: translateZ(0);
 }
 
 .bottom-nav > button {
@@ -409,8 +405,8 @@ main:focus {
   /* width: 100%; */
   /* min-width: 0; */
   /* min-height: 88px; */
-  padding: 12px 2px;
-  gap: 8px;
+  padding: 8px 2px 12px 2px;
+  gap: 4px;
   background: transparent;
   color: #c3c3c3;
   font-size: 12px;
@@ -425,8 +421,6 @@ main:focus {
   text-align: center;
 }
 
-.nav-item:hover,
-.nav-new:hover,
 .nav-new:focus-visible {
   color: #e0e0dc;
 }
@@ -502,7 +496,6 @@ main:focus {
   transform: translateY(0);
 }
 
-.scroll-cue:hover,
 .scroll-cue:focus-visible {
   background: var(--accent-deep);
 }
@@ -600,10 +593,6 @@ main:focus {
   line-height: 1;
 }
 
-.control-tile:hover {
-  background: var(--surface-3);
-}
-
 .control-tile.is-primary {
   background: var(--accent-fill);
   color: var(--on-accent);
@@ -616,10 +605,6 @@ main:focus {
 
 :root[data-theme="light"] .control-tile.is-primary {
   box-shadow: none;
-}
-
-.control-tile.is-primary:hover {
-  background: var(--accent-deep);
 }
 
 .tile-icon {
@@ -779,7 +764,6 @@ main:focus {
   transition: background 160ms ease;
 }
 
-.job-card:hover,
 .job-card:focus-within {
   background: var(--surface-3);
 }
@@ -818,7 +802,6 @@ main:focus {
   height: 20px;
 }
 
-.job-card-menu:hover,
 .job-card-menu:active,
 .job-card-menu:focus-visible {
   color: var(--accent);
@@ -960,7 +943,6 @@ main:focus {
   height: 20px;
 }
 
-.job-card:hover .job-card-action,
 .job-card:focus-within .job-card-action {
   background: transparent;
   color: var(--accent-deep);
@@ -1129,7 +1111,6 @@ main:focus {
   display: flex;
 }
 
-.library-result-card:hover,
 .library-result-card:active,
 .library-result-card:focus-visible {
   background: var(--surface-3);
@@ -1157,7 +1138,6 @@ main:focus {
   transition: background 160ms ease;
 }
 
-.library-repair-match:hover,
 .library-repair-match:active,
 .library-repair-match:focus-visible {
   background: var(--surface-2);
@@ -1385,7 +1365,6 @@ main:focus {
   transition: background-color 160ms ease;
 }
 
-.task-back:hover,
 .task-back:active,
 .task-back:focus-visible {
   background: var(--surface-3);
@@ -2920,7 +2899,6 @@ button.journey-item:active {
   height: 14px;
 }
 
-.dtc-chip-remove:hover,
 .dtc-chip-remove:focus-visible {
   color: var(--heading);
 }
@@ -3139,10 +3117,6 @@ button.journey-item:active {
   color: var(--on-accent);
 }
 
-.primary-button:hover {
-  background: var(--accent-deep);
-}
-
 .secondary-button {
   color: #f5f5f5;
   /* border: 1px solid #565656; */
@@ -3346,7 +3320,6 @@ button.journey-item:active {
   transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
-.match-option:hover,
 .match-option:focus-visible {
   background: var(--surface-3);
 }
@@ -3358,7 +3331,6 @@ button.journey-item:active {
   border-radius: var(--card-radius);
 }
 
-.match-option.is-selected:hover,
 .match-option.is-selected:focus-visible {
   background: var(--surface-3);
 }
@@ -3422,7 +3394,6 @@ button.journey-item:active {
   border-radius: 8px;
 }
 
-.match-option:hover .match-option-action,
 .match-option:active .match-option-action,
 .match-option:focus-visible .match-option-action {
   background: color-mix(in srgb, var(--text) 13%, var(--surface-2));
@@ -3813,7 +3784,6 @@ button.settings-row {
   transition: background-color 160ms ease;
 }
 
-button.settings-row:hover,
 button.settings-row:active,
 button.settings-row:focus-visible {
   background: var(--surface-3);
@@ -4741,7 +4711,8 @@ button.settings-toggle-row {
 
 :root[data-theme="light"] .bottom-nav {
   background: #fefefe;
-  border-top: 1px solid #767676;
+  border-top: 1px solid #e5e7eb;
+  padding: 0 8px;
 }
 
 :root[data-theme="light"] .nav-item,
@@ -4761,7 +4732,6 @@ button.settings-toggle-row {
   background: var(--surface-3);
 }
 
-:root[data-theme="light"] .job-card:hover .job-card-action,
 :root[data-theme="light"] .job-card:focus-within .job-card-action {
   color: var(--muted-strong);
 }
@@ -4930,6 +4900,116 @@ button.settings-toggle-row {
   .repair-part-row:hover {
     background: var(--surface-3);
   }
+
+  .workshop-clock:hover {
+    background: #1e1e1e;
+  }
+
+  .icon-button:hover {
+    border-color: var(--muted);
+  }
+
+  .topbar .icon-button:hover {
+    border-color: #565656;
+  }
+
+  .nav-item:hover,
+  .nav-new:hover {
+    color: #e0e0dc;
+  }
+
+  .scroll-cue:hover {
+    background: var(--accent-deep);
+  }
+
+  .control-tile:hover {
+    background: var(--surface-3);
+  }
+
+  .control-tile.is-primary:hover {
+    background: var(--accent-deep);
+  }
+
+  .job-card:hover {
+    background: var(--surface-3);
+  }
+
+  .job-card-menu:hover {
+    color: var(--accent);
+  }
+
+  .job-card:hover .job-card-action {
+    background: transparent;
+    color: var(--accent-deep);
+  }
+
+  :root[data-theme="light"] .job-card:hover .job-card-action {
+    color: var(--muted-strong);
+  }
+
+  .library-result-card:hover {
+    background: var(--surface-3);
+  }
+
+  .library-repair-match:hover {
+    background: var(--surface-2);
+  }
+
+  .task-back:hover {
+    background: var(--surface-3);
+  }
+
+  .dtc-chip-remove:hover {
+    color: var(--heading);
+  }
+
+  .primary-button:hover {
+    background: var(--accent-deep);
+  }
+
+  .match-option:hover {
+    background: var(--surface-3);
+  }
+
+  .match-option.is-selected:hover {
+    background: var(--surface-3);
+  }
+
+  .match-option:hover .match-option-action {
+    background: color-mix(in srgb, var(--text) 13%, var(--surface-2));
+  }
+
+  button.settings-row:hover {
+    background: var(--surface-3);
+  }
+
+  .price-card:hover {
+    background: var(--surface-3);
+  }
+
+  .source-list-item:hover {
+    background: var(--surface-3);
+  }
+
+  .citation-link:hover {
+    text-decoration: underline;
+  }
+
+  .dictation-cancel:hover {
+    background: color-mix(in srgb, var(--danger) 86%, #000);
+  }
+
+  .dictation-send:hover {
+    background: var(--accent-deep);
+  }
+
+  .profile-repair-row-button:hover {
+    background: var(--surface-3);
+  }
+
+  a.profile-recall:hover {
+    background: var(--surface-3);
+  }
 }
 
 .part-search-summary {
@@ -5025,10 +5105,6 @@ button.settings-toggle-row {
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
-}
-
-.price-card:hover {
-  background: var(--surface-3);
 }
 
 .offer-image {
@@ -5203,7 +5279,6 @@ button.settings-toggle-row {
   transition: background-color 160ms ease;
 }
 
-.source-list-item:hover,
 .source-list-item:active,
 .source-list-item:focus-visible {
   background: var(--surface-3);
@@ -5271,7 +5346,6 @@ button.settings-toggle-row {
   cursor: pointer;
 }
 
-.citation-link:hover,
 .citation-link:focus-visible {
   text-decoration: underline;
 }
@@ -5545,7 +5619,6 @@ button.settings-toggle-row {
   color: var(--on-danger);
 }
 
-.dictation-cancel:hover,
 .dictation-cancel:focus-visible {
   background: color-mix(in srgb, var(--danger) 86%, #000);
 }
@@ -5574,7 +5647,6 @@ button.settings-toggle-row {
   color: var(--on-accent);
 }
 
-.dictation-send:hover,
 .dictation-send:focus-visible {
   background: var(--accent-deep);
 }
@@ -6459,11 +6531,6 @@ body.dictation-active .toast {
   border-bottom: none;
 }
 
-.profile-repair-row-button:hover {
-  background: var(--surface-3);
-}
-
-
 /* Sits directly under a section heading and above that section's content, so
    the source is read before the content it qualifies rather than after it. */
 .section-source {
@@ -6687,7 +6754,6 @@ a.profile-recall {
   transition: background-color 160ms ease;
 }
 
-a.profile-recall:hover,
 a.profile-recall:active,
 a.profile-recall:focus-visible {
   background: var(--surface-3);
