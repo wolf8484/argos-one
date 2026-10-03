@@ -34,7 +34,7 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --nav-safe-bottom: min(env(safe-area-inset-bottom, 0px), 20px);
-  --topbar-height: calc(84px + var(--safe-top));
+  --topbar-height: calc(76px + var(--safe-top));
   --gutter: 16px;
   --content: 960px;
   --copy-size: 16px;
@@ -43,7 +43,7 @@
      are all built from this pair so a future change to the "card" look
      updates every grid of them at once. */
   --card-gap: 12px;
-  --card-radius: 12px;
+  --card-radius: 8px;
 }
 
 @property --ai-trace-angle {
@@ -54,7 +54,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #f7f7f7;
+  --bg: #f6f6f6;
   --surface: #e0e0dc;
   --surface-2: #fefefe;
   --surface-3: #d8d8d5;
@@ -6994,6 +6994,21 @@ a.profile-recall:focus-visible {
   flex: none;
   padding: 2px 6px 1px;
   font-weight: 600;
+}
+
+@media (max-width: 500px) {
+  .branch-bar-name,
+  .branch-bar-bay {
+    font-size: 12px;
+  }
+
+  .branch-bar-tag {
+    font-size: 12px;
+  }
+
+  .branch-bar-button {
+    min-height: 36px;
+  }
 }
 
 /* The first paragraph of an explanatory page carries more weight than the
