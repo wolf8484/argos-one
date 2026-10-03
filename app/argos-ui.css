@@ -473,10 +473,6 @@ main:focus {
   display: block;
 }
 
-:root[data-theme="light"] .nav-update-dot {
-  background: #000000;
-}
-
 .scroll-cue {
   position: fixed;
   z-index: 48;
