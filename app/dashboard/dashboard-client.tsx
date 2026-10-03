@@ -78,7 +78,7 @@ export default function DashboardClient({ buildVersion }: { buildVersion: string
             <span>Home</span>
           </button>
           <button type="button" data-route="jobs" className="nav-item">
-            <span className="nav-icon" data-icon="clipboard" />
+            <span className="nav-icon" data-icon="job" />
             <span>Jobs</span>
           </button>
           <button type="button" data-route="new" className="nav-new">
