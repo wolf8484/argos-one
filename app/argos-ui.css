@@ -388,7 +388,7 @@ main:focus {
      the inset is slack, and spending all of it left a visible dead band under
      the labels. 20px clears the indicator and keeps buttons out of the
      home-swipe zone; going to 0 would put them under both. */
-  padding: 0 8px;
+  padding: 0 12px;
   /* border-top: 1px solid #2d2d2d; */
   background: #090909;
   /* iOS Safari occasionally rasterizes a fixed element into the document's
@@ -407,7 +407,7 @@ main:focus {
 .nav-new {
   position: relative;
   display: grid;
-  place-content: center;
+  align-content: start;
   justify-items: center;
   /* width: 100%; */
   /* min-width: 0; */
