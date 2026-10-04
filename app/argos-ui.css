@@ -46,6 +46,7 @@
   --card-radius: 8px;
   --hover-duration: 240ms;
   --hover-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --hover-surface: var(--surface-3);
 }
 
 @property --ai-trace-angle {
@@ -56,6 +57,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
+  --hover-surface: #ebebeb;
   --bg: #f6f6f6;
   --surface: #e0e0dc;
   --surface-2: #fefefe;
@@ -757,7 +759,10 @@ main:focus {
 
 /* Shared hover/press easing for anything clickable that doesn't set its own. */
 button,
-a {
+a,
+summary,
+[role="button"],
+.price-card {
   transition:
     background-color var(--hover-duration) var(--hover-ease),
     border-color var(--hover-duration) var(--hover-ease),
@@ -789,11 +794,7 @@ a {
 }
 
 .job-card:focus-within {
-  background: var(--surface-3);
-}
-
-:root[data-theme="light"] .job-card:focus-within {
-  background: #ebebeb;
+  background: var(--hover-surface);
 }
 
 .job-card-main {
@@ -910,7 +911,7 @@ a {
 
 :root[data-theme="light"] .job-menu-item:active,
 :root[data-theme="light"] .job-menu-item:focus-visible {
-  background: #f3f3f3;
+  background: var(--hover-surface);
 }
 
 .job-menu-item svg {
@@ -1234,12 +1235,12 @@ a {
 }
 
 .library-brand-tile:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .library-brand-tile:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 }
 
@@ -1274,7 +1275,7 @@ a {
 
 .library-result-card:active,
 .library-result-card:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .library-repair-match-list {
@@ -1533,7 +1534,7 @@ a {
 
 .task-back:active,
 .task-back:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .task-back svg {
@@ -1767,7 +1768,7 @@ button.journey-item {
 }
 
 button.journey-item:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 /* Repair record */
@@ -1980,7 +1981,7 @@ button.journey-item:active {
 }
 
 .repair-part-row:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 /* Takes the slack between the thumbnail and the price so the name starts
@@ -2127,7 +2128,7 @@ button.journey-item:active {
 }
 
 .repair-part-qty button:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .repair-part-qty button svg {
@@ -2629,7 +2630,7 @@ button.journey-item:active {
 }
 
 .parts-offer-qty button:not(:disabled):active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .parts-offer-qty button svg {
@@ -3122,7 +3123,7 @@ button.journey-item:active {
 
 .quick-chip:not(.is-selected):active,
 .filter-button:not(.is-active):active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .photo-panel {
@@ -3336,7 +3337,7 @@ button.journey-item:active {
 .tertiary-button.view-all-button:active,
 .tertiary-button.catalog-add-button:active,
 .vin-camera:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .full {
@@ -3496,7 +3497,7 @@ button.journey-item:active {
 }
 
 .match-option:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .match-option.is-selected {
@@ -3511,7 +3512,7 @@ button.journey-item:active {
 }
 
 .match-option.is-selected:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .match-option-top {
@@ -3965,12 +3966,7 @@ button.settings-row {
 
 button.settings-row:active,
 button.settings-row:focus-visible {
-  background: var(--surface-3);
-}
-
-:root[data-theme="light"] button.settings-row:active,
-:root[data-theme="light"] button.settings-row:focus-visible {
-  background: #ebebeb;
+  background: var(--hover-surface);
 }
 
 .settings-row-icon {
@@ -4738,7 +4734,7 @@ button.settings-toggle-row {
 }
 
 .calendar-nav:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .calendar-grid {
@@ -4840,7 +4836,18 @@ button.settings-toggle-row {
 :root[data-theme="light"] .tertiary-button.view-all-button:active,
 :root[data-theme="light"] .tertiary-button.catalog-add-button:active,
 :root[data-theme="light"] .vin-camera:active {
-  background: #ffffff;
+  background: var(--hover-surface);
+}
+
+/* Filled dark in light theme, so it lightens slightly instead -- the shared
+   light hover surface would hide its light label. */
+:root[data-theme="light"] .secondary-button:active {
+  background: #2d2d2d;
+}
+
+:root[data-theme="light"] .library-repair-match:active,
+:root[data-theme="light"] .library-repair-match:focus-visible {
+  background: var(--hover-surface);
 }
 
 :root[data-theme="light"] .journey-item.is-current {
@@ -4929,7 +4936,7 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .calendar-nav:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 :root[data-theme="light"] .job-card:focus-within .job-card-action {
@@ -5051,7 +5058,7 @@ button.settings-toggle-row {
 }
 
 .profile-menu-button:active {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -5068,7 +5075,7 @@ button.settings-toggle-row {
   .tertiary-button.add-parts-button:hover,
   .tertiary-button.view-all-button:hover,
   .tertiary-button.catalog-add-button:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   :root[data-theme="light"] .secondary-button:hover,
@@ -5082,23 +5089,31 @@ button.settings-toggle-row {
   :root[data-theme="light"] .calendar-nav:hover,
   :root[data-theme="light"] .quick-chip:not(.is-selected):hover,
   :root[data-theme="light"] .filter-button:not(.is-active):hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
+  }
+
+  :root[data-theme="light"] .secondary-button:hover {
+    background: #2d2d2d;
+  }
+
+  :root[data-theme="light"] .library-repair-match:hover {
+    background: var(--hover-surface);
   }
 
   .profile-menu-button:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   button.journey-item:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .known-issues-accordion summary:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .repair-part-row:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .workshop-clock:hover {
@@ -5123,7 +5138,7 @@ button.settings-toggle-row {
   }
 
   .control-tile:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .control-tile.is-primary:hover {
@@ -5131,12 +5146,7 @@ button.settings-toggle-row {
   }
 
   .job-card:hover {
-    background: var(--surface-3);
-  }
-
-  :root[data-theme="light"] .control-tile:not(.is-primary):hover,
-  :root[data-theme="light"] .job-card:hover {
-    background: #ebebeb;
+    background: var(--hover-surface);
   }
 
   :root[data-theme="light"] .control-tile.is-primary:hover {
@@ -5152,7 +5162,7 @@ button.settings-toggle-row {
   }
 
   :root[data-theme="light"] .job-menu-item:hover {
-    background: #f3f3f3;
+    background: var(--hover-surface);
   }
 
   .job-card:hover .job-card-action {
@@ -5165,7 +5175,7 @@ button.settings-toggle-row {
   }
 
   .library-result-card:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .library-repair-match:hover {
@@ -5173,7 +5183,7 @@ button.settings-toggle-row {
   }
 
   .task-back:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .dtc-chip-remove:hover {
@@ -5185,11 +5195,11 @@ button.settings-toggle-row {
   }
 
   .match-option:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .match-option.is-selected:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .match-option:hover .match-option-action {
@@ -5197,19 +5207,15 @@ button.settings-toggle-row {
   }
 
   button.settings-row:hover {
-    background: var(--surface-3);
-  }
-
-  :root[data-theme="light"] button.settings-row:hover {
-    background: #ebebeb;
+    background: var(--hover-surface);
   }
 
   .price-card:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .source-list-item:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   .citation-link:hover {
@@ -5225,11 +5231,11 @@ button.settings-toggle-row {
   }
 
   .profile-repair-row-button:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 
   a.profile-recall:hover {
-    background: var(--surface-3);
+    background: var(--hover-surface);
   }
 }
 
@@ -5502,7 +5508,7 @@ button.settings-toggle-row {
 
 .source-list-item:active,
 .source-list-item:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .source-list-main {
@@ -6960,7 +6966,7 @@ a.profile-recall {
 
 a.profile-recall:active,
 a.profile-recall:focus-visible {
-  background: var(--surface-3);
+  background: var(--hover-surface);
 }
 
 .profile-recall-meta {
