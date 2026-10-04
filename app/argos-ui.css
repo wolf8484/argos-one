@@ -985,6 +985,11 @@ main:focus {
 
 @media (max-width: 720px) {
   .job-filters.job-filters {
+    width: calc(100% + var(--gutter) * 2);
+    margin-left: calc(var(--gutter) * -1);
+    margin-right: calc(var(--gutter) * -1);
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
     flex-wrap: nowrap;
     overflow-x: auto;
     scrollbar-width: none;
@@ -1619,11 +1624,11 @@ button.journey-item:active {
 
 /* Repair record */
 .repair-record-shell .journey-nav {
-  margin-bottom: 56px;
+  margin-bottom: 40px;
 }
 
 .repair-job-strip {
-  margin-bottom: 56px;
+  margin-bottom: 40px;
 }
 
 .repair-job-strip {
