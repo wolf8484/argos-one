@@ -1635,7 +1635,7 @@ function renderHome() {
       ${resumeTile}
       <button type="button" class="control-tile" data-route="jobs">
         <span class="tile-copy"><strong>All jobs</strong><small>${allJobsCount} ${allJobsCount === 1 ? "item" : "items"}</small></span>
-        <span class="tile-icon">${icon("clipboard")}</span>
+        <span class="tile-icon">${materialIcon("jobOutline")}</span>
       </button>
       <button type="button" class="control-tile" data-route="knowledge">
         <span class="tile-copy"><strong>Repair library</strong><small>${repairLibraryCount} ${repairLibraryCount === 1 ? "car profile" : "car profiles"}</small></span>
