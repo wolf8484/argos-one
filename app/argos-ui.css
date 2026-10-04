@@ -1401,7 +1401,7 @@ main:focus {
   display: flex;
   align-items: flex-start;
   gap: 4px;
-  margin-top: 4px;
+  margin-top: 8px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 18px;
@@ -2785,7 +2785,7 @@ button.journey-item:active {
 .input:focus,
 .select:focus,
 .textarea:focus {
-  outline: 2px solid var(--accent);
+  outline: 1px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -2844,7 +2844,11 @@ button.journey-item:active {
   line-height: 1;
 }
 
-:root[data-theme="light"] .tertiary-button,
+:root[data-theme="light"] .tertiary-button {
+  border-color: #1e1e1e;
+  color: #1e1e1e;
+}
+
 :root[data-theme="light"] .part-button {
   border-color: #1d1d1d;
   color: #1d1d1d;
@@ -4752,7 +4756,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .input:focus,
 :root[data-theme="light"] .select:focus,
 :root[data-theme="light"] .textarea:focus {
-  outline-color: var(--accent-fill);
+  outline-color: #1e1e1e;
 }
 
 :root[data-theme="light"] .bottom-nav {
