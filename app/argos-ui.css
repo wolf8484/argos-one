@@ -453,8 +453,8 @@ main:focus {
 
 .nav-icon svg,
 .nav-plus svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   stroke-width: 1.5px;
 }
 
@@ -1353,7 +1353,7 @@ main:focus {
 .task-header {
   display: grid;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   margin-bottom: 40px;
   margin-top: 24px;
 }
@@ -1365,12 +1365,17 @@ main:focus {
 .task-back {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--card-radius);
-  background: #2d2d2d;
+  border: 1px solid #565656;
+  background: none;
   color: var(--text);
   transition: background-color 160ms ease;
+}
+
+:root[data-theme="light"] .task-back {
+  border-color: #1d1d1d;
 }
 
 .task-back:active,
@@ -1391,7 +1396,7 @@ main:focus {
   display: flex;
   align-items: flex-start;
   gap: 4px;
-  margin-top: 8px;
+  margin-top: 4px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 18px;
@@ -2952,8 +2957,8 @@ button.journey-item:active {
 }
 
 .job-filters .quick-chip.is-selected {
-  border-color: #565656;
-  background: #565656;
+  border-color: #2d2d2d;
+  background: #2d2d2d;
   color: #f5f5f5;
 }
 
@@ -3126,7 +3131,7 @@ button.journey-item:active {
 .secondary-button {
   color: #f5f5f5;
   /* border: 1px solid #565656; */
-  background-color: #565656;
+  background-color: #2d2d2d;
 }
 
 .tertiary-button.add-parts-button {
@@ -4653,7 +4658,6 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .secondary-button,
-:root[data-theme="light"] .task-back,
 :root[data-theme="light"] .quick-chip.is-selected,
 :root[data-theme="light"] .filter-button.is-active {
   background-color: #1d1d1d;
@@ -4745,7 +4749,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .bottom-nav {
   background: #fefefe;
   border-top: 1px solid #e5e7eb;
-  padding: 0 8px;
+  padding: 0 12px;
 }
 
 :root[data-theme="light"] .nav-item,
@@ -5868,20 +5872,12 @@ body.dictation-active .toast {
     --topbar-height: calc(64px + var(--safe-top));
   }
 
-  /* 72px still reads as a deliberately oversized target for gloved or dirty
-     hands (iOS ships 49px) while giving back 16px of a screen that was
-     spending nearly a third of its height on chrome. */
   .bottom-nav {
-    min-height: calc(72px + var(--nav-safe-bottom));
+    min-height: calc(60px + var(--nav-safe-bottom));
   }
 
   main {
     padding-bottom: calc(72px + var(--nav-safe-bottom));
-  }
-
-  .nav-item,
-  .nav-new {
-    min-height: 72px;
   }
 
   .resolved-summary {
@@ -6002,6 +5998,7 @@ body.dictation-active .toast {
   .nav-item,
   .nav-new {
     gap: 4px;
+    padding: 8px 2px 12px;
     font-size: 11px;
   }
 
