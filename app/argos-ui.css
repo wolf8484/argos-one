@@ -793,7 +793,7 @@ a {
 }
 
 :root[data-theme="light"] .job-card:focus-within {
-  background: #f0f0f0;
+  background: #ebebeb;
 }
 
 .job-card-main {
@@ -3968,6 +3968,11 @@ button.settings-row:focus-visible {
   background: var(--surface-3);
 }
 
+:root[data-theme="light"] button.settings-row:active,
+:root[data-theme="light"] button.settings-row:focus-visible {
+  background: #ebebeb;
+}
+
 .settings-row-icon {
   display: flex;
   flex: none;
@@ -5131,7 +5136,7 @@ button.settings-toggle-row {
 
   :root[data-theme="light"] .control-tile:not(.is-primary):hover,
   :root[data-theme="light"] .job-card:hover {
-    background: #f0f0f0;
+    background: #ebebeb;
   }
 
   :root[data-theme="light"] .control-tile.is-primary:hover {
@@ -5193,6 +5198,10 @@ button.settings-toggle-row {
 
   button.settings-row:hover {
     background: var(--surface-3);
+  }
+
+  :root[data-theme="light"] button.settings-row:hover {
+    background: #ebebeb;
   }
 
   .price-card:hover {
