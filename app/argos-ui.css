@@ -6009,6 +6009,13 @@ body.dictation-active .toast {
     stroke-width: 1.5px;
   }
 
+  .nav-update-dot {
+    width: 6px;
+    height: 6px;
+    top: 8px;
+    left: calc(50% + 8px);
+  }
+
   .journey-nav {
     display: flex;
     overflow-x: auto;
