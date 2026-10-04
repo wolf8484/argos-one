@@ -44,6 +44,8 @@
      updates every grid of them at once. */
   --card-gap: 12px;
   --card-radius: 8px;
+  --hover-duration: 240ms;
+  --hover-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 @property --ai-trace-angle {
@@ -491,7 +493,7 @@ main:focus {
   opacity: 0;
   pointer-events: none;
   transform: translateY(10px);
-  transition: opacity 160ms ease, transform 160ms ease, background 160ms ease;
+  transition: opacity 160ms ease, transform 160ms ease, background var(--hover-duration) var(--hover-ease);
 }
 
 :root[data-theme="light"] .scroll-cue {
@@ -588,7 +590,7 @@ main:focus {
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
-  transition: background-color 200ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 .control-tile::after {
@@ -753,6 +755,16 @@ main:focus {
   box-shadow: inset 0 0 0 1px var(--accent-border);
 }
 
+/* Shared hover/press easing for anything clickable that doesn't set its own. */
+button,
+a {
+  transition:
+    background-color var(--hover-duration) var(--hover-ease),
+    border-color var(--hover-duration) var(--hover-ease),
+    color var(--hover-duration) var(--hover-ease),
+    box-shadow var(--hover-duration) var(--hover-ease);
+}
+
 .job-list {
   display: grid;
   gap: var(--card-gap);
@@ -773,7 +785,7 @@ main:focus {
   border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
-  transition: background-color 200ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 .job-card:focus-within {
@@ -817,7 +829,7 @@ main:focus {
   border-radius: 50%;
   background: transparent;
   color: var(--muted);
-  transition: color 160ms ease, background-color 160ms ease;
+  transition: color var(--hover-duration) var(--hover-ease), background-color var(--hover-duration) var(--hover-ease);
 }
 
 .job-card-menu.is-open {
@@ -1079,7 +1091,7 @@ main:focus {
   pointer-events: none;
   background: transparent;
   color: var(--accent);
-  transition: color 160ms ease;
+  transition: color var(--hover-duration) var(--hover-ease);
 }
 
 .job-card-action svg {
@@ -1211,7 +1223,7 @@ main:focus {
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  transition: background 0.16s;
+  transition: background var(--hover-duration) var(--hover-ease);
   display: flex;
 }
 
@@ -1256,7 +1268,7 @@ main:focus {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  transition: background 160ms ease;
+  transition: background var(--hover-duration) var(--hover-ease);
   display: flex;
 }
 
@@ -1284,7 +1296,7 @@ main:focus {
   color: var(--text);
   text-align: left;
   cursor: pointer;
-  transition: background 160ms ease;
+  transition: background var(--hover-duration) var(--hover-ease);
 }
 
 .library-repair-match:active,
@@ -1512,7 +1524,7 @@ main:focus {
   border: 1px solid #565656;
   background: none;
   color: var(--text);
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 :root[data-theme="light"] .task-back {
@@ -1711,7 +1723,7 @@ button.assignment-bar-label strong {
 }
 
 button.journey-item {
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 .journey-item svg {
@@ -1964,7 +1976,7 @@ button.journey-item:active {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 160ms ease;
+  transition: background var(--hover-duration) var(--hover-ease);
 }
 
 .repair-part-row:active {
@@ -3480,7 +3492,7 @@ button.journey-item:active {
   color: var(--text);
   text-align: left;
   box-shadow: none;
-  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease), color var(--hover-duration) var(--hover-ease), box-shadow var(--hover-duration) var(--hover-ease);
 }
 
 .match-option:focus-visible {
@@ -3557,7 +3569,7 @@ button.journey-item:active {
   height: 40px;
   background: color-mix(in srgb, var(--text) 7%, var(--surface-2));
   color: var(--accent);
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
   border-radius: 8px;
 }
 
@@ -3948,7 +3960,7 @@ button.journey-item:active {
 }
 
 button.settings-row {
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 button.settings-row:active,
@@ -4227,7 +4239,7 @@ button.settings-toggle-row {
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--surface-3);
-  transition: background-color 160ms ease, border-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease), border-color var(--hover-duration) var(--hover-ease);
 }
 
 .switch-thumb {
@@ -4238,7 +4250,7 @@ button.settings-toggle-row {
   height: 20px;
   border-radius: 50%;
   background: var(--muted-strong);
-  transition: transform 160ms ease, background-color 160ms ease;
+  transition: transform 160ms ease, background-color var(--hover-duration) var(--hover-ease);
 }
 
 .switch.is-on {
@@ -5476,7 +5488,7 @@ button.settings-toggle-row {
   background: var(--surface-2);
   border: 0;
   text-align: left;
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 .source-list-item:active,
@@ -6824,7 +6836,7 @@ body.dictation-active .toast {
   padding: 16px;
   list-style: none;
   display: flex;
-  transition: background 160ms ease;
+  transition: background var(--hover-duration) var(--hover-ease);
 }
 
 .known-issues-system-icon {
@@ -6934,7 +6946,7 @@ body.dictation-active .toast {
 
 a.profile-recall {
   cursor: pointer;
-  transition: background-color 160ms ease;
+  transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
 a.profile-recall:active,
