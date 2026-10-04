@@ -588,6 +588,7 @@ main:focus {
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
+  transition: background-color 200ms ease;
 }
 
 .control-tile::after {
@@ -772,11 +773,15 @@ main:focus {
   border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
-  transition: background 160ms ease;
+  transition: background-color 200ms ease;
 }
 
 .job-card:focus-within {
   background: var(--surface-3);
+}
+
+:root[data-theme="light"] .job-card:focus-within {
+  background: #fafafa;
 }
 
 .job-card-main {
@@ -5104,6 +5109,15 @@ button.settings-toggle-row {
 
   .job-card:hover {
     background: var(--surface-3);
+  }
+
+  :root[data-theme="light"] .control-tile:not(.is-primary):hover,
+  :root[data-theme="light"] .job-card:hover {
+    background: #fafafa;
+  }
+
+  :root[data-theme="light"] .control-tile.is-primary:hover {
+    background: color-mix(in srgb, var(--accent-fill) 94%, #000);
   }
 
   .job-card-menu:hover {
