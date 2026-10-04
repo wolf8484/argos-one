@@ -757,11 +757,14 @@ main:focus {
   gap: var(--card-gap);
 }
 
+/* The main button spans the whole card so its copy runs full width; the
+   menu and chevron sit on top of it in the first row only. */
 .job-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 40px 24px;
-  align-items: center;
-  gap: 8px;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  column-gap: 8px;
   width: 100%;
   min-height: 132px;
   padding: 16px;
@@ -777,6 +780,8 @@ main:focus {
 }
 
 .job-card-main {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
   display: flex;
   width: 100%;
   min-width: 0;
@@ -792,17 +797,31 @@ main:focus {
 
 .job-card-menu,
 .job-card-menu-spacer {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
+  margin-top: -6px;
 }
 
 .job-card-menu {
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--muted);
-  transition: color 160ms ease;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.job-card-menu.is-open {
+  background: var(--line);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .job-card-menu.is-open {
+  background: #ececec;
 }
 
 .job-card-menu svg {
@@ -815,9 +834,110 @@ main:focus {
   color: var(--accent);
 }
 
+.job-menu {
+  position: fixed;
+  z-index: 60;
+  width: 264px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--card-radius);
+  background: var(--surface-3);
+  box-shadow: var(--shadow);
+  transform-origin: top right;
+  animation: job-menu-in 140ms ease-out;
+}
+
+.job-menu.is-above {
+  transform-origin: bottom right;
+}
+
+:root[data-theme="light"] .job-menu {
+  border-color: #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes job-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job-menu {
+    animation: none;
+  }
+}
+
+.job-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 20px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--copy-size);
+  text-align: left;
+}
+
+.job-menu-item:active,
+.job-menu-item:focus-visible {
+  background: var(--line);
+  outline: none;
+}
+
+:root[data-theme="light"] .job-menu-item:active,
+:root[data-theme="light"] .job-menu-item:focus-visible {
+  background: #f3f3f3;
+}
+
+.job-menu-item svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.job-menu-label {
+  flex: 1;
+}
+
+.job-menu-chevron {
+  display: flex;
+  color: var(--muted);
+}
+
+.job-menu-chevron svg {
+  width: 20px;
+  height: 20px;
+}
+
+.job-menu-item.is-danger {
+  color: #f87171;
+}
+
+:root[data-theme="light"] .job-menu-item.is-danger {
+  color: var(--danger);
+}
+
+.job-menu-divider {
+  height: 1px;
+  margin: 8px 20px;
+  background: var(--line-strong);
+}
+
+:root[data-theme="light"] .job-menu-divider {
+  background: #e5e7eb;
+}
+
 .job-card-top {
   display: flex;
   width: 100%;
+  padding-right: 80px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -937,10 +1057,15 @@ main:focus {
 }
 
 .job-card-action {
+  position: relative;
+  grid-column: 3;
+  grid-row: 1;
   display: grid;
   place-items: center;
   width: 24px;
-  min-height: 44px;
+  height: 40px;
+  margin-top: -6px;
+  pointer-events: none;
   background: transparent;
   color: var(--accent);
   transition: color 160ms ease;
@@ -4985,6 +5110,14 @@ button.settings-toggle-row {
     color: var(--accent);
   }
 
+  .job-menu-item:hover {
+    background: var(--line);
+  }
+
+  :root[data-theme="light"] .job-menu-item:hover {
+    background: #f3f3f3;
+  }
+
   .job-card:hover .job-card-action {
     background: transparent;
     color: var(--accent-deep);
@@ -6209,24 +6342,6 @@ body.dictation-active .toast {
   .control-tile {
     min-height: 172px;
     padding: 16px;
-  }
-
-  .job-card {
-    grid-template-columns: minmax(0, 1fr) 40px 24px;
-    gap: 8px;
-    padding: 16px;
-  }
-
-  .job-card-menu,
-  .job-card-menu-spacer {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .job-card-action {
-    grid-column: 3;
-    grid-row: 1;
-    width: 24px;
   }
 
   .stat {

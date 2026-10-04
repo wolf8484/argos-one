@@ -378,6 +378,7 @@ const icons = {
   moon: '<path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/>',
   lock: '<rect x="5" y="10" width="14" height="11" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>',
   more: '<circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
   sparkles: '<path d="m12 2 1.4 4.6L18 8l-4.6 1.4L12 14l-1.4-4.6L6 8l4.6-1.4Z"/><path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8Z"/><path d="m5 14 .8 1.7 1.7.8-1.7.8L5 19l-.8-1.7-1.7-.8 1.7-.8Z"/>',
   send: '<path d="m3 11 18-8-8 18-2-7Z"/><path d="m11 14 10-11"/>',
   book: '<path d="M4 5.5A2 2 0 0 1 6 4h5v15H6a2 2 0 0 0-2 1.5V5.5Z"/><path d="M20 5.5A2 2 0 0 0 18 4h-5v15h5a2 2 0 0 1 2 1.5V5.5Z"/>',
@@ -1679,10 +1680,67 @@ function jobCard(job, { hidden = false } = {}) {
       <span class="job-card-context"><span>${escapeHTML(vehicleSpecLine(job.vehicle))}</span></span>
       <span class="job-issue">${jobSummary(job)}</span>
     </button>
-    ${showMenu ? `<button class="job-card-menu" type="button" data-action="delete-job-from-list" data-job-id="${job.id}" aria-label="Delete job for ${jobVehicleName(job)}">${icon("more")}</button>` : `<span class="job-card-menu-spacer" aria-hidden="true"></span>`}
+    ${showMenu ? `<button class="job-card-menu" type="button" data-action="open-job-menu" data-job-id="${job.id}" aria-haspopup="menu" aria-expanded="false" aria-label="Job options for ${jobVehicleName(job)}">${icon("more")}</button>` : `<span class="job-card-menu-spacer" aria-hidden="true"></span>`}
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
   </div>`;
 }
+
+// Unlike sheets, this menu holds no form and its destructive item still goes
+// through a confirmation sheet, so an outside tap or Escape may dismiss it.
+let jobMenuEl = null;
+let jobMenuTrigger = null;
+
+function closeJobMenu({ restoreFocus = false } = {}) {
+  if (!jobMenuEl) return;
+  jobMenuEl.remove();
+  jobMenuEl = null;
+  if (jobMenuTrigger) {
+    jobMenuTrigger.setAttribute("aria-expanded", "false");
+    jobMenuTrigger.classList.remove("is-open");
+    if (restoreFocus && jobMenuTrigger.isConnected) jobMenuTrigger.focus();
+  }
+  jobMenuTrigger = null;
+}
+
+function openJobMenu(trigger) {
+  const job = jobRecords.find((entry) => String(entry.id) === String(trigger.dataset.jobId));
+  if (!job) return;
+  const jobId = escapeHTML(String(job.id));
+  const item = (action, iconName, label, { danger = false, submenu = false } = {}) =>
+    `<button class="job-menu-item${danger ? " is-danger" : ""}" type="button" role="menuitem" data-action="${action}" data-job-id="${jobId}">${icon(iconName)}<span class="job-menu-label">${label}</span>${submenu ? `<span class="job-menu-chevron">${icon("arrow")}</span>` : ""}</button>`;
+  const canReassign = isPersistedJobId(job.id) && canEditJob(job);
+  const menu = document.createElement("div");
+  menu.className = "job-menu";
+  menu.setAttribute("role", "menu");
+  menu.setAttribute("aria-label", `Job options for ${jobVehicleName(job)}`);
+  menu.innerHTML = `${canReassign
+    ? `${item("job-menu-reassign-tech", "user", "Assign technician", { submenu: true })}${item("job-menu-reassign-bay", "building", "Assign bay", { submenu: true })}<div class="job-menu-divider" role="separator"></div>`
+    : ""}${item("delete-job-from-list", "trash", "Delete job", { danger: true })}`;
+  document.body.appendChild(menu);
+  jobMenuEl = menu;
+  jobMenuTrigger = trigger;
+  trigger.setAttribute("aria-expanded", "true");
+  trigger.classList.add("is-open");
+
+  const triggerRect = trigger.getBoundingClientRect();
+  const cardRect = (trigger.closest(".job-card") || trigger).getBoundingClientRect();
+  // offset* sizes, not getBoundingClientRect: the open animation starts scaled down.
+  const menuRect = { width: menu.offsetWidth, height: menu.offsetHeight };
+  const navTop = document.querySelector(".bottom-nav")?.getBoundingClientRect().top ?? window.innerHeight;
+  const left = Math.max(16, Math.min(cardRect.right, window.innerWidth - 16) - menuRect.width);
+  const below = triggerRect.bottom + 4;
+  const fitsBelow = below + menuRect.height <= navTop - 8;
+  menu.style.left = `${left}px`;
+  menu.style.top = `${fitsBelow ? below : Math.max(8, triggerRect.top - 4 - menuRect.height)}px`;
+  menu.classList.toggle("is-above", !fitsBelow);
+  menu.querySelector("button")?.focus({ preventScroll: true });
+}
+
+window.addEventListener("scroll", () => closeJobMenu(), { passive: true });
+window.addEventListener("resize", () => closeJobMenu());
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && jobMenuEl) closeJobMenu({ restoreFocus: true });
+});
 
 function renderJobs() {
   const counts = {
@@ -4003,7 +4061,7 @@ function openTechnicianRolePickerModal(technicianId) {
 function openReassignJobModal(job) {
   if (!job) return;
   const options = state.technicians.filter((technician) => technician.active && technician.profile_id);
-  const rows = options.map((technician) => `<button class="settings-row" type="button" data-action="reassign-job-to" data-technician-id="${technician.id}">
+  const rows = options.map((technician) => `<button class="settings-row" type="button" data-action="reassign-job-to" data-technician-id="${technician.id}" data-job-id="${escapeHTML(String(job.id))}">
       <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
       ${technician.profile_id === job.assignedTo ? `<span class="settings-row-value">Current</span>` : ""}
     </button>`).join("");
@@ -4014,9 +4072,9 @@ function openReassignJobModal(job) {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign job" });
 }
 
-function reassignCurrentJob(technicianId) {
-  if (!technicianId || !isPersistedJobId(state.currentJobId)) return closeSheet();
-  return apiRequest(`/api/jobs/${state.currentJobId}/assign`, { method: "PATCH", body: JSON.stringify({ technicianId }) })
+function reassignCurrentJob(technicianId, jobId = state.currentJobId) {
+  if (!technicianId || !isPersistedJobId(jobId)) return closeSheet();
+  return apiRequest(`/api/jobs/${jobId}/assign`, { method: "PATCH", body: JSON.stringify({ technicianId }) })
     .then(({ job }) => {
       const updated = databaseJobToUi(job);
       const index = jobRecords.findIndex((record) => record.id === updated.id);
@@ -4033,11 +4091,11 @@ function reassignCurrentJob(technicianId) {
 function openReassignBayModal(job) {
   if (!job) return;
   const activeBays = state.bays.filter((bay) => bay.active);
-  const rows = activeBays.map((bay) => `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="${escapeHTML(bay.name)}">
+  const rows = activeBays.map((bay) => `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="${escapeHTML(bay.name)}" data-job-id="${escapeHTML(String(job.id))}">
       <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
       ${bay.name === job.bay ? `<span class="settings-row-value">Current</span>` : ""}
     </button>`).join("");
-  const unassignedRow = `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="">
+  const unassignedRow = `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="" data-job-id="${escapeHTML(String(job.id))}">
       <span class="settings-row-text"><strong>${NO_BAY}</strong></span>
       ${job.bay ? "" : `<span class="settings-row-value">Current</span>`}
     </button>`;
@@ -4048,9 +4106,9 @@ function openReassignBayModal(job) {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign bay" });
 }
 
-function reassignCurrentJobBay(bayName) {
-  if (!isPersistedJobId(state.currentJobId)) return closeSheet();
-  return apiRequest(`/api/jobs/${state.currentJobId}/bay`, { method: "PATCH", body: JSON.stringify({ bay: bayName || null }) })
+function reassignCurrentJobBay(bayName, jobId = state.currentJobId) {
+  if (!isPersistedJobId(jobId)) return closeSheet();
+  return apiRequest(`/api/jobs/${jobId}/bay`, { method: "PATCH", body: JSON.stringify({ bay: bayName || null }) })
     .then(({ job }) => {
       const updated = databaseJobToUi(job);
       const index = jobRecords.findIndex((record) => record.id === updated.id);
@@ -4759,6 +4817,7 @@ function partRow(name, number, key) {
 }
 
 function render() {
+  closeJobMenu();
   renderBranchBar();
   renderUpdateBanner();
   if (state.route === "home") renderHome();
@@ -5922,6 +5981,11 @@ async function libraryWebResearchSheet() {
 }
 
 document.addEventListener("click", (event) => {
+  if (jobMenuEl && !jobMenuEl.contains(event.target)) {
+    closeJobMenu();
+    return;
+  }
+
   const themeChoice = event.target.closest("[data-theme-choice]");
   if (themeChoice) {
     setTheme(themeChoice.dataset.themeChoice, true, render);
@@ -6023,12 +6087,21 @@ document.addEventListener("click", (event) => {
     if (action === "restore-job") return restoreJob();
     if (action === "delete-forever") return deleteForeverConfirmation();
     if (action === "confirm-delete-forever") return deleteForever(actionButton.dataset.jobId);
-    if (action === "delete-job-from-list") return deleteJobFromListConfirmation(actionButton.dataset.jobId);
+    if (action === "open-job-menu") return openJobMenu(actionButton);
+    if (action === "job-menu-reassign-tech" || action === "job-menu-reassign-bay") {
+      const job = jobRecords.find((entry) => String(entry.id) === String(actionButton.dataset.jobId));
+      closeJobMenu();
+      return action === "job-menu-reassign-tech" ? openReassignJobModal(job) : openReassignBayModal(job);
+    }
+    if (action === "delete-job-from-list") {
+      closeJobMenu();
+      return deleteJobFromListConfirmation(actionButton.dataset.jobId);
+    }
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
     if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
-    if (action === "reassign-job-to") return reassignCurrentJob(actionButton.dataset.technicianId);
+    if (action === "reassign-job-to") return reassignCurrentJob(actionButton.dataset.technicianId, actionButton.dataset.jobId);
     if (action === "reassign-bay") return openReassignBayModal(currentJobRecord());
-    if (action === "reassign-bay-to") return reassignCurrentJobBay(actionButton.dataset.bayName);
+    if (action === "reassign-bay-to") return reassignCurrentJobBay(actionButton.dataset.bayName, actionButton.dataset.jobId);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");
