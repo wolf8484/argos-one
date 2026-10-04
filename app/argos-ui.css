@@ -781,7 +781,7 @@ main:focus {
 }
 
 :root[data-theme="light"] .job-card:focus-within {
-  background: #fafafa;
+  background: #f0f0f0;
 }
 
 .job-card-main {
@@ -5119,7 +5119,7 @@ button.settings-toggle-row {
 
   :root[data-theme="light"] .control-tile:not(.is-primary):hover,
   :root[data-theme="light"] .job-card:hover {
-    background: #fafafa;
+    background: #f0f0f0;
   }
 
   :root[data-theme="light"] .control-tile.is-primary:hover {
