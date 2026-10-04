@@ -1028,6 +1028,12 @@ main:focus {
   .job-issue {
     font-size: 14px;
   }
+
+  .job-bay,
+  .job-time,
+  .job-date {
+    font-size: 12px;
+  }
 }
 
 .code-chip,
