@@ -3274,7 +3274,7 @@ button.journey-item:active {
 .primary-button {
   border: 1px solid var(--accent-border);
   background: var(--accent-fill);
-  color: var(--on-accent);
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .primary-button {
@@ -3284,7 +3284,7 @@ button.journey-item:active {
 .primary-button svg {
   width: 20px;
   height: 20px;
-  color: var(--on-accent);
+  color: #1e1e1e;
 }
 
 .secondary-button {
@@ -4822,9 +4822,9 @@ button.settings-toggle-row {
 :root[data-theme="light"] .secondary-button,
 :root[data-theme="light"] .quick-chip.is-selected,
 :root[data-theme="light"] .filter-button.is-active {
-  background-color: #1d1d1d;
+  background-color: #e0e0dc;
   border-color: #1d1d1d;
-  color: #e0e0dc;
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .secondary-button:active,
@@ -4839,10 +4839,10 @@ button.settings-toggle-row {
   background: var(--hover-surface);
 }
 
-/* Filled dark in light theme, so it lightens slightly instead -- the shared
-   light hover surface would hide its light label. */
+/* Filled #e0e0dc in light theme -- darker than the shared hover surface -- so
+   it deepens its own fill instead. */
 :root[data-theme="light"] .secondary-button:active {
-  background: #2d2d2d;
+  background: color-mix(in srgb, #e0e0dc 94%, #000);
 }
 
 :root[data-theme="light"] .library-repair-match:active,
@@ -4855,7 +4855,7 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .secondary-button svg {
-  color: #e0e0dc;
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .web-button svg,
@@ -5093,7 +5093,7 @@ button.settings-toggle-row {
   }
 
   :root[data-theme="light"] .secondary-button:hover {
-    background: #2d2d2d;
+    background: color-mix(in srgb, #e0e0dc 94%, #000);
   }
 
   :root[data-theme="light"] .library-repair-match:hover {

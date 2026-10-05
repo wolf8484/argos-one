@@ -5,6 +5,6 @@
 // will flag itself as stale the same way a stale production tab would,
 // letting the update-available flow (nav blip + Settings reload) be
 // exercised without a real deploy.
-const DEV_BUILD_LABEL = "20261005-global-hover-surface-token"
+const DEV_BUILD_LABEL = "20261006-light-secondary-primary-text"
 
 export const BUILD_VERSION = process.env.VERCEL_GIT_COMMIT_SHA || DEV_BUILD_LABEL
