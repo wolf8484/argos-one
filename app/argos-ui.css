@@ -459,8 +459,8 @@ main:focus {
 
 .nav-icon svg,
 .nav-plus svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   stroke-width: 1.5px;
 }
 
@@ -1036,8 +1036,12 @@ summary,
 }
 
 @media (max-width: 500px) {
+  :root {
+    --copy-size: 15px;
+  }
+
   .job-vehicle {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .job-issue {
@@ -1248,7 +1252,7 @@ summary,
 
 .library-brand-name {
   color: var(--heading);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -3787,8 +3791,7 @@ button.journey-item:active {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  min-height: 82px;
-  padding: 16px 16px;
+  padding: 16px;
   background: var(--surface-3);
   border-radius: var(--card-radius);
 }
@@ -4372,7 +4375,7 @@ button.settings-toggle-row {
   justify-content: space-between;
   gap: 16px;
   padding: 24px 20px;
-  background: var(--sheet-surface);
+  background: #111;
   touch-action: none;
   cursor: grab;
 }
@@ -6301,8 +6304,8 @@ body.dictation-active .toast {
 
   .nav-icon svg,
   .nav-plus svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     stroke-width: 1.5px;
   }
 
@@ -6501,7 +6504,7 @@ body.dictation-active .toast {
 
   .part-row {
     grid-template-columns: 1fr;
-    padding: 14px 0;
+    padding: 16px;
   }
 
   .part-button {
