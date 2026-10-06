@@ -1468,12 +1468,33 @@ function showUpdateOverlay() {
   setTimeout(() => { window.location.reload(); }, 3400);
 }
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("is-visible");
-  clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => toast.classList.remove("is-visible"), 2600);
+// The ring's 10s CSS animation is the timer: animationend dismisses, so
+// pausing the animation (hover/focus) pauses the countdown with it.
+toast.removeAttribute("role");
+toast.removeAttribute("aria-live");
+toast.innerHTML = `<span class="toast-message" role="status" aria-live="polite"></span>
+  <button class="toast-close" type="button" aria-label="Dismiss notification">
+    <svg class="toast-ring" viewBox="0 0 40 40" aria-hidden="true"><circle class="toast-ring-track" cx="20" cy="20" r="18"/><circle class="toast-ring-progress" cx="20" cy="20" r="18" pathLength="100"/></svg>
+    ${icon("close")}
+  </button>`;
+const toastMessage = toast.querySelector(".toast-message");
+const toastRing = toast.querySelector(".toast-ring-progress");
+
+function hideToast() {
+  toast.classList.remove("is-visible");
+  toastRing.classList.remove("is-running");
 }
+
+function showToast(message) {
+  toastMessage.textContent = message;
+  toastRing.classList.remove("is-running");
+  void toastRing.getBoundingClientRect();
+  toastRing.classList.add("is-running");
+  toast.classList.add("is-visible");
+}
+
+toastRing.addEventListener("animationend", hideToast);
+toast.querySelector(".toast-close").addEventListener("click", hideToast);
 
 function showTopProgressBar({ blocking = false } = {}) {
   if (!document.querySelector(".top-progress-bar")) {
@@ -1726,7 +1747,7 @@ function openJobMenu(trigger) {
   menu.setAttribute("role", "menu");
   menu.setAttribute("aria-label", `Job options for ${jobVehicleName(job)}`);
   menu.innerHTML = `${canReassign
-    ? `${item("job-menu-reassign-tech", "user", "Assign technician", { submenu: true })}${item("job-menu-reassign-bay", "bay", "Assign bay", { submenu: true })}<div class="job-menu-divider" role="separator"></div>`
+    ? `${item("job-menu-reassign-tech", "user", technicianActionLabel(job), { submenu: true })}${item("job-menu-reassign-bay", "bay", bayActionLabel(job), { submenu: true })}<div class="job-menu-divider" role="separator"></div>`
     : ""}${item("delete-job-from-list", "trash", "Delete job", { danger: true })}`;
   document.body.appendChild(menu);
   jobMenuEl = menu;
@@ -4067,69 +4088,110 @@ function openTechnicianRolePickerModal(technicianId) {
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Role" });
 }
 
-// Only staff with a linked login can own a job (assigned_to is a profiles.id),
-// so imported/unlinked roster rows aren't offered here. Unlike the default
-// pickers above, a job always has someone assigned -- there's no "Not set".
+// Pick first, save on confirm: the current choice starts selected and Save
+// stays disabled until a different option is picked. Only staff with a
+// linked login can own a job (assigned_to is a profiles.id), and only bays
+// Bay management knows about are offered.
+let assignmentPicker = null;
+
+function openAssignmentPicker({ kind, job, title, options, current, note = "", emptyHint }) {
+  assignmentPicker = { kind, jobId: job.id, current, selected: current, options };
+  const rows = options.map((option) => {
+    const isCurrent = option.value === current;
+    return `<button class="settings-row theme-row${isCurrent ? " is-selected" : ""}" type="button" role="radio" aria-checked="${isCurrent}" data-action="pick-assignment" data-value="${escapeHTML(option.value)}">
+      <span class="theme-radio" aria-hidden="true"></span>
+      <span class="settings-row-text"><strong>${escapeHTML(option.label)}</strong></span>
+      ${isCurrent ? `<span class="settings-row-value">Current</span>` : ""}
+    </button>`;
+  }).join("");
+  openSheet(`<div class="confirmation-content">
+    <h2>${escapeHTML(title)}</h2>
+    ${note ? `<p class="settings-detail-note">${escapeHTML(note)}</p>` : ""}
+    ${options.length
+      ? `<div class="settings-list" role="radiogroup" aria-label="${escapeHTML(title)}">${rows}</div>`
+      : `<p class="empty-hint">${escapeHTML(emptyHint)}</p>`}
+    <div class="profile-note-actions">
+      <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
+      ${options.length ? `<button class="primary-button full" type="button" data-action="confirm-assignment" disabled>Save</button>` : ""}
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
+}
+
+function technicianActionLabel(job) {
+  return job.assignedTo ? "Reassign technician" : "Assign technician";
+}
+
+function bayActionLabel(job) {
+  return job.bay ? "Reassign bay" : "Assign bay";
+}
+
 function openReassignJobModal(job) {
   if (!job) return;
-  const options = state.technicians.filter((technician) => technician.active && technician.profile_id);
-  const rows = options.map((technician) => `<button class="settings-row" type="button" data-action="reassign-job-to" data-technician-id="${technician.id}" data-job-id="${escapeHTML(String(job.id))}">
-      <span class="settings-row-text"><strong>${escapeHTML(technicianName(technician))}</strong></span>
-      ${technician.profile_id === job.assignedTo ? `<span class="settings-row-value">Current</span>` : ""}
-    </button>`).join("");
-  openSheet(`<div class="confirmation-content">
-    <h2>Reassign job</h2>
-    <div class="settings-list">${rows || `<p class="empty-hint">No staff with logins available to assign yet.</p>`}</div>
-    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign job" });
+  const options = state.technicians
+    .filter((technician) => technician.active && technician.profile_id)
+    .map((technician) => ({ value: String(technician.id), label: technicianName(technician), profileId: technician.profile_id }));
+  const handingOffOwnJob = state.profile?.role === "technician" && job.assignedTo === state.profile?.id;
+  openAssignmentPicker({
+    kind: "technician",
+    job,
+    title: technicianActionLabel(job),
+    options,
+    current: options.find((option) => option.profileId === job.assignedTo)?.value ?? null,
+    note: handingOffOwnJob ? "You won't be able to edit this job after reassigning it." : "",
+    emptyHint: "No staff with logins available to assign yet.",
+  });
 }
 
-function reassignCurrentJob(technicianId, jobId = state.currentJobId) {
-  if (!technicianId || !isPersistedJobId(jobId)) return closeSheet();
-  return apiRequest(`/api/jobs/${jobId}/assign`, { method: "PATCH", body: JSON.stringify({ technicianId }) })
-    .then(({ job }) => {
-      const updated = databaseJobToUi(job);
-      const index = jobRecords.findIndex((record) => record.id === updated.id);
-      if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
-      closeSheet();
-      showToast("Job reassigned");
-      render();
-    })
-    .catch((error) => showToast(error.message || "Could not reassign that job"));
-}
-
-// Only bays the shop actually has are offered -- a job can't legitimately
-// sit in a bay Bay management doesn't know about.
 function openReassignBayModal(job) {
   if (!job) return;
   const activeBays = state.bays.filter((bay) => bay.active);
-  const rows = activeBays.map((bay) => `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="${escapeHTML(bay.name)}" data-job-id="${escapeHTML(String(job.id))}">
-      <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
-      ${bay.name === job.bay ? `<span class="settings-row-value">Current</span>` : ""}
-    </button>`).join("");
-  const unassignedRow = `<button class="settings-row" type="button" data-action="reassign-bay-to" data-bay-name="" data-job-id="${escapeHTML(String(job.id))}">
-      <span class="settings-row-text"><strong>${NO_BAY}</strong></span>
-      ${job.bay ? "" : `<span class="settings-row-value">Current</span>`}
-    </button>`;
-  openSheet(`<div class="confirmation-content">
-    <h2>Reassign bay</h2>
-    <div class="settings-list">${activeBays.length ? `${unassignedRow}${rows}` : `<p class="empty-hint">No bays set up yet. Add one in Bay management first.</p>`}</div>
-    <div class="profile-note-actions"><button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button></div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign bay" });
+  openAssignmentPicker({
+    kind: "bay",
+    job,
+    title: bayActionLabel(job),
+    options: activeBays.length ? [{ value: "", label: NO_BAY }, ...activeBays.map((bay) => ({ value: bay.name, label: bay.name }))] : [],
+    current: job.bay || "",
+    emptyHint: "No bays set up yet. Add one in Bay management first.",
+  });
 }
 
-function reassignCurrentJobBay(bayName, jobId = state.currentJobId) {
-  if (!isPersistedJobId(jobId)) return closeSheet();
-  return apiRequest(`/api/jobs/${jobId}/bay`, { method: "PATCH", body: JSON.stringify({ bay: bayName || null }) })
-    .then(({ job }) => {
-      const updated = databaseJobToUi(job);
-      const index = jobRecords.findIndex((record) => record.id === updated.id);
-      if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
-      closeSheet();
-      showToast("Bay reassigned");
-      render();
-    })
-    .catch((error) => showToast(error.message || "Could not reassign that bay"));
+function pickAssignmentOption(value) {
+  if (!assignmentPicker) return;
+  assignmentPicker.selected = value;
+  sheetLayer.querySelectorAll('[data-action="pick-assignment"]').forEach((row) => {
+    const isSelected = row.dataset.value === value;
+    row.classList.toggle("is-selected", isSelected);
+    row.setAttribute("aria-checked", String(isSelected));
+  });
+  const saveButton = sheetLayer.querySelector('[data-action="confirm-assignment"]');
+  if (saveButton) saveButton.disabled = value === assignmentPicker.current;
+}
+
+async function confirmAssignment(button) {
+  const picker = assignmentPicker;
+  if (!picker || picker.selected === picker.current || button.dataset.loading === "true") return;
+  const isTechnician = picker.kind === "technician";
+  setButtonLoading(button, "Saving\u2026");
+  sheetLayer.classList.add("is-busy");
+  try {
+    const { job } = await apiRequest(`/api/jobs/${picker.jobId}/${isTechnician ? "assign" : "bay"}`, {
+      method: "PATCH",
+      body: JSON.stringify(isTechnician ? { technicianId: picker.selected } : { bay: picker.selected || null }),
+    });
+    const updated = databaseJobToUi(job);
+    const index = jobRecords.findIndex((record) => record.id === updated.id);
+    if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
+    const label = picker.options.find((option) => option.value === picker.selected)?.label || "";
+    assignmentPicker = null;
+    sheetLayer.classList.remove("is-busy");
+    closeSheet();
+    render();
+    showToast(isTechnician ? `Reassigned to ${label}` : picker.selected ? `Moved to ${label}` : "Removed from its bay");
+  } catch (error) {
+    sheetLayer.classList.remove("is-busy");
+    resetButtonLoading(button);
+    showToast(error.message || (isTechnician ? "Could not reassign that job" : "Could not change that bay"));
+  }
 }
 
 async function saveShopField(form) {
@@ -6111,9 +6173,9 @@ document.addEventListener("click", (event) => {
     }
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
     if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
-    if (action === "reassign-job-to") return reassignCurrentJob(actionButton.dataset.technicianId, actionButton.dataset.jobId);
+    if (action === "pick-assignment") return pickAssignmentOption(actionButton.dataset.value);
+    if (action === "confirm-assignment") return confirmAssignment(actionButton);
     if (action === "reassign-bay") return openReassignBayModal(currentJobRecord());
-    if (action === "reassign-bay-to") return reassignCurrentJobBay(actionButton.dataset.bayName, actionButton.dataset.jobId);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");
