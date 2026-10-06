@@ -2995,7 +2995,7 @@ button.journey-item:active {
 }
 
 :root[data-theme="light"] .tertiary-button {
-  border-color: #c3c3c3;
+  border-color: #92928e;
   color: #1e1e1e;
 }
 
