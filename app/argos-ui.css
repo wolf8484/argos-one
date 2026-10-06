@@ -47,6 +47,7 @@
   --hover-duration: 240ms;
   --hover-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
   --hover-surface: var(--surface-3);
+  --accent-hover: var(--accent-deep);
 }
 
 @property --ai-trace-angle {
@@ -58,6 +59,7 @@
 :root[data-theme="light"] {
   color-scheme: light;
   --hover-surface: #ebebeb;
+  --accent-hover: color-mix(in srgb, var(--accent-fill) 94%, #000);
   --bg: #f6f6f6;
   --surface: #e0e0dc;
   --surface-2: #fefefe;
@@ -509,7 +511,7 @@ main:focus {
 }
 
 .scroll-cue:focus-visible {
-  background: var(--accent-deep);
+  background: var(--accent-hover);
 }
 
 .scroll-cue svg {
@@ -5140,7 +5142,7 @@ button.settings-toggle-row {
   }
 
   .scroll-cue:hover {
-    background: var(--accent-deep);
+    background: var(--accent-hover);
   }
 
   .control-tile:hover {
@@ -5148,15 +5150,11 @@ button.settings-toggle-row {
   }
 
   .control-tile.is-primary:hover {
-    background: var(--accent-deep);
+    background: var(--accent-hover);
   }
 
   .job-card:hover {
     background: var(--hover-surface);
-  }
-
-  :root[data-theme="light"] .control-tile.is-primary:hover {
-    background: color-mix(in srgb, var(--accent-fill) 94%, #000);
   }
 
   .job-card-menu:hover {
@@ -5197,7 +5195,7 @@ button.settings-toggle-row {
   }
 
   .primary-button:hover {
-    background: var(--accent-deep);
+    background: var(--accent-hover);
   }
 
   .match-option:hover {
@@ -5233,7 +5231,7 @@ button.settings-toggle-row {
   }
 
   .dictation-send:hover {
-    background: var(--accent-deep);
+    background: var(--accent-hover);
   }
 
   .profile-repair-row-button:hover {
@@ -5881,7 +5879,7 @@ button.settings-toggle-row {
 }
 
 .dictation-send:focus-visible {
-  background: var(--accent-deep);
+  background: var(--accent-hover);
 }
 
 .dictation-send svg {
