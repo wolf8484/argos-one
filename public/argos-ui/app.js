@@ -4094,7 +4094,7 @@ function openTechnicianRolePickerModal(technicianId) {
 // Bay management knows about are offered.
 let assignmentPicker = null;
 
-function openAssignmentPicker({ kind, job, title, options, current, note = "", emptyHint }) {
+function openAssignmentPicker({ kind, job, title, options, current, note = "", emptyHint, emptyAction = "" }) {
   assignmentPicker = { kind, jobId: job.id, current, selected: current, options };
   const rows = options.map((option) => {
     const isCurrent = option.value === current;
@@ -4112,7 +4112,7 @@ function openAssignmentPicker({ kind, job, title, options, current, note = "", e
       : `<p class="empty-hint">${escapeHTML(emptyHint)}</p>`}
     <div class="profile-note-actions">
       <button class="secondary-button full" type="button" data-action="close-sheet">Cancel</button>
-      ${options.length ? `<button class="primary-button full" type="button" data-action="confirm-assignment" disabled>Save</button>` : ""}
+      ${options.length ? `<button class="primary-button full" type="button" data-action="confirm-assignment" disabled>Save</button>` : emptyAction}
     </div>
   </div>`, { sheetClass: "confirmation-sheet", ariaLabel: title });
 }
@@ -4151,8 +4151,14 @@ function openReassignBayModal(job) {
     title: bayActionLabel(job),
     options: activeBays.length ? [{ value: "", label: NO_BAY }, ...activeBays.map((bay) => ({ value: bay.name, label: bay.name }))] : [],
     current: job.bay || "",
-    emptyHint: "No bays set up yet. Add one in Bay management first.",
+    // Bay management is owner/admin-only, so only they get a way straight there.
+    emptyHint: canManageBays() ? "No bays set up yet." : "No bays set up yet. Ask a manager to add them.",
+    emptyAction: canManageBays() ? `<button class="primary-button full" type="button" data-action="go-to-bay-management">Manage bays</button>` : "",
   });
+}
+
+function canManageBays() {
+  return (currentTechnician()?.role || state.profile?.role || "technician") !== "technician";
 }
 
 function pickAssignmentOption(value) {
@@ -6175,6 +6181,15 @@ document.addEventListener("click", (event) => {
     if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
     if (action === "pick-assignment") return pickAssignmentOption(actionButton.dataset.value);
     if (action === "confirm-assignment") return confirmAssignment(actionButton);
+    if (action === "go-to-bay-management") {
+      assignmentPicker = null;
+      closeSheet();
+      setRoute("settings");
+      settingsOpenPage("bays");
+      render();
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
     if (action === "reassign-bay") return openReassignBayModal(currentJobRecord());
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
