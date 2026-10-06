@@ -442,15 +442,20 @@ function filledIcon(name, label = "") {
 // icon()/filledIcon() -- those assume one shared 24x24 path toggled by fill.
 function navIconMarkup(name, isActive) {
   if (name === "job") return materialIcon(isActive ? "job" : "jobOutline");
+  if (name === "library") return materialIcon(isActive ? "library" : "libraryOutline");
   return isActive ? filledIcon(name) : icon(name);
 }
 
 const materialIcons = {
-  job: '<path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm80-160h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Z"/>',
-  jobOutline: '<path d="M280-280h280v-80H280v80Zm0-160h400v-80H280v80Zm0-160h400v-80H280v80Zm-80 480q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/>',
+  job: '<path d="M400-420h139.23v-40H400v40Zm0-120h278.46v-40H400v40Zm0-120h278.46v-40H400v40Zm-75.38 380q-27.62 0-46.12-18.5Q260-317 260-344.62v-430.76q0-27.62 18.5-46.12Q297-840 324.62-840h430.76q27.62 0 46.12 18.5Q820-803 820-775.38v430.76q0 27.62-18.5 46.12Q783-280 755.38-280H324.62Zm-120 120q-27.62 0-46.12-18.5Q140-197 140-224.61v-470.77h40v470.77q0 9.23 7.69 16.92 7.69 7.69 16.93 7.69h470.76v40H204.62Z"/>',
+  jobOutline: '<path d="M400-420h139.23v-40H400v40Zm0-120h278.46v-40H400v40Zm0-120h278.46v-40H400v40Zm-75.38 380q-27.62 0-46.12-18.5Q260-317 260-344.62v-430.76q0-27.62 18.5-46.12Q297-840 324.62-840h430.76q27.62 0 46.12 18.5Q820-803 820-775.38v430.76q0 27.62-18.5 46.12Q783-280 755.38-280H324.62Zm0-40h430.76q9.24 0 16.93-7.69 7.69-7.69 7.69-16.93v-430.76q0-9.24-7.69-16.93-7.69-7.69-16.93-7.69H324.62q-9.24 0-16.93 7.69-7.69 7.69-7.69 16.93v430.76q0 9.24 7.69 16.93 7.69 7.69 16.93 7.69Zm-120 160q-27.62 0-46.12-18.5Q140-197 140-224.61v-470.77h40v470.77q0 9.23 7.69 16.92 7.69 7.69 16.93 7.69h470.76v40H204.62ZM300-800v480-480Z"/>',
   autorenew: '<path d="M204-318q-22-38-33-78t-11-82q0-134 93-228t227-94h7l-64-64 56-56 160 160-160 160-56-56 64-64h-7q-100 0-170 70.5T240-478q0 26 6 51t18 49l-60 60ZM481-40 321-200l160-160 56 56-64 64h7q100 0 170-70.5T720-482q0-26-6-51t-18-49l60-60q22 38 33 78t11 82q0 134-93 228t-227 94h-7l64 64-56 56Z"/>',
+  library: '<path d="M707.69-560.08q93.08-40.84 93.08-99.15t-93.08-99.15q-93.07-40.85-226.92-40.85t-227.31 40.85Q160-717.54 160-659.23t93.46 99.15q93.46 40.85 227.31 40.85 133.85 0 226.92-40.85Zm-128.65 94.66q50.34-7.73 94.65-22.89 44.31-15.15 78-37.57 33.69-22.43 49.08-51.81v118.46q-15.39 29.38-49.08 51.81-33.69 22.42-78 37.57-44.31 15.16-94.65 22.89-50.35 7.73-99.04 7.73-48.69 0-99.04-7.73-50.34-7.73-94.27-22.89-43.92-15.15-77.61-37.57-33.7-22.43-49.08-51.81v-118.46q15.38 29.38 49.08 51.81 33.69 22.42 77.61 37.57 43.93 15.16 94.27 22.89 50.35 7.73 99.04 7.73 48.69 0 99.04-7.73Zm0 180q50.34-7.73 94.65-22.89 44.31-15.15 78-37.57 33.69-22.43 49.08-51.81V-280q-15.39 29.38-49.08 51.81-33.69 22.42-78 37.57-44.31 15.16-94.65 22.89Q528.69-160 480-160q-48.69 0-99.04-7.73-50.34-7.73-94.27-22.89-43.92-15.15-77.61-37.57Q175.38-250.62 160-280v-117.69q15.38 29.38 49.08 51.81 33.69 22.42 77.61 37.57 43.93 15.16 94.27 22.89 50.35 7.73 99.04 7.73 48.69 0 99.04-7.73Z"/>',
+  libraryOutline: '<path d="M480-160q-140.23 0-230.12-35.73Q160-231.46 160-287.69V-680q0-49.85 93.58-84.92Q347.15-800 480-800t226.42 35.08Q800-729.85 800-680v392.31q0 56.23-89.88 91.96Q620.23-160 480-160Zm0-444.38q85.92 0 173.23-23.97 87.31-23.96 104.46-52.19-16.38-29.77-102.81-54.61Q568.46-760 480-760q-87.15 0-174.65 23.96t-104.58 52.42q16.31 30 103.04 54.62 86.73 24.62 176.19 24.62Zm0 201.3q41.23 0 81-4t76.04-11.88q36.27-7.89 67.38-19.66 31.12-11.76 55.58-26.53V-629q-24.46 14.77-55.58 26.54-31.11 11.77-67.38 19.65-36.27 7.89-76.04 11.89-39.77 4-81 4-42.77 0-83.15-4.39-40.39-4.38-76.27-12.27-35.89-7.88-66.5-19.27Q223.46-614.23 200-629v163.85q23.46 14.77 54.08 26.15 30.61 11.38 66.5 19.27 35.88 7.88 76.27 12.27 40.38 4.38 83.15 4.38ZM480-200q51.38 0 97.73-5.85 46.35-5.84 83.27-16.57 36.92-10.73 62.77-25.62 25.85-14.88 36.23-32.19v-144.92q-24.46 14.77-55.58 26.53-31.11 11.77-67.38 19.66-36.27 7.88-76.04 11.88-39.77 4-81 4-42.77 0-83.15-4.38-40.39-4.39-76.27-12.27-35.89-7.89-66.5-19.27-30.62-11.38-54.08-26.15V-280q10.38 18.08 36.12 32.46 25.73 14.39 62.65 25.12t83.38 16.57Q428.62-200 480-200Z"/>',
+  bay: '<path d="M460-129.23v-120H180v-40h600v40H500v120h-40Zm-93.81-358.42q9.19-9.2 9.19-21.58 0-12.39-9.19-21.58Q357-540 344.62-540q-12.39 0-21.58 9.19-9.19 9.19-9.19 21.58 0 12.38 9.19 21.58 9.19 9.19 21.58 9.19 12.38 0 21.57-9.19Zm270.77 0q9.19-9.2 9.19-21.58 0-12.39-9.19-21.58-9.19-9.19-21.58-9.19-12.38 0-21.57 9.19t-9.19 21.58q0 12.38 9.19 21.58 9.19 9.19 21.57 9.19 12.39 0 21.58-9.19ZM240-579.08l59.85-172q2.69-8.61 9.57-13.38 6.89-4.77 15.5-4.77h310.16q8.61 0 15.5 4.77 6.88 4.77 9.57 13.38l59.85 172v231.7q0 7.84-5.15 13-5.16 5.15-13 5.15h-3.7q-7.84 0-13-5.15-5.15-5.16-5.15-13v-61.85H280v61.85q0 7.84-5.15 13-5.16 5.15-13 5.15h-3.7q-7.84 0-13-5.15-5.15-5.16-5.15-13v-231.7Zm52.15-30.15h375.7l-41.85-120H334l-41.85 120Zm-12.15 40v120-120Zm0 120h400v-120H280v120Z"/>',
+  resumeJob: '<path d="M289.23-295.38v-369.24h40v369.24h-40Zm135.39 0L733.08-480 424.62-664.62v369.24Zm40-72.54v-224.16L651.92-480l-187.3 112.08Zm0-112.08Z"/>',
   technicians: '<path d="M40-160v-112q0-34 17.5-62.5T104-378q62-31 126-46.5T360-440q66 0 130 15.5T616-378q29 15 46.5 43.5T680-272v112H40Zm720 0v-120q0-44-24.5-84.5T666-434q51 6 96 20.5t84 35.5q36 20 55 44.5t19 53.5v120H760ZM247-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47Zm466 0q-47 47-113 47-11 0-28-2.5t-28-5.5q27-32 41.5-71t14.5-81q0-42-14.5-81T544-792q14-5 28-6.5t28-1.5q66 0 113 47t47 113q0 66-47 113ZM120-240h480v-32q0-11-5.5-20T580-306q-54-27-109-40.5T360-360q-56 0-111 13.5T140-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q440-607 440-640t-23.5-56.5Q393-720 360-720t-56.5 23.5Q280-673 280-640t23.5 56.5Q327-560 360-560t56.5-23.5ZM360-240Zm0-400Z"/>',
-  resumeJob: '<path d="M382.5-350.23q-92.81 0-158.98-65.67-66.17-65.67-66.17-158.48 0-19.3 2.77-36.84 2.77-17.55 10.46-35.55 2.37-6.23 7.88-11.33 5.52-5.1 12.52-7.17 7-2.08 13.93.14 6.93 2.21 12.36 7.75l108.04 107.46 85.46-84.66-106.38-106.77q-5.52-5.46-7.59-12.44-2.07-6.97-.14-13.7 1.93-6.73 6.87-12.91 4.93-6.18 12.16-8.71 16.81-6.08 33.47-8.66t33.32-2.58q93.93 0 159.96 67.03 66.02 67.03 66.02 160.12 0 25.08-5.27 45.89-5.27 20.81-14.81 41.16l176.08 175.81q24.16 24.27 24.16 57.64 0 33.38-24.33 56.31-24.51 23.12-56.71 22.22-32.19-.91-55.54-23.37L478.88-370.31q-21.15 9.16-46 14.62-24.86 5.46-50.38 5.46Zm-.08-47.96q17.09 0 47.07-7.06 29.97-7.06 56.74-27.17l199.46 199.77q9.43 9.61 21.62 10.21 12.19.6 23.11-9.92 10.93-10.52 10.93-22.62 0-12.1-10.93-23.21L529.65-477.35q18.54-25.07 24.7-52.51 6.15-27.45 6.15-43.52 0-73.39-57.75-130.66-57.75-57.27-142.94-48.85l98.42 97.43q9.35 9.53 9.1 22.19-.25 12.65-9.89 22.28L345.98-503.17q-9.79 9.25-21.64 9-11.86-.25-20.53-9.29L205-602.27q-10.46 90.92 46.86 147.5 57.33 56.58 130.56 56.58Zm89.23-91.62Z"/>',
+  startRepair: '<path d="M382.5-350.23q-92.81 0-158.98-65.67-66.17-65.67-66.17-158.48 0-19.3 2.77-36.84 2.77-17.55 10.46-35.55 2.37-6.23 7.88-11.33 5.52-5.1 12.52-7.17 7-2.08 13.93.14 6.93 2.21 12.36 7.75l108.04 107.46 85.46-84.66-106.38-106.77q-5.52-5.46-7.59-12.44-2.07-6.97-.14-13.7 1.93-6.73 6.87-12.91 4.93-6.18 12.16-8.71 16.81-6.08 33.47-8.66t33.32-2.58q93.93 0 159.96 67.03 66.02 67.03 66.02 160.12 0 25.08-5.27 45.89-5.27 20.81-14.81 41.16l176.08 175.81q24.16 24.27 24.16 57.64 0 33.38-24.33 56.31-24.51 23.12-56.71 22.22-32.19-.91-55.54-23.37L478.88-370.31q-21.15 9.16-46 14.62-24.86 5.46-50.38 5.46Zm-.08-47.96q17.09 0 47.07-7.06 29.97-7.06 56.74-27.17l199.46 199.77q9.43 9.61 21.62 10.21 12.19.6 23.11-9.92 10.93-10.52 10.93-22.62 0-12.1-10.93-23.21L529.65-477.35q18.54-25.07 24.7-52.51 6.15-27.45 6.15-43.52 0-73.39-57.75-130.66-57.75-57.27-142.94-48.85l98.42 97.43q9.35 9.53 9.1 22.19-.25 12.65-9.89 22.28L345.98-503.17q-9.79 9.25-21.64 9-11.86-.25-20.53-9.29L205-602.27q-10.46 90.92 46.86 147.5 57.33 56.58 130.56 56.58Zm89.23-91.62Z"/>',
 };
 
 function materialIcon(name, label = "") {
@@ -1640,7 +1645,7 @@ function renderHome() {
       </button>
       <button type="button" class="control-tile" data-route="knowledge">
         <span class="tile-copy"><strong>Repair library</strong><small>${repairLibraryCount} ${repairLibraryCount === 1 ? "car profile" : "car profiles"}</small></span>
-        <span class="tile-icon">${icon("database")}</span>
+        <span class="tile-icon">${materialIcon("libraryOutline")}</span>
       </button>
     </div>
 
@@ -1707,14 +1712,14 @@ function openJobMenu(trigger) {
   if (!job) return;
   const jobId = escapeHTML(String(job.id));
   const item = (action, iconName, label, { danger = false, submenu = false } = {}) =>
-    `<button class="job-menu-item${danger ? " is-danger" : ""}" type="button" role="menuitem" data-action="${action}" data-job-id="${jobId}">${icon(iconName)}<span class="job-menu-label">${label}</span>${submenu ? `<span class="job-menu-chevron">${icon("arrow")}</span>` : ""}</button>`;
+    `<button class="job-menu-item${danger ? " is-danger" : ""}" type="button" role="menuitem" data-action="${action}" data-job-id="${jobId}">${anyIcon(iconName)}<span class="job-menu-label">${label}</span>${submenu ? `<span class="job-menu-chevron">${icon("arrow")}</span>` : ""}</button>`;
   const canReassign = isPersistedJobId(job.id) && canEditJob(job);
   const menu = document.createElement("div");
   menu.className = "job-menu";
   menu.setAttribute("role", "menu");
   menu.setAttribute("aria-label", `Job options for ${jobVehicleName(job)}`);
   menu.innerHTML = `${canReassign
-    ? `${item("job-menu-reassign-tech", "user", "Assign technician", { submenu: true })}${item("job-menu-reassign-bay", "building", "Assign bay", { submenu: true })}<div class="job-menu-divider" role="separator"></div>`
+    ? `${item("job-menu-reassign-tech", "user", "Assign technician", { submenu: true })}${item("job-menu-reassign-bay", "bay", "Assign bay", { submenu: true })}<div class="job-menu-divider" role="separator"></div>`
     : ""}${item("delete-job-from-list", "trash", "Delete job", { danger: true })}`;
   document.body.appendChild(menu);
   jobMenuEl = menu;
@@ -2880,7 +2885,7 @@ function renderSettingsHome() {
       // kind of thing and are listed together; opening either lands on the
       // same profile. Splitting them was what made one site appear twice.
       !isTechnicianRole ? settingsRow({ iconName: "building", title: "Workshop & branches", description: "Details, sites and switching", value: String(state.branches.length || 1), page: "branches" }) : "",
-      !isTechnicianRole ? settingsRow({ iconName: "building", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }) : "",
+      !isTechnicianRole ? settingsRow({ iconName: "bay", title: "Bay management", description: "Add, edit or remove bays", value: String(activeBays), page: "bays" }) : "",
       settingsRow({
         iconName: "technicians", title: "Staff directory",
         description: isTechnicianRole ? "See who's on the team" : "Add, edit or remove staff",
@@ -3279,7 +3284,7 @@ function settingsEditRow({ title, value, field, optional = false }) {
 function renderBaysPage() {
   const rows = state.bays.length
     ? state.bays.map((bay) => `<button class="settings-row" type="button" data-action="edit-bay" data-bay-id="${bay.id}">
-        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-icon" aria-hidden="true">${materialIcon("bay")}</span>
         <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong>${bay.description ? `<small>${escapeHTML(bay.description)}</small>` : ""}</span>
         <span class="settings-row-value">${bay.active ? "Active" : "Inactive"}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
@@ -3290,7 +3295,7 @@ function renderBaysPage() {
     <span class="settings-group-label">Defaults</span>
     <div class="settings-list">
       <button class="settings-row" type="button" data-action="pick-default-bay">
-        <span class="settings-row-icon" aria-hidden="true">${icon("building")}</span>
+        <span class="settings-row-icon" aria-hidden="true">${materialIcon("bay")}</span>
         <span class="settings-row-text"><strong>Default bay</strong><small>New jobs start in this bay</small></span>
         <span class="settings-row-value">${escapeHTML(defaultBay?.name || "Not set")}</span>
         <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
@@ -4483,7 +4488,7 @@ function renderResults() {
         <div class="parts-panel always-visible">${selected.parts.map(([name, number, key]) => partRow(name, number, key)).join("")}</div>
       </div>
     </section>
-    <div class="result-actions"><button class="secondary-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("resumeJob")} Save & start repair</button></div>
+    <div class="result-actions"><button class="secondary-button full" type="button" data-action="web-research">${icon("globe")} Search web repair tips</button><button class="primary-button full" type="button" data-action="log-fix">${materialIcon("startRepair")} Save & start repair</button></div>
   </section>`;
   if (!canEditCurrentJob()) lockWorkflowForm();
 }

@@ -4918,7 +4918,7 @@ button.settings-toggle-row {
 :root[data-theme="light"] .profile-repair-list,
 :root[data-theme="light"] .profile-repair-row-button,
 :root[data-theme="light"] .profile-recall-list {
-  border-color: #e5e7eb;
+  border-color: #c3c3c3;
 }
 
 :root[data-theme="light"] .input:focus,
@@ -4935,7 +4935,7 @@ button.settings-toggle-row {
 
 :root[data-theme="light"] .nav-item,
 :root[data-theme="light"] .nav-new {
-  color: #767676;
+  color: #1e1e1e;
 }
 
 :root[data-theme="light"] .nav-item.is-active,
