@@ -1619,7 +1619,6 @@ summary,
   .task-status {
     grid-column: 1 / -1;
     justify-self: start;
-    margin-top: 10px;
   }
 
   .task-header.has-back .task-status {
@@ -3694,7 +3693,6 @@ button.journey-item:active {
 
 #selected-repair-heading,
 .resolved-report-identity h2 {
-  margin-top: 20px;
   font-size: 20px;
 }
 
@@ -3738,7 +3736,7 @@ button.journey-item:active {
 }
 
 .selected-repair-date-line {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .selected-repair-specs svg {
@@ -7137,7 +7135,7 @@ a.profile-recall:focus-visible {
 .resolved-report-identity .repair-job-meta {
   align-items: flex-start;
   text-align: left;
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 /* Branches
