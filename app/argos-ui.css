@@ -3529,7 +3529,7 @@ button.journey-item:active {
 
 :root[data-theme="light"] .match-option.is-selected,
 :root[data-theme="light"] .selected-repair-card {
-  border-color: #c3c3c3;
+  border-color: #92928e;
 }
 
 .match-option.is-selected:focus-visible {
@@ -3570,6 +3570,10 @@ button.journey-item:active {
 }
 
 .match-option-score .percent-symbol {
+  color: #ececd0;
+}
+
+:root[data-theme="light"] .match-option-score .percent-symbol {
   color: var(--accent);
 }
 
