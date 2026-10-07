@@ -4863,7 +4863,7 @@ function matchOption(repair, isSelected) {
   const evidence = repairMatchEvidence(repair);
   const vehicleName = repair.vehicle.split(" · ")[0];
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
-    <span class="match-option-top"><span class="match-option-rank">${repair.rank}${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : ""}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
+    <span class="match-option-top"><span class="match-option-rank">${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : repair.rank}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
     <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul>${repair.repairSummary ? `<p class="match-option-summary">${escapeHTML(repair.repairSummary)}</p>` : ""}</span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
