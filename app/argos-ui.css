@@ -3552,6 +3552,7 @@ button.journey-item:active {
   background: var(--accent-fill);
   color: #111;
   font-weight: 600;
+  font-size: var(--caps-size);
   text-transform: uppercase;
 }
 
@@ -3654,8 +3655,8 @@ button.journey-item:active {
 .match-option-summary {
   margin: 10px 0 0;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--caps-size);
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3690,6 +3691,7 @@ button.journey-item:active {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 24px;
   margin-bottom: 16px;
 }
 
