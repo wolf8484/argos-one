@@ -3543,21 +3543,8 @@ button.journey-item:active {
   gap: 12px;
 }
 
-.match-option-rank {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--caps-size);
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.match-option.is-selected .match-option-rank {
-  color: var(--muted-strong);
-}
-
-/* Same tag as the branch bar's DEMO badge. */
+/* Same tag as the branch bar's DEMO badge; also marks the best match in the
+   selected repair report. */
 .match-option-best {
   flex: none;
   padding: 2px 6px 1px;
@@ -3700,15 +3687,10 @@ button.journey-item:active {
 
 .selected-repair-top {
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 16px;
-}
-
-.selected-repair-eyebrow.is-best {
-  color: var(--accent);
-  font-weight: 600;
 }
 
 #selected-repair-heading,
@@ -3720,14 +3702,10 @@ button.journey-item:active {
   flex: 0 0 auto;
   color: var(--heading);
   font-size: var(--caps-size);
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.25;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-.selected-match-value.is-best {
-  font-weight: 600;
 }
 
 .selected-match-value .percent-symbol {

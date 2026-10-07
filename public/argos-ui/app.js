@@ -4548,8 +4548,8 @@ function renderResults() {
 
     <section class="selected-repair-card" aria-live="polite" aria-labelledby="selected-repair-heading-label">
       <div class="selected-repair-top">
-        <span class="field-label selected-repair-eyebrow${selected.rank === "01" ? " is-best" : ""}" id="selected-repair-heading-label">${selected.rank === "01" ? "Best match" : `Repair ${selected.rank}`}</span>
-        <span class="selected-match-value${selected.rank === "01" ? " is-best" : ""}">${selectedPercent}<span class="percent-symbol">%</span></span>
+        <span class="selected-match-value" id="selected-repair-heading-label">${selectedPercent}<span class="percent-symbol">%</span> match</span>
+        ${selected.rank === "01" ? `<span class="match-option-best">Best match</span>` : ""}
       </div>
       <h2 id="selected-repair-heading">${selectedVehicleName}</h2>
       <div class="selected-repair-specs">
@@ -4863,7 +4863,7 @@ function matchOption(repair, isSelected) {
   const evidence = repairMatchEvidence(repair);
   const vehicleName = repair.vehicle.split(" · ")[0];
   return `<button class="match-option${isSelected ? " is-selected" : ""}" type="button" data-repair-match="${repair.id}" aria-pressed="${isSelected}">
-    <span class="match-option-top"><span class="match-option-rank">${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : repair.rank}</span><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span></span>
+    <span class="match-option-top"><span class="match-option-score">${percent}<span class="percent-symbol">%</span></span>${repair.rank === "01" ? `<span class="match-option-best">Best match</span>` : ""}</span>
     <span class="match-option-copy"><strong>${vehicleName}</strong><ul class="match-option-evidence">${evidence.map((reason) => `<li>${icon("check")}<span>${reason}</span></li>`).join("")}</ul>${repair.repairSummary ? `<p class="match-option-summary">${escapeHTML(repair.repairSummary)}</p>` : ""}</span>
     <span class="match-option-action" aria-hidden="true">${icon(isSelected ? "check" : "arrow")}</span>
   </button>`;
