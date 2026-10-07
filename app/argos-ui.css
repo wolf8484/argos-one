@@ -3057,10 +3057,16 @@ button.journey-item:active {
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 0 8px 0 12px;
+  padding: 0 12px;
+  border-radius: var(--card-radius);
   background: var(--surface-3);
   color: var(--heading);
   line-height: 1;
+}
+
+:root[data-theme="light"] .dtc-chip,
+:root[data-theme="light"] .part-row {
+  background: var(--bg);
 }
 
 .dtc-chip-remove {
@@ -3521,6 +3527,11 @@ button.journey-item:active {
   border-radius: var(--card-radius);
 }
 
+:root[data-theme="light"] .match-option.is-selected,
+:root[data-theme="light"] .selected-repair-card {
+  border-color: #c3c3c3;
+}
+
 .match-option.is-selected:focus-visible {
   background: var(--hover-surface);
 }
@@ -3546,9 +3557,22 @@ button.journey-item:active {
   color: var(--muted-strong);
 }
 
+/* Same tag as the branch bar's DEMO badge. */
 .match-option-best {
-  color: var(--accent);
+  flex: none;
+  padding: 2px 6px 1px;
+  border-radius: 4px;
+  background: var(--notice);
+  color: #111111;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 500px) {
+  .match-option-best {
+    font-size: 12px;
+  }
 }
 
 .match-option-score {
