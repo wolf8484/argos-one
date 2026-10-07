@@ -3501,13 +3501,13 @@ button.journey-item:active {
   min-width: min(280px, 100%);
   flex-direction: column;
   padding: 20px;
-  border: 0;
+  border: 2px solid transparent;
   border-radius: var(--card-radius);
   background: var(--surface-2);
   color: var(--text);
   text-align: left;
   box-shadow: none;
-  transition: background-color var(--hover-duration) var(--hover-ease), color var(--hover-duration) var(--hover-ease), box-shadow var(--hover-duration) var(--hover-ease);
+  transition: background-color var(--hover-duration) var(--hover-ease), border-color var(--hover-duration) var(--hover-ease), color var(--hover-duration) var(--hover-ease), box-shadow var(--hover-duration) var(--hover-ease);
 }
 
 .match-option:focus-visible {
@@ -3517,12 +3517,8 @@ button.journey-item:active {
 .match-option.is-selected {
   background: var(--surface-2);
   color: var(--text);
-  border: 2px solid #565656;
+  border-color: var(--line-strong);
   border-radius: var(--card-radius);
-}
-
-:root[data-theme="light"] .match-option.is-selected {
-  border: none;
 }
 
 .match-option.is-selected:focus-visible {
@@ -3669,7 +3665,7 @@ button.journey-item:active {
 }
 
 .selected-repair-card {
-  border: 2px solid #565656;
+  border: 2px solid var(--line-strong);
   background: var(--surface-2);
   padding: 20px;
   border-radius: var(--card-radius);
@@ -3684,6 +3680,7 @@ button.journey-item:active {
   align-items: flex-start;
   justify-content: flex-start;
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .selected-repair-eyebrow.is-best {
