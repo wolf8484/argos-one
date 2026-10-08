@@ -5866,7 +5866,7 @@ button.settings-toggle-row {
 }
 
 .toast-ring-progress.is-running {
-  animation: toast-countdown 10s linear forwards;
+  animation: toast-countdown 5s linear forwards;
 }
 
 .toast:focus-within .toast-ring-progress {

@@ -1468,7 +1468,7 @@ function showUpdateOverlay() {
   setTimeout(() => { window.location.reload(); }, 3400);
 }
 
-// The ring's 10s CSS animation is the timer: animationend dismisses, so
+// The ring's 5s CSS animation is the timer: animationend dismisses, so
 // pausing the animation (hover/focus) pauses the countdown with it.
 toast.removeAttribute("role");
 toast.removeAttribute("aria-live");
