@@ -26,6 +26,11 @@
   --notice: #f7e75d;
   --danger: #b91c1c;
   --on-danger: #ffffff;
+  /* Delete / destructive buttons: tinted red on dark rather than a solid
+     fill, so they read as dangerous without shouting. */
+  --danger-fill: #502828;
+  --danger-fill-hover: color-mix(in srgb, #502828 88%, #fff);
+  --on-danger-fill: #ff6d5d;
   --sheet-surface: #080808;
   --sheet-backdrop: rgba(8, 8, 8, 0.42);
   --sheet-shadow: 0 -24px 70px rgba(0, 0, 0, 0.62);
@@ -84,6 +89,9 @@
   --notice: #f4e55c;
   --danger: #b91c1c;
   --on-danger: #ffffff;
+  --danger-fill: var(--danger);
+  --danger-fill-hover: color-mix(in srgb, var(--danger) 86%, #000);
+  --on-danger-fill: var(--on-danger);
   --sheet-surface: #f5f5f3;
   --sheet-backdrop: rgba(10, 10, 10, 0.32);
   --sheet-shadow: 0 -22px 62px rgba(0, 0, 0, 0.28);
@@ -4571,14 +4579,14 @@ button.settings-toggle-row {
   padding: 0 18px;
   gap: 8px;
   border-radius: var(--card-radius);
-  background: var(--danger);
-  color: var(--on-danger);
+  background: var(--danger-fill);
+  color: var(--on-danger-fill);
   font-size: var(--copy-size);
   text-align: center;
 }
 
-.danger-button:active {
-  background: #991b1b;
+.danger-button:not(:disabled):active {
+  background: var(--danger-fill-hover);
 }
 
 /* iOS Safari's UA stylesheet dims disabled buttons via opacity regardless of
@@ -4700,17 +4708,17 @@ button.settings-toggle-row {
   min-height: 52px;
   padding: 0 18px;
   gap: 8px;
-  background: var(--danger);
-  color: var(--on-danger);
+  background: var(--danger-fill);
+  color: var(--on-danger-fill);
   font-size: var(--copy-size);
 }
 
 .photo-delete-button svg {
-  color: var(--on-danger);
+  color: var(--on-danger-fill);
 }
 
 .photo-delete-button:active {
-  background: #991b1b;
+  background: var(--danger-fill-hover);
 }
 
 .photo-swipe-hint {
@@ -5245,6 +5253,11 @@ button.settings-toggle-row {
 
   .citation-link:hover {
     text-decoration: underline;
+  }
+
+  .danger-button:not(:disabled):hover,
+  .photo-delete-button:hover {
+    background: var(--danger-fill-hover);
   }
 
   .dictation-cancel:hover {
