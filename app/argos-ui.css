@@ -786,10 +786,10 @@ summary,
 }
 
 /* The main button spans the whole card so its copy runs full width; the
-   menu and chevron sit on top of it in the first row only. */
+   menu sits on top of it top-right and the chevron bottom-right. */
 .job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px 24px;
+  grid-template-columns: minmax(0, 1fr) 40px;
   grid-template-rows: auto 1fr;
   align-items: start;
   column-gap: 8px;
@@ -803,7 +803,10 @@ summary,
   transition: background-color var(--hover-duration) var(--hover-ease);
 }
 
-.job-card:focus-within {
+/* :focus-visible rather than :focus-within -- a mouse click on the menu
+   button leaves it focused, which kept the whole card lit after the menu
+   closed. */
+.job-card:has(:focus-visible) {
   background: var(--hover-surface);
 }
 
@@ -833,6 +836,8 @@ summary,
   width: 40px;
   height: 40px;
   margin-top: -6px;
+  justify-self: end;
+  margin-right: -8px;
 }
 
 .job-card-menu {
@@ -969,7 +974,7 @@ summary,
 .job-card-top {
   display: flex;
   width: 100%;
-  padding-right: 80px;
+  padding-right: 48px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1100,13 +1105,15 @@ summary,
 
 .job-card-action {
   position: relative;
-  grid-column: 3;
-  grid-row: 1;
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 40px;
-  margin-top: -6px;
+  width: 40px;
+  height: 24px;
+  justify-self: end;
+  margin-right: -8px;
   pointer-events: none;
   background: transparent;
   color: var(--accent);
@@ -1118,7 +1125,7 @@ summary,
   height: 20px;
 }
 
-.job-card:focus-within .job-card-action {
+.job-card:has(:focus-visible) .job-card-action {
   background: transparent;
   color: var(--accent-deep);
 }
@@ -4968,7 +4975,7 @@ button.settings-toggle-row {
   background: var(--hover-surface);
 }
 
-:root[data-theme="light"] .job-card:focus-within .job-card-action {
+:root[data-theme="light"] .job-card:has(:focus-visible) .job-card-action {
   color: var(--muted-strong);
 }
 
