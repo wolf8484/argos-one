@@ -1043,7 +1043,7 @@ summary,
 
 .job-issue {
   display: -webkit-box;
-  margin: 4px 0 0;
+  margin: 4px 32px 0 0;
   overflow: hidden;
   color: var(--muted);
   font-size: var(--copy-size);
