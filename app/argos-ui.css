@@ -4436,7 +4436,7 @@ button.settings-toggle-row {
 .confirmation-content p {
   max-width: 620px;
   color: var(--muted-strong);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -6576,9 +6576,10 @@ body.dictation-active .toast {
   color: var(--text);
   border: 0;
   flex: 1 1 0;
-  padding: 0 10px;
+  padding: 0 8px;
   font-weight: 400;
   position: relative;
+  border-radius: 0;
 }
 
 .profile-tabs .quick-chip.is-selected {
@@ -6844,10 +6845,16 @@ body.dictation-active .toast {
 /* Sits directly under a section heading and above that section's content, so
    the source is read before the content it qualifies rather than after it. */
 .section-source {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   color: var(--muted);
   font-size: var(--caps-size);
   line-height: 1.45;
+}
+
+@media (min-width: 501px) {
+  .section-source {
+    font-size: var(--copy-size);
+  }
 }
 
 .profile-empty {

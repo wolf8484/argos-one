@@ -4132,7 +4132,7 @@ function openReassignBayModal(job) {
     options: activeBays.length ? [{ value: "", label: NO_BAY }, ...activeBays.map((bay) => ({ value: bay.name, label: bay.name }))] : [],
     current: job ? jobBayName(job) || "" : draftBayName() || "",
     // Bay management is owner/admin-only, so only they get a way straight there.
-    emptyHint: canManageBays() ? "No bays set up yet." : "No bays set up yet. Ask a manager to add them.",
+    emptyHint: canManageBays() ? "No bays set up yet. Go to manage bays settings to add bays to this shop." : "No bays set up yet. Ask a manager to add them.",
     emptyAction: canManageBays() ? `<button class="primary-button full" type="button" data-action="go-to-bay-management">Manage bays</button>` : "",
   });
 }
