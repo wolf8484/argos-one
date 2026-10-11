@@ -541,7 +541,7 @@ function databaseJobToUi(row) {
       customerPhone: customer.phone || "", customerEmail: customer.email || "",
       trim: vehicle.trim || "", engine: vehicle.engine || "", drivetrain: vehicle.drivetrain || "", transmission: vehicle.transmission || "",
     },
-    bay: row.bay || NO_BAY,
+    bay: row.bay || null,
     time: timestamp ? new Intl.DateTimeFormat("en-AU", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(timestamp)) : "",
     createdAtShort: row.created_at ? shortDate(row.created_at) : "",
     resolvedAtShort: row.resolved_at ? shortDate(row.resolved_at) : "",
@@ -763,9 +763,10 @@ function vehiclePayload() {
       transmission: state.vehicle.transmission || null,
     },
     // Both are chosen on the Vehicle step before the job is saved, and default
-    // to the shop's bay and whoever is signed in when nobody picks.
-    bay: draftBayName(),
-    technicianId: draftTechnicianId(),
+    // to the shop's bay and whoever is signed in when nobody picks. Once the
+    // job exists they're changed through the assign endpoints instead, so a
+    // re-save of the vehicle details never touches them.
+    ...(isPersistedJobId(state.currentJobId) ? {} : { bay: draftBayName(), technicianId: draftTechnicianId() }),
   };
 }
 
@@ -891,25 +892,14 @@ function lockWorkflowForm() {
   scope.querySelectorAll(LOCKED_JOB_HIDE_SELECTORS.join(", ")).forEach((el) => { el.hidden = true; });
 }
 
-// Shown under the journey nav on every workflow step so it's clear who owns
-// the job and which bay it's in. The reassign actions follow the same rule
-// as edit access: the assigned technician (handing off their own job) or an
-// owner/manager -- both can move it to a different bay too.
-function assignmentBar() {
-  const job = currentJobRecord();
-  if (!job || !isPersistedJobId(job.id)) return "";
-  const editable = canEditJob(job);
-  const assigneeName = job.assigneeName || "Unassigned";
-  const bayName = job.bay || NO_BAY;
-  if (!editable) {
-    return `<div class="assignment-bar is-locked">
-      <span class="assignment-bar-label">${icon("lock")}<span>Assigned to <strong>${escapeHTML(assigneeName)}</strong> &middot; <strong>${escapeHTML(bayName.toUpperCase())}</strong></span></span>
-    </div>`;
-  }
-  return `<div class="assignment-bar">
-    <button class="assignment-bar-label" type="button" data-action="reassign-job"><span>Assigned to <strong>${escapeHTML(assigneeName)}</strong></span></button>
-    <button class="assignment-bar-label" type="button" data-action="reassign-bay"><span><strong>${escapeHTML(bayName.toUpperCase())}</strong></span></button>
-  </div>`;
+// jobs.bay is free text, so it can outlive the bay it named (deleted, renamed
+// or switched off in Bay management) or never have matched one at all (seed
+// data). A job can't be in a bay the branch doesn't have, so only a name that
+// matches one of its active bays counts -- anything else reads as no bay.
+function jobBayName(job) {
+  const name = String(job?.bay || "").trim().toLowerCase();
+  if (!name) return null;
+  return state.bays.find((bay) => bay.active && bay.name.toLowerCase() === name)?.name || null;
 }
 
 // Shown wherever the app states which bay the signed-in technician works from.
@@ -941,46 +931,31 @@ function draftTechnicianName() {
   return technician ? technicianName(technician) : "Unassigned";
 }
 
-// Vehicle step only, and only before the job exists: booking a car in is when
-// the bay and the owner are actually known. Once the job is saved these are
-// no longer editable here -- assignmentBar() takes over and reassignment is a
-// deliberate action elsewhere.
-function jobSetupBar() {
-  if (isPersistedJobId(state.currentJobId)) return "";
-  return `<button class="assignment-bar job-setup-bar" type="button" data-action="edit-job-setup">
-    <span class="assignment-bar-label">${icon("building")}<span><strong>${escapeHTML(draftBayName() || NO_BAY)}</strong> &middot; <strong>${escapeHTML(draftTechnicianName())}</strong></span></span>
-    <span class="settings-row-chevron" aria-hidden="true">${icon("arrow")}</span>
-  </button>`;
-}
-
-function openJobSetupSheet() {
-  const bayRows = state.bays.filter((bay) => bay.active).map((bay) => `<button class="settings-row" type="button" data-action="set-draft-bay" data-choice-id="${escapeHTML(bay.name)}">
-      <span class="settings-row-text"><strong>${escapeHTML(bay.name)}</strong></span>
-      ${draftBayName() === bay.name ? `<span class="settings-row-value">Selected</span>` : ""}
-    </button>`).join("");
-  // Invited staff are listed but disabled: a job's owner is a profiles row,
-  // which doesn't exist until they redeem their code. Hiding them made the
-  // picker look broken -- saying "Pending" explains itself.
-  const staffOptions = state.technicians.filter((technician) => technician.active).map((technician) => {
-    const pending = isInvitePending(technician);
-    const label = `${technicianName(technician)}${pending ? " (Pending)" : ""}`;
-    return `<option value="${technician.id}"${pending ? " disabled" : ""}${draftTechnicianId() === technician.id ? " selected" : ""}>${escapeHTML(label)}</option>`;
-  }).join("");
-  openSheet(`<div class="confirmation-content">
-    <h2>Bay &amp; technician</h2>
-    <span class="settings-group-label">Bay</span>
-    <div class="settings-list">
-      <button class="settings-row" type="button" data-action="set-draft-bay" data-choice-id="">
-        <span class="settings-row-text"><strong>${NO_BAY}</strong></span>
-        ${draftBayName() ? "" : `<span class="settings-row-value">Selected</span>`}
-      </button>
-      ${bayRows}
-    </div>
-    ${bayRows ? "" : `<p class="settings-detail-note">This branch has no bays yet — add them under Bay management.</p>`}
-    <span class="settings-group-label settings-group-label-spaced">Technician</span>
-    <label class="form-field"><span class="select-control"><select class="select" id="draft-technician" aria-label="Technician">${staffOptions || `<option value="">No staff available yet</option>`}</select>${icon("down")}</span></label>
-    <div class="profile-note-actions"><button class="primary-button full" type="button" data-action="close-sheet">Done</button></div>
-  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Bay and technician" });
+// Vehicle step only -- the one place a job's owner and bay are shown and
+// changed. Before the job is saved the picks stay local and go out with the
+// first save; once it exists each pick saves straight away, under the same
+// edit rule as the rest of the job (owner/manager, or the assigned tech).
+function jobAssignmentSection() {
+  const persisted = isPersistedJobId(state.currentJobId);
+  const job = persisted ? currentJobRecord() : null;
+  if (persisted && !job) return "";
+  const editable = !persisted || canEditJob(job);
+  const technician = persisted ? job.assigneeName : (draftTechnicianId() ? draftTechnicianName() : null);
+  const bay = persisted ? jobBayName(job) : draftBayName();
+  const field = (id, label, action, iconName, value, placeholder) => {
+    const content = `${anyIcon(iconName)}<span>${escapeHTML(value || placeholder)}</span>`;
+    const className = `select assignment-select${value ? "" : " is-placeholder"}`;
+    return `<div class="form-field"><div class="field-header"><span class="field-label" id="${id}">${label}</span></div>
+      ${editable
+        ? `<span class="select-control"><button class="${className}" type="button" data-action="${action}" aria-haspopup="dialog" aria-labelledby="${id}">${content}</button>${icon("down")}</span>`
+        : `<div class="${className} is-locked" aria-labelledby="${id}">${content}</div>`}
+    </div>`;
+  };
+  return `<div class="customer-details-heading span-2"><h2>Job assignment</h2></div>
+    <div class="customer-details-grid span-2">
+      ${field("assignment-technician-label", "Technician", "assign-technician", "user", technician, "Unassigned")}
+      ${field("assignment-bay-label", "Workshop bay", "assign-bay", "bay", bay, NO_BAY)}
+    </div>`;
 }
 
 function defaultBayName() {
@@ -1705,7 +1680,7 @@ function jobCard(job, { hidden = false } = {}) {
       <span class="job-card-top">
         <span class="job-status-group">
           <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
-          <span class="job-bay">${job.bay.toUpperCase()}</span>
+          <span class="job-bay">${escapeHTML((jobBayName(job) || NO_BAY).toUpperCase())}</span>
           ${dateLabel ? `<span class="job-date">${escapeHTML(dateLabel)}</span>` : ""}
         </span>
       </span>
@@ -4094,8 +4069,9 @@ function openTechnicianRolePickerModal(technicianId) {
 // Bay management knows about are offered.
 let assignmentPicker = null;
 
+// job is null for a draft (not yet saved): the pick is then kept locally.
 function openAssignmentPicker({ kind, job, title, options, current, note = "", emptyHint, emptyAction = "" }) {
-  assignmentPicker = { kind, jobId: job.id, current, selected: current, options };
+  assignmentPicker = { kind, jobId: job?.id || null, current, selected: current, options };
   const rows = options.map((option) => {
     const isCurrent = option.value === current;
     return `<button class="settings-row theme-row${isCurrent ? " is-selected" : ""}" type="button" role="radio" aria-checked="${isCurrent}" data-action="pick-assignment" data-value="${escapeHTML(option.value)}">
@@ -4118,39 +4094,40 @@ function openAssignmentPicker({ kind, job, title, options, current, note = "", e
 }
 
 function technicianActionLabel(job) {
-  return job.assignedTo ? "Reassign technician" : "Assign technician";
+  return job?.assignedTo ? "Reassign technician" : "Assign technician";
 }
 
 function bayActionLabel(job) {
-  return job.bay ? "Reassign bay" : "Assign bay";
+  return jobBayName(job) ? "Reassign bay" : "Assign bay";
 }
 
+// job is null for a draft, where the current pick comes from the local state.
 function openReassignJobModal(job) {
-  if (!job) return;
   const options = state.technicians
     .filter((technician) => technician.active && technician.profile_id)
     .map((technician) => ({ value: String(technician.id), label: technicianName(technician), profileId: technician.profile_id }));
-  const handingOffOwnJob = state.profile?.role === "technician" && job.assignedTo === state.profile?.id;
+  const handingOffOwnJob = Boolean(job) && state.profile?.role === "technician" && job.assignedTo === state.profile?.id;
   openAssignmentPicker({
     kind: "technician",
     job,
     title: technicianActionLabel(job),
     options,
-    current: options.find((option) => option.profileId === job.assignedTo)?.value ?? null,
+    current: job
+      ? options.find((option) => option.profileId === job.assignedTo)?.value ?? null
+      : (draftTechnicianId() ? String(draftTechnicianId()) : null),
     note: handingOffOwnJob ? "You won't be able to edit this job after reassigning it." : "",
     emptyHint: "No staff with logins available to assign yet.",
   });
 }
 
 function openReassignBayModal(job) {
-  if (!job) return;
   const activeBays = state.bays.filter((bay) => bay.active);
   openAssignmentPicker({
     kind: "bay",
     job,
     title: bayActionLabel(job),
     options: activeBays.length ? [{ value: "", label: NO_BAY }, ...activeBays.map((bay) => ({ value: bay.name, label: bay.name }))] : [],
-    current: job.bay || "",
+    current: job ? jobBayName(job) || "" : draftBayName() || "",
     // Bay management is owner/admin-only, so only they get a way straight there.
     emptyHint: canManageBays() ? "No bays set up yet." : "No bays set up yet. Ask a manager to add them.",
     emptyAction: canManageBays() ? `<button class="primary-button full" type="button" data-action="go-to-bay-management">Manage bays</button>` : "",
@@ -4177,6 +4154,13 @@ async function confirmAssignment(button) {
   const picker = assignmentPicker;
   if (!picker || picker.selected === picker.current || button.dataset.loading === "true") return;
   const isTechnician = picker.kind === "technician";
+  if (!picker.jobId) {
+    if (isTechnician) state.jobTechnicianId = picker.selected; else state.jobBay = picker.selected || null;
+    assignmentPicker = null;
+    closeSheet();
+    render();
+    return;
+  }
   setButtonLoading(button, "Saving\u2026");
   sheetLayer.classList.add("is-busy");
   try {
@@ -4424,8 +4408,6 @@ function renderVehicle() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${workflowJourney(1)}
     ${vehicleTaskHeader()}
-    ${assignmentBar()}
-    ${jobSetupBar()}
     <form id="vehicle-form" class="form-grid two-col">
       <div class="form-field span-2 vin-field">
         <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN <span class="optional-label">(optional)</span></label></div>
@@ -4447,6 +4429,7 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Current mileage</span></div><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="tertiary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add new vehicle</button></div>
       </div>
+      ${jobAssignmentSection()}
       <div class="customer-details-heading span-2"><h2>Customer details</h2></div>
       <div class="customer-details-grid span-2">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
@@ -4495,7 +4478,6 @@ function renderProblem() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${workflowJourney(2)}
     ${problemTaskHeader()}
-    ${assignmentBar()}
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Symptoms</label></div>
@@ -4540,7 +4522,6 @@ function renderResults() {
   app.innerHTML = `<section class="screen workflow-shell">
     ${workflowJourney(3)}
     ${resultsTaskHeader()}
-    ${assignmentBar()}
 
     <div class="match-selector ${repairCountClass}" role="group" aria-label="Choose a repair record">
       ${repairMatches.map((repair) => matchOption(repair, repair.id === selected.id)).join("")}
@@ -4597,7 +4578,6 @@ function renderRepairRecord() {
   app.innerHTML = `<section class="screen workflow-shell repair-record-shell">
     ${workflowJourney(4)}
     ${repairRecordHeader()}
-    ${assignmentBar()}
     <div class="repair-job-strip">
       <div class="repair-job-info">
         <strong>${state.vehicle.year} ${state.vehicle.make} ${state.vehicle.model}</strong>
@@ -4605,7 +4585,7 @@ function renderRepairRecord() {
       </div>
       <div class="repair-job-meta">
         ${activeJobRecord?.jobNumber ? `<span class="repair-job-number">Job ${escapeHTML(activeJobRecord.jobNumber)}</span>` : ""}
-        ${activeJobRecord?.bay ? `<span class="repair-job-bay">${escapeHTML(activeJobRecord.bay)}</span>` : ""}
+        ${jobBayName(activeJobRecord) ? `<span class="repair-job-bay">${escapeHTML(jobBayName(activeJobRecord))}</span>` : ""}
       </div>
     </div>
 
@@ -6178,7 +6158,7 @@ document.addEventListener("click", (event) => {
       return deleteJobFromListConfirmation(actionButton.dataset.jobId);
     }
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
-    if (action === "reassign-job") return openReassignJobModal(currentJobRecord());
+    if (action === "assign-technician") return openReassignJobModal(isPersistedJobId(state.currentJobId) ? currentJobRecord() : null);
     if (action === "pick-assignment") return pickAssignmentOption(actionButton.dataset.value);
     if (action === "confirm-assignment") return confirmAssignment(actionButton);
     if (action === "go-to-bay-management") {
@@ -6190,7 +6170,7 @@ document.addEventListener("click", (event) => {
       window.scrollTo({ top: 0, behavior: "instant" });
       return;
     }
-    if (action === "reassign-bay") return openReassignBayModal(currentJobRecord());
+    if (action === "assign-bay") return openReassignBayModal(isPersistedJobId(state.currentJobId) ? currentJobRecord() : null);
     if (action === "view-active-jobs") {
       state.jobFilter = "open";
       setRoute("jobs");
@@ -6382,12 +6362,6 @@ document.addEventListener("click", (event) => {
           showToast("Assigned bay updated");
         })
         .catch((error) => showToast(error.message || "Could not update that bay"));
-    }
-    if (action === "edit-job-setup") return openJobSetupSheet();
-    if (action === "set-draft-bay") {
-      state.jobBay = actionButton.dataset.choiceId || null;
-      render();
-      return openJobSetupSheet();
     }
     if (action === "pick-default-bay") {
       return openDefaultPickerModal({
@@ -6921,13 +6895,6 @@ document.addEventListener("change", (event) => {
     partsSearch.sort = event.target.value;
     sortPartsOffers();
     return partsEditorSheet();
-  }
-  if (event.target.matches("#draft-technician")) {
-    state.jobTechnicianId = event.target.value || null;
-    // No sheet refresh: the select already shows the new value. Only the bar
-    // behind it needs redrawing.
-    render();
-    return;
   }
   if (event.target.matches("#repair-case-select")) {
     const detail = state.activeProfile;

@@ -166,8 +166,11 @@ export class WorkshopRepository {
       }).eq('id', job.vehicle_id).eq('shop_id', this.profile.shop_id)
     if (vehicleError) throw vehicleError
 
+    // The bay is only set here when a caller sends one: the dashboard leaves
+    // it out once the job exists (reassignJobBay owns it from then on), and a
+    // vehicle re-save mustn't wipe the bay the job is actually in.
     const { error: updateJobError } = await this.supabase.from('jobs').update({
-      bay: input.bay || null,
+      ...(input.bay !== undefined ? { bay: input.bay || null } : {}),
       customer_id: customerId,
       stage: job.stage === 'vehicle' ? 'assessment' : job.stage,
     }).eq('id', jobId).eq('shop_id', this.profile.shop_id)
@@ -1023,6 +1026,12 @@ export class WorkshopRepository {
   }
 
   async updateBay(bayId: string, input: { name?: string; description?: string | null; active?: boolean }) {
+    let previousName: string | null = null
+    if (input.name !== undefined) {
+      const { data: before, error: beforeError } = await this.supabase.from('shop_bays').select('name').eq('id', bayId).single()
+      if (beforeError) throw beforeError
+      previousName = before.name
+    }
     const patch: Record<string, unknown> = {}
     if (input.name !== undefined) patch.name = input.name
     if (input.description !== undefined) patch.description = input.description
@@ -1032,15 +1041,27 @@ export class WorkshopRepository {
       .from('shop_bays')
       .update(patch)
       .eq('id', bayId)
-      .select('id,name,description,position,active,created_at,updated_at')
+      .select('id,shop_id,name,description,position,active,created_at,updated_at')
       .single()
     if (error) throw error
+    // jobs.bay is free text, so a rename has to carry over to the jobs that
+    // named the old bay or they'd drop out of it.
+    if (previousName !== null && previousName !== data.name) {
+      const { error: jobsError } = await this.supabase.from('jobs').update({ bay: data.name })
+        .eq('shop_id', data.shop_id).ilike('bay', escapeLikePattern(previousName))
+      if (jobsError) throw jobsError
+    }
     return data
   }
 
   async deleteBay(bayId: string) {
-    const { error } = await this.supabase.from('shop_bays').delete().eq('id', bayId)
+    const { data: bay, error } = await this.supabase.from('shop_bays').delete().eq('id', bayId).select('shop_id,name').single()
     if (error) throw error
+    // Same reason as the rename in updateBay: without this every job that was
+    // in the bay keeps showing it after the bay is gone.
+    const { error: jobsError } = await this.supabase.from('jobs').update({ bay: null })
+      .eq('shop_id', bay.shop_id).ilike('bay', escapeLikePattern(bay.name))
+    if (jobsError) throw jobsError
   }
 
   async listTechnicians() {
@@ -1628,4 +1649,10 @@ export class WorkshopRepository {
     if (error) throw error
     return new Map((data ?? []).map((row) => [row.code, row]))
   }
+}
+
+// ilike with no wildcards is a case-insensitive equals -- bay names are matched
+// case-insensitively everywhere else (the shop_bays unique index, the client).
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, (character) => `\\${character}`)
 }
