@@ -710,9 +710,6 @@ main:focus {
     justify-content: center;
   }
 
-  .tile-copy small {
-    font-size: 14px;
-  }
 }
 
 .field-label {
@@ -1059,10 +1056,6 @@ summary,
 
   .job-vehicle {
     font-size: 16px;
-  }
-
-  .job-issue {
-    font-size: 14px;
   }
 
   .job-bay,
@@ -6204,7 +6197,6 @@ body.dictation-active .toast {
     min-height: 44px;
     height: 44px;
     padding: 0 8px;
-    font-size: 14px;
   }
 
   #workshop-time,
@@ -6282,10 +6274,6 @@ body.dictation-active .toast {
     grid-area: foot;
     justify-content: space-between;
     padding-right: 28px;
-  }
-
-  .repair-parts-total {
-    font-size: 14px;
   }
 
   .nav-item,
@@ -6566,6 +6554,8 @@ body.dictation-active .toast {
 .profile-tabs {
   gap: 2px;
   margin-bottom: 40px;
+  border-radius: 8px;
+  overflow: auto;
 }
 
 .profile-tabs .quick-chip {
