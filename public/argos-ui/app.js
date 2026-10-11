@@ -949,8 +949,7 @@ function jobAssignmentSection() {
   // The bay stays a picker sheet: with no bays it has to explain that and
   // offer the way to Bay management, which a select can't.
   const bayClass = `select assignment-select${bay ? "" : " is-placeholder"}`;
-  return `<div class="customer-details-heading span-2"><h2>Job assignment</h2></div>
-    <div class="customer-details-grid span-2">
+  return `<div class="customer-details-grid span-2">
       <label class="form-field"><div class="field-header"><span class="field-label">Technician</span></div><span class="select-control"><select class="select${currentTechnicianId ? "" : " is-placeholder"}" id="assignment-technician" aria-label="Technician"${editable ? "" : " disabled"}>${currentTechnicianId ? "" : `<option value="" disabled selected>Unassigned</option>`}${technicianOptions}</select>${icon("down")}</span></label>
       <div class="form-field"><div class="field-header"><span class="field-label" id="assignment-bay-label">Workshop bay</span></div>
         ${editable
@@ -1563,8 +1562,10 @@ function workflowJourney(currentStep) {
   }).join("")}</nav>`;
 }
 
+// Job assignment is the Vehicle step's first section, so it carries the page
+// title; Vehicle details and Customer details follow as section headings.
 function vehicleTaskHeader() {
-  return taskHeader({ context: "New job", title: "Vehicle details" });
+  return taskHeader({ title: "Job assignment" });
 }
 
 function problemTaskHeader() {
@@ -4469,6 +4470,8 @@ function renderVehicle() {
     ${workflowJourney(1)}
     ${vehicleTaskHeader()}
     <form id="vehicle-form" class="form-grid two-col">
+      ${jobAssignmentSection()}
+      <div class="customer-details-heading span-2"><h2>Vehicle details</h2></div>
       <div class="form-field span-2 vin-field">
         <div class="field-header"><label class="field-label" for="vin">Scan or enter VIN <span class="optional-label">(optional)</span></label></div>
         <div class="vin-row">
@@ -4489,7 +4492,6 @@ function renderVehicle() {
         <label class="form-field"><div class="field-header"><span class="field-label">Current mileage</span></div><input class="input" name="mileage" inputmode="numeric" value="${state.vehicle.mileage}" placeholder="e.g. 82000" required /></label>
         <div class="catalog-action-row"><button class="tertiary-button field-secondary-action catalog-add-button" type="button" data-action="add-catalog-vehicle">${icon("plus")} Add new vehicle</button></div>
       </div>
-      ${jobAssignmentSection()}
       <div class="customer-details-heading span-2"><h2>Customer details</h2></div>
       <div class="customer-details-grid span-2">
         <label class="form-field"><div class="field-header"><span class="field-label">First name</span></div><input class="input" name="customerFirstName" autocomplete="given-name" value="${escapeHTML(firstName)}" placeholder="First name" required /></label>
