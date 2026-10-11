@@ -926,11 +926,6 @@ function draftTechnicianId() {
   return state.jobTechnicianId === undefined ? (currentTechnician()?.id || null) : state.jobTechnicianId;
 }
 
-function draftTechnicianName() {
-  const technician = state.technicians.find((candidate) => candidate.id === draftTechnicianId());
-  return technician ? technicianName(technician) : "Unassigned";
-}
-
 // Vehicle step only -- the one place a job's owner and bay are shown and
 // changed. Before the job is saved the picks stay local and go out with the
 // first save; once it exists each pick saves straight away, under the same
@@ -940,21 +935,28 @@ function jobAssignmentSection() {
   const job = persisted ? currentJobRecord() : null;
   if (persisted && !job) return "";
   const editable = !persisted || canEditJob(job);
-  const technician = persisted ? job.assigneeName : (draftTechnicianId() ? draftTechnicianName() : null);
   const bay = persisted ? jobBayName(job) : draftBayName();
-  const field = (id, label, action, iconName, value, placeholder) => {
-    const content = `${anyIcon(iconName)}<span>${escapeHTML(value || placeholder)}</span>`;
-    const className = `select assignment-select${value ? "" : " is-placeholder"}`;
-    return `<div class="form-field"><div class="field-header"><span class="field-label" id="${id}">${label}</span></div>
-      ${editable
-        ? `<span class="select-control"><button class="${className}" type="button" data-action="${action}" aria-haspopup="dialog" aria-labelledby="${id}">${content}</button>${icon("down")}</span>`
-        : `<div class="${className} is-locked" aria-labelledby="${id}">${content}</div>`}
-    </div>`;
-  };
+  // The technician is a plain select like the rest of the form. Invited staff
+  // are listed but disabled: a job's owner is a profiles row, which doesn't
+  // exist until they redeem their code.
+  const currentTechnicianId = persisted
+    ? state.technicians.find((technician) => technician.profile_id && technician.profile_id === job.assignedTo)?.id
+    : draftTechnicianId();
+  const technicianOptions = state.technicians.filter((technician) => technician.active).map((technician) => {
+    const pending = !technician.profile_id;
+    return `<option value="${escapeHTML(String(technician.id))}"${pending ? " disabled" : ""}${String(technician.id) === String(currentTechnicianId) ? " selected" : ""}>${escapeHTML(technicianName(technician))}${pending ? " (Pending)" : ""}</option>`;
+  }).join("");
+  // The bay stays a picker sheet: with no bays it has to explain that and
+  // offer the way to Bay management, which a select can't.
+  const bayClass = `select assignment-select${bay ? "" : " is-placeholder"}`;
   return `<div class="customer-details-heading span-2"><h2>Job assignment</h2></div>
     <div class="customer-details-grid span-2">
-      ${field("assignment-technician-label", "Technician", "assign-technician", "user", technician, "Unassigned")}
-      ${field("assignment-bay-label", "Workshop bay", "assign-bay", "bay", bay, NO_BAY)}
+      <label class="form-field"><div class="field-header"><span class="field-label">Technician</span></div><span class="select-control"><select class="select${currentTechnicianId ? "" : " is-placeholder"}" id="assignment-technician" aria-label="Technician"${editable ? "" : " disabled"}>${currentTechnicianId ? "" : `<option value="" disabled selected>Unassigned</option>`}${technicianOptions}</select>${icon("down")}</span></label>
+      <div class="form-field"><div class="field-header"><span class="field-label" id="assignment-bay-label">Workshop bay</span></div>
+        ${editable
+          ? `<span class="select-control"><button class="${bayClass}" type="button" data-action="assign-bay" aria-haspopup="dialog" aria-labelledby="assignment-bay-label"><span>${escapeHTML(bay || NO_BAY)}</span></button>${icon("down")}</span>`
+          : `<div class="${bayClass} is-locked" aria-labelledby="assignment-bay-label"><span>${escapeHTML(bay || NO_BAY)}</span></div>`}
+      </div>
     </div>`;
 }
 
@@ -4184,6 +4186,64 @@ async function confirmAssignment(button) {
   }
 }
 
+// The Vehicle step's technician select. A draft just remembers the pick; a
+// saved job is reassigned straight away. A technician handing off their own
+// job loses edit access, so that one case asks first.
+function changeJobTechnician(select) {
+  const vehicleForm = select.closest("#vehicle-form");
+  if (vehicleForm) syncVehicle(vehicleForm);
+  const technicianId = select.value;
+  if (!isPersistedJobId(state.currentJobId)) {
+    state.jobTechnicianId = technicianId;
+    render();
+    return;
+  }
+  const job = currentJobRecord();
+  if (!job) return;
+  const technician = state.technicians.find((candidate) => String(candidate.id) === technicianId);
+  const label = technician ? technicianName(technician) : "";
+  const handingOffOwnJob = state.profile?.role === "technician" && job.assignedTo === state.profile?.id;
+  if (!handingOffOwnJob) return saveJobTechnician(job, technicianId, label);
+  pendingTechnicianHandoff = { jobId: job.id, technicianId, label };
+  openSheet(`<div class="confirmation-content">
+    <h2>Reassign to ${escapeHTML(label)}?</h2>
+    <p class="settings-detail-note">You won't be able to edit this job after reassigning it.</p>
+    <div class="profile-note-actions">
+      <button class="secondary-button full" type="button" data-action="cancel-technician-handoff">Cancel</button>
+      <button class="primary-button full" type="button" data-action="confirm-technician-handoff">Reassign</button>
+    </div>
+  </div>`, { sheetClass: "confirmation-sheet", ariaLabel: "Reassign technician" });
+}
+
+let pendingTechnicianHandoff = null;
+
+async function saveJobTechnician(job, technicianId, label, button = null) {
+  if (button) {
+    setButtonLoading(button, "Saving\u2026");
+    sheetLayer.classList.add("is-busy");
+  }
+  try {
+    const { job: saved } = await apiRequest(`/api/jobs/${job.id}/assign`, { method: "PATCH", body: JSON.stringify({ technicianId }) });
+    const updated = databaseJobToUi(saved);
+    const index = jobRecords.findIndex((record) => record.id === updated.id);
+    if (index >= 0) jobRecords[index] = updated; else jobRecords.push(updated);
+    if (button) {
+      sheetLayer.classList.remove("is-busy");
+      closeSheet();
+    }
+    render();
+    showToast(`Reassigned to ${label}`);
+  } catch (error) {
+    if (button) {
+      sheetLayer.classList.remove("is-busy");
+      resetButtonLoading(button);
+    }
+    // Put the select back on the technician the job still has.
+    render();
+    showToast(error.message || "Could not reassign that job");
+  }
+}
+
 async function saveShopField(form) {
   const value = String(new FormData(form).get("value") || "").trim();
   const field = form.dataset.field;
@@ -5117,6 +5177,12 @@ function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
 
 function closeSheet() {
   if (sheetLayer.hidden) return;
+  // Dismissing the handoff confirmation any way but "Reassign" puts the
+  // technician select back on the job's current owner.
+  if (pendingTechnicianHandoff) {
+    pendingTechnicianHandoff = null;
+    render();
+  }
   sheetLayer.classList.remove("is-open");
   clearTimeout(sheetCloseTimer);
   sheetCloseTimer = setTimeout(() => {
@@ -6158,7 +6224,14 @@ document.addEventListener("click", (event) => {
       return deleteJobFromListConfirmation(actionButton.dataset.jobId);
     }
     if (action === "confirm-delete-job-from-list") return deleteJobFromList(actionButton.dataset.jobId);
-    if (action === "assign-technician") return openReassignJobModal(isPersistedJobId(state.currentJobId) ? currentJobRecord() : null);
+    if (action === "cancel-technician-handoff") return closeSheet();
+    if (action === "confirm-technician-handoff") {
+      const handoff = pendingTechnicianHandoff;
+      const job = handoff && jobRecords.find((record) => record.id === handoff.jobId);
+      pendingTechnicianHandoff = null;
+      if (!job) return closeSheet();
+      return saveJobTechnician(job, handoff.technicianId, handoff.label, actionButton);
+    }
     if (action === "pick-assignment") return pickAssignmentOption(actionButton.dataset.value);
     if (action === "confirm-assignment") return confirmAssignment(actionButton);
     if (action === "go-to-bay-management") {
@@ -6909,6 +6982,7 @@ document.addEventListener("change", (event) => {
     event.target.classList.toggle("is-placeholder", !event.target.value);
     return;
   }
+  if (event.target.matches("#assignment-technician")) return changeJobTechnician(event.target);
   const vehicleForm = event.target.closest("#vehicle-form");
   if (!vehicleForm) return;
   // A make change reloads the dependent model list. Capture every field first

@@ -2812,8 +2812,8 @@ button.journey-item:active {
   display: block;
 }
 
-/* Job assignment fields: buttons that open a picker sheet, dressed as the
-   form's selects so the section reads like Customer details. */
+/* Job assignment's bay field: a button that opens a picker sheet, dressed
+   as the form's selects so it matches the technician select beside it. */
 .assignment-select {
   display: flex;
   align-items: center;
@@ -2828,13 +2828,6 @@ button.journey-item:active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.assignment-select > svg {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  color: var(--muted-strong);
 }
 
 .assignment-select.is-locked {
