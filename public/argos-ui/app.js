@@ -1048,6 +1048,10 @@ function repairSnapshot() {
   return JSON.stringify(repairPayload(false));
 }
 
+// Only an explicit save (Save changes / complete / confirm-leave flush) clears
+// the dirty flag. Background autosaves deliberately leave it set so a mechanic
+// still gets the confirmation sheet for anything they haven't saved by hand --
+// otherwise parts/consumables added more than a debounce ago read as clean.
 function markRepairSaved() {
   lastSavedRepairSnapshot = repairSnapshot();
 }
@@ -1057,13 +1061,13 @@ function repairFormIsDirty() {
   return lastSavedRepairSnapshot !== null && repairSnapshot() !== lastSavedRepairSnapshot;
 }
 
-async function persistRepair(resolve = false) {
+async function persistRepair(resolve = false, { explicit = true } = {}) {
   if (!state.currentJobId) await persistVehicleDetails();
   const { job } = await apiRequest(`/api/jobs/${state.currentJobId}/repair`, { method: "PUT", body: JSON.stringify(repairPayload(resolve)) });
   const mapped = databaseJobToUi(job);
   const index = jobRecords.findIndex((record) => record.id === mapped.id);
   if (index >= 0) jobRecords[index] = mapped;
-  markRepairSaved();
+  if (explicit) markRepairSaved();
   return mapped;
 }
 
@@ -1074,7 +1078,7 @@ function queueRepairAutosave(delay = 900) {
     if (repairAutosaveInFlight) return queueRepairAutosave(500);
     repairAutosaveInFlight = true;
     try {
-      await persistRepair(false);
+      await persistRepair(false, { explicit: false });
     } catch (error) {
       showToast(error.status === 401 ? "Sign in to save this repair draft." : "Repair draft could not be saved.");
     } finally {
