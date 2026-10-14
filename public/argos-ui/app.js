@@ -6204,13 +6204,22 @@ document.addEventListener("click", (event) => {
       const reason = pendingNavReason;
       pendingNavAction = null;
       pendingNavReason = null;
-      closeSheet();
       if (reason === "unsaved-repair") {
         clearTimeout(repairAutosaveTimer);
+        // The sheet stays open with the button spinning until the save lands,
+        // so nothing else can be tapped mid-write.
+        showTopProgressBar({ blocking: true });
+        setButtonLoading(actionButton, "Saving…");
         return persistRepair(false)
           .catch(() => showToast("Repair draft could not be saved."))
-          .finally(() => proceed());
+          .finally(() => {
+            resetButtonLoading(actionButton);
+            hideTopProgressBar();
+            closeSheet();
+            proceed();
+          });
       }
+      closeSheet();
       return proceed();
     }
     // The header exposes one delete entry point across every workflow step
@@ -6621,6 +6630,9 @@ document.addEventListener("click", (event) => {
         .catch((error) => showToast(error.message));
     }
     if (action === "confirm-complete-job") {
+      clearTimeout(repairAutosaveTimer);
+      showTopProgressBar({ blocking: true });
+      setButtonLoading(actionButton, "Saving…");
       return persistRepair(true).then((job) => {
         state.selectedJobId = job.id;
         state.route = "resolved";
@@ -6628,7 +6640,10 @@ document.addEventListener("click", (event) => {
         updateNavigation();
         render();
         showToast("Repair record saved and job marked resolved.");
-      }).catch((error) => showToast(error.message));
+      }).catch((error) => showToast(error.message)).finally(() => {
+        resetButtonLoading(actionButton);
+        hideTopProgressBar();
+      });
     }
     if (action === "open-parts-editor") {
       const form = document.querySelector("#repair-form");
