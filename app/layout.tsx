@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import { PwaRegister } from '@/components/pwa-register'
 
@@ -19,10 +20,19 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: '#090909', width: 'device-width', initialScale: 1, viewportFit: 'cover' }
 
+const themeScript = `try{var t=localStorage.getItem('argos-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the theme script sets data-theme on <html>
+    // before React hydrates, which React would otherwise flag as a mismatch.
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+        {/* Applies the theme saved by the app's Appearance setting before the
+            page is interactive, so signed-out pages (and the dashboard's first
+            frame) don't flash dark for someone who chose light. app.js keeps
+            using the same "argos-theme" key once it loads. */}
+        <Script id="argos-theme" strategy="beforeInteractive">{themeScript}</Script>
         <PwaRegister />
         {children}
       </body>

@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { normalizePhone } from '@/lib/identity'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
 import { Notice, PasswordField, PhoneField, ReviewRow } from './fields'
+import { Logo } from './logo'
 import styles from './login.module.css'
 
 type Draft = {
@@ -431,7 +431,7 @@ export default function LoginPage() {
 function Shell({ heading, eyebrow, step, children }: { heading: string; eyebrow: string; step?: string; children: React.ReactNode }) {
   return <main className={styles.page}>
     <section className={styles.panel}>
-      <Image src="/argos-ui/assets/brand/argos-one-logo-yellow.svg" alt="Argos One" width={212} height={47} priority />
+      <Logo className={styles.logo} />
       <div>
         <p className={styles.eyebrow}><span>{eyebrow}</span>{step && <span className={styles.eyebrowStep}>{step}</span>}</p>
         <h1>{heading}</h1>

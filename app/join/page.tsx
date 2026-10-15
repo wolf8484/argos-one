@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -8,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { formatPhoneForDisplay, normalizePhone, staffAuthEmail } from '@/lib/identity'
 import { PasswordField, PhoneField, ReviewRow } from '../login/fields'
 import { createBrowserSupabaseClient } from '@/lib/supabase/browser'
+import { Logo } from '../login/logo'
 import styles from '../login/login.module.css'
 
 type Invite = { shopName: string; firstName: string; lastName: string; role: string; email: string; mobile: string }
@@ -189,7 +189,7 @@ export default function JoinPage() {
 function Shell({ eyebrow, step, heading, children }: { eyebrow: string; step?: string; heading: string; children: React.ReactNode }) {
   return <main className={styles.page}>
     <section className={styles.panel}>
-      <Image src="/argos-ui/assets/brand/argos-one-logo-yellow.svg" alt="Argos One" width={212} height={47} priority />
+      <Logo className={styles.logo} />
       <div>
         <p className={styles.eyebrow}><span>{eyebrow}</span>{step && <span className={styles.eyebrowStep}>{step}</span>}</p>
         <h1>{heading}</h1>

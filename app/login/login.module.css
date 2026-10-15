@@ -1,71 +1,380 @@
-.page{min-height:100svh;display:grid;place-items:center;padding:24px;background:#111;color:#f0f0f0;font:16px/1.4 Arial,sans-serif}
-.panel{width:min(100%,520px);display:grid;gap:32px;padding:32px;background:transparent}
-.panel img{width:auto;height:30px}
-.eyebrow{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px;color:#c3c3c3;text-transform:uppercase;font-size:14px;line-height:20px}
-.eyebrowStep{color:#FFC001}
-.panel h1{margin:0;font-size:36px;line-height:50px;font-weight:500}
-.form{display:grid;gap:20px}
-.form label{display:grid;gap:12px;color:#c3c3c3;text-transform:uppercase;font-size:14px;line-height:20px}
-/* Mirrors the app's .field-label: label text and its "(optional)" tag sit in
-   one flex row together, as a single grid item -- not two, which is what put
-   "(optional)" on its own line under the plain grid label above. */
-.labelText{display:flex;align-items:center;gap:8px}
-.form input{min-height:56px;padding:16px;border:0;background:#232323;color:#f0f0f0;font:inherit;line-height:20px;width:100%}
-.form input:focus{outline:2px solid #FFC001;outline-offset:0}
+/* Signed-out screens (sign in, create workshop, join, register device).
+   They don't load the dashboard's argos-ui.css, so the app's tokens are
+   mirrored here -- same Inter type, 8px radius, colours, field labels and
+   button treatments as the signed-in app, in both themes. The theme comes
+   from the same "argos-theme" choice the app saves (applied to <html> by the
+   root layout), so a light-mode user isn't flashed a dark sign-in screen. */
+.page {
+  --bg: #111111;
+  --field: #1c1c1c;
+  --surface-2: #1d1d1d;
+  --text: #e0e0dc;
+  --heading: #e0e0dc;
+  --muted: #c3c3c3;
+  --placeholder: #9b9b97;
+  --line: #2d2d2d;
+  --accent: #fcd535;
+  --accent-fill: #fcd535;
+  --accent-border: #fcd535;
+  --accent-hover: #d19f00;
+  --tertiary-border: #565656;
+  --tertiary-text: #f5f5f5;
+  --hover-surface: #232323;
+  --error: #ef4444;
+  --success: #22c55e;
+  --card-radius: 8px;
+  --copy-size: 16px;
+  --caps-size: 14px;
+  --hover: 240ms cubic-bezier(0.25, 0.1, 0.25, 1);
 
-/* Buttons stack in a column with a 20px gap; the primary always leads.
-   Exactly two button treatments exist -- .primary and .switcher (secondary)
-   -- matching the app's own primary-button/secondary-button pair, so every
-   screen reuses one of these two rather than a one-off style. */
-.actions{display:grid;gap:20px}
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-inter), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: var(--copy-size);
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
 
-.primary{min-height:56px;border:1px solid #FFC001;padding:0 20px;background:#FFC001;color:#111;font:inherit;line-height:20px;font-weight:500;cursor:pointer}
-.primary:hover{background:#D19F00;border-color:#D19F00}
-.primary:disabled{opacity:.65;cursor:default}
+:global(html[data-theme="light"]) .page {
+  --bg: #f6f6f6;
+  --field: #fefefe;
+  --surface-2: #fefefe;
+  --text: #1e1e1e;
+  --heading: #1e1e1e;
+  --muted: #5c5c58;
+  --line: #d3d3d0;
+  --accent: #1e1e1e;
+  --accent-border: transparent;
+  --accent-hover: color-mix(in srgb, #fcd535 94%, #000);
+  --tertiary-border: #92928e;
+  --tertiary-text: #1e1e1e;
+  --hover-surface: #ebebeb;
+  /* Text-on-light versions: the dark theme's tints fail contrast on #f6f6f6. */
+  --error: #b91c1c;
+  --success: #15803d;
+}
 
-.switcher{display:grid;gap:2px;align-content:center;justify-items:center;min-height:56px;border:1px solid #2d2d2d;padding:0 20px;background:transparent;color:#f0f0f0;font:inherit;line-height:20px;font-weight:500;text-align:center;text-decoration:none;cursor:pointer}
-.switcher:hover{background:#232323}
-.switcher:disabled{opacity:.65;cursor:default}
-.switcher small{color:#9b9b97;font-size:13px;line-height:18px;font-weight:400}
+.panel {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 32px;
+  padding: 32px;
+}
 
-.alternatives{display:grid;gap:20px}
-.tertiary{justify-self:center;color:#9b9b97;font-size:15px;line-height:21px;text-decoration:none}
-.tertiary strong{color:#FFC001;font-weight:500;text-decoration:underline}
+.logo {
+  display: block;
+  width: auto;
+  height: 30px;
+  color: var(--heading);
+}
 
-/* Reveal toggle blends into the field it sits on -- same background as the
-   input, icon in accent yellow, no border or box around it. */
-.passwordControl{position:relative;display:block}
-.passwordControl input{padding-right:56px}
-.reveal{position:absolute;top:0;right:0;display:grid;place-items:center;width:56px;height:56px;border:0;background:#232323;color:#FFC001;cursor:pointer}
-.reveal:hover{color:#D19F00}
+/* Same uppercase caption the app uses under its page titles (.task-context). */
+.eyebrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 18px;
+  text-transform: uppercase;
+}
 
-.reviewList{display:grid;gap:1px;background:#2a2a2a}
-.reviewRow{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:16px;background:#1a1a1a}
-.reviewRow span{color:#9b9b97;font-size:14px;line-height:20px;text-transform:uppercase}
-.reviewRow strong{font-weight:500;line-height:22px;text-align:right;word-break:break-word}
+.eyebrowStep {
+  color: var(--accent);
+  font-weight: 600;
+}
 
-.hint{margin:0;color:#c3c3c3;font-size:15px;line-height:22px}
+.panel h1 {
+  margin: 0;
+  color: var(--heading);
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 600;
+}
 
-/* Bordered callout: dark surface, yellow border and icon -- for a fact worth
-   pausing on rather than skimming past, without the full alarm of a solid
-   yellow fill. */
-.notice{display:flex;gap:12px;align-items:flex-start;padding:16px;background:#1a1a1a;border:1px solid #FFC001}
-.notice svg{flex:none;color:#FFC001;margin-top:1px}
-.noticeTitle{display:block;color:#f0f0f0;font-size:16px;line-height:22px;font-weight:600;text-transform:none}
-.noticeText{margin:4px 0 0;color:#c3c3c3;font-size:15px;line-height:22px;text-transform:none}
-.optional{color:#6f6f6b;text-transform:none}
+.form {
+  display: grid;
+  gap: 24px;
+}
 
-/* Live password requirement. Muted until satisfied, then the app's completed
-   check-item green (#22c55e, as used by .complete-job-check-item.is-done). */
-.rule{display:flex;align-items:center;gap:8px;color:#9b9b97;font-size:15px;line-height:22px;text-transform:none;font-weight:400}
-.rule svg{flex:none}
-.ruleMet{color:#22c55e}
+/* Field labels match the app's .field-label: sentence case, 16px semibold,
+   12px above the input. */
+.form label {
+  display: grid;
+  gap: 12px;
+  color: var(--heading);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 18px;
+}
 
-/* This only ever carries a failure, so it is red -- but a lighter tint of the
-   app's --danger (#b91c1c) rather than the token itself. That value is a
-   button *fill* carrying white text; as text on #111 it measures 2.92:1,
-   under the 4.5:1 minimum, which is the wrong place to lose legibility on a
-   glare-lit workshop tablet. This tint holds the same hue at 4.99:1. */
-.message{margin:0;color:#ef4444;text-transform:none;font-size:16px;line-height:22px}
+.labelText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-@media(max-width:500px){.page{padding:0}.panel{min-height:100svh;align-content:center;padding:24px}}
+.optional {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.form input {
+  width: 100%;
+  min-height: 56px;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--card-radius);
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--copy-size);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.form input::placeholder {
+  color: var(--placeholder);
+  font-style: italic;
+  opacity: 1;
+}
+
+.form input:focus {
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Buttons stack with the primary leading. Two treatments only, matching the
+   app: .primary (its primary-button) and .switcher (its tertiary-button). */
+.actions,
+.alternatives {
+  display: grid;
+  gap: 12px;
+}
+
+.primary,
+.switcher {
+  min-height: 56px;
+  padding: 0 20px;
+  border-radius: var(--card-radius);
+  font: inherit;
+  font-size: var(--copy-size);
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background-color var(--hover), border-color var(--hover), color var(--hover);
+}
+
+.primary {
+  border: 1px solid var(--accent-border);
+  background: var(--accent-fill);
+  color: #1e1e1e;
+}
+
+.primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.switcher {
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  justify-items: center;
+  border: 1px solid var(--tertiary-border);
+  background: transparent;
+  color: var(--tertiary-text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.switcher:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.switcher small {
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 18px;
+  font-weight: 400;
+}
+
+.tertiary {
+  justify-self: center;
+  padding: 8px 0;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.tertiary strong {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .primary:not(:disabled):hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  :global(html[data-theme="light"]) .primary:not(:disabled):hover {
+    border-color: transparent;
+  }
+
+  .switcher:not(:disabled):hover {
+    background: var(--hover-surface);
+  }
+}
+
+/* Reveal toggle sits inside the field: same fill, accent icon, no box. */
+.passwordControl {
+  position: relative;
+  display: block;
+}
+
+.passwordControl input {
+  padding-right: 56px;
+}
+
+.reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 0 var(--card-radius) var(--card-radius) 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.reviewList {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border-radius: var(--card-radius);
+  background: var(--line);
+}
+
+.reviewRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface-2);
+}
+
+.reviewRow span {
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 20px;
+  text-transform: uppercase;
+}
+
+.reviewRow strong {
+  color: var(--heading);
+  font-weight: 500;
+  line-height: 22px;
+  text-align: right;
+  word-break: break-word;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  line-height: 1.5;
+}
+
+/* Bordered callout for a fact worth pausing on. */
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--accent-fill);
+  border-radius: var(--card-radius);
+  background: var(--surface-2);
+}
+
+.notice svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.noticeTitle {
+  display: block;
+  color: var(--heading);
+  font-size: var(--copy-size);
+  line-height: 22px;
+  font-weight: 600;
+}
+
+.noticeText {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--copy-size);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Live password requirement: muted until met, then the app's check green. */
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: var(--caps-size);
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.rule svg {
+  flex: none;
+}
+
+.ruleMet {
+  color: var(--success);
+}
+
+/* Only ever a failure. A lighter tint of the app's --danger on dark, since
+   the fill colour itself is under 4.5:1 as text on #111. */
+.message {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--copy-size);
+  line-height: 1.4;
+}
+
+@media (max-width: 500px) {
+  .page {
+    --copy-size: 15px;
+    padding: 0;
+  }
+
+  .panel {
+    min-height: 100svh;
+    align-content: center;
+    padding: 24px 16px;
+  }
+
+  .panel h1 {
+    font-size: 24px;
+  }
+}
