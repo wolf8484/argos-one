@@ -1895,19 +1895,22 @@ button.journey-item:active {
   justify-content: space-between;
   margin-top: 16px;
   margin-bottom: 16px;
+  padding: 16px;
+  border-radius: var(--card-radius);
+  background-color: #2d2d2d;
+  color: #f5f5f5;
   font-size: var(--copy-size);
   font-weight: 600;
 }
 
+/* Same box in both themes, on the secondary-button greys. */
 :root[data-theme="light"] .repair-parts-total {
   color: #1e1e1e;
   background-color: #e0e0dc;
-  padding: 16px;
-  border-radius: var(--card-radius);
 }
 
 .repair-parts-total strong {
-  color: var(--accent);
+  color: inherit;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
