@@ -20,7 +20,7 @@ First-draft landing page copy. Grounded in features that are actually live in th
 Scan or type a 17-character VIN and Argos One fills in year, make, model, trim, engine, drivetrain and transmission automatically. No more typing out a full spec sheet before you've even opened the bonnet.
 
 ### 2. See what your own shop already fixed
-Before you start diagnosing from scratch, Argos One shows you ranked matches from your shop's own repair history for this exact vehicle and complaint — symptoms, what was done, parts used, and how it was verified.
+Before you start diagnosing from scratch, Argos One shows you ranked matches from your shop's own repair history for this exact vehicle and complaint — each with a match score, and the strongest flagged as the **Best match**. Open one to see the symptoms, what was done, parts used, and how it was verified.
 
 ### 3. A repair library that builds itself
 Every completed job automatically files itself into a car profile — organised by brand, model and trim. No admin, no manual data entry. Next time that model rolls in, the knowledge is already there.
@@ -38,7 +38,13 @@ Each branch keeps its own jobs, bays, staff and repair library — nothing leaks
 Anonymised repair patterns flow both ways with the wider Argos One network if you opt in — see the fault and fix other workshops have already found, and contribute yours back. Prefer to keep it in-house? Share named repairs across just your own branches instead, or turn both off entirely.
 
 ### 8. Nothing gets lost, nothing's irreversible by accident
-Delete a job and it moves to a recoverable Deleted list, not the void — restore it any time, or deliberately delete it forever when you're sure.
+Delete a job and it moves to a recoverable Deleted list, not the void — restore it any time, or deliberately delete it forever when you're sure. Repair notes autosave as you go, and the app still checks with you before you leave anything you haven't saved.
+
+### 9. Every car has an owner and a bay
+Assign the technician and the bay the moment a car is booked in. Hand a job to someone else or move it to another bay straight from the job list, in two taps — and a job can only ever sit in a bay your workshop actually has.
+
+### 10. Built for the workshop floor
+Big tap targets for gloved, greasy hands, dictation instead of typing, and a dark theme for glare-heavy bays — with a light theme for the front desk. Works on the shop tablet, the counter PC, or a tech's own phone.
 
 ---
 

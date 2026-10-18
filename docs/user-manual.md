@@ -11,6 +11,8 @@ Roles referenced throughout: **Owner**, **Admin** (shown in the app as "Admin"),
 ### Signing in
 Go to the sign-in screen and enter **email or mobile** plus your password — either identifier works, the app resolves which login it belongs to before authenticating. If your access to the workshop has been switched off, sign-in itself is blocked with a message to contact your manager (this is checked straight after your password, not later).
 
+The sign-in, create-workshop, join and register-device screens use the same look as the app and follow the device's saved **Appearance** choice (dark or light), so a light-mode user never gets a dark sign-in screen.
+
 ### Creating a workshop (first-time owners)
 From the sign-in screen, choose **Create a workshop**. It's a 3-step wizard:
 1. Workshop details — name, phone, email (all but name are optional and editable later in Settings).
@@ -38,7 +40,7 @@ The home screen (bottom nav → **Home**) shows:
 - Four control tiles: **New job**, **Resume job** (only shown if you have an active job; otherwise this tile becomes a second way to start a new one), **All jobs**, and **Repair library** (shows how many car profiles exist).
 - **Currently active** — the first 3 open jobs, with a "View all" link into the full Jobs list.
 
-Tapping any job card takes you straight back into that job at whatever stage it's at.
+Tapping any job card takes you straight back into that job at whatever stage it's at. Each card also has a **⋮ menu** (top-right) for reassigning or deleting the job without opening it — see §4.
 
 ---
 
@@ -47,7 +49,15 @@ Tapping any job card takes you straight back into that job at whatever stage it'
 A job moves through four stages, shown as a journey bar at the top of each screen: **Vehicle → Assessment → Similar repairs → Repair**.
 
 ### Stage 1 — Vehicle intake
-From Home or the bottom nav, tap **New**. Fill in:
+From Home or the bottom nav, tap **New**. The Vehicle tab has three sections, in this order:
+
+**Job assignment** — who's working on the car and where:
+- **Technician** — a dropdown of the branch's staff. It starts on whoever is signed in. Invited staff who haven't redeemed their code yet are listed as "(Pending)" but can't be picked, because a job can only belong to someone with a login.
+- **Workshop bay** — opens a picker of this branch's active bays (or **No bay**). It starts on the branch's default bay. If the branch has no bays yet, the picker says so; Owners and Admins get a **Manage bays** button that goes straight to Bay management, Technicians are told to ask a manager.
+
+On a new job these picks are saved with the job when you first tap Save & continue. On a job that's already saved, each change saves straight away and a confirmation toast appears. A technician handing their *own* job to someone else is asked to confirm first, because they lose edit access once it's reassigned. This section only appears on the Vehicle tab — the other stages don't repeat it.
+
+**Vehicle details** and **Customer details**:
 - **VIN** (optional) — scan with the camera icon or type it in; a 17-character VIN triggers an automatic decode that fills in year/make/model/trim/engine/drivetrain/transmission for you (partial decodes are flagged so you can check the fields).
 - **Year, Make, Model, Trim, Drivetrain, Engine, Transmission** — all required except where marked optional. These are mandatory specifically because the repair library filters a car's history by them; skip one and that vehicle's repairs become invisible to the trim filter.
 - **Registration** (optional), **Current mileage** (required).
@@ -67,7 +77,7 @@ Two ways forward:
 - **Save & continue** (labelled for direct diagnosis) — skips straight to the Repair stage if you already know the fix.
 
 ### Stage 3 — Similar repairs
-The app surfaces past repairs — from your own shop's history — that match this vehicle and complaint, ranked by match percentage (a "Best match" badge marks the top one). For the selected match you see the original complaint, observations, DTCs, work performed, verification notes, and the parts/consumables used.
+The app surfaces past repairs — from your own shop's history — that match this vehicle and complaint, ranked by match percentage. Each match card leads with its score, and the top one carries a yellow **BEST MATCH** badge. Pick a card to see its full report underneath — the original complaint, observations, DTCs, work performed, verification notes, and the parts/consumables used — with the same badge repeated when the best match is selected.
 
 Two actions:
 - **Search web repair tips** — runs a web lookup for this symptom/vehicle combination.
@@ -84,12 +94,14 @@ Record:
 
 **Save job** keeps it open for later; **Complete job** resolves it and files it into the repair library.
 
+While you work, the repair record autosaves in the background. Leaving the tab (or the job) with changes you haven't saved yourself still asks you to confirm, so parts added a minute ago aren't silently treated as done. Save & continue and Complete job show a saving spinner and block the screen until the write lands, so nothing can be tapped mid-save.
+
 ### Who can edit a job
 Every job on the floor is visible to everyone. But a persisted (already-saved) job can only be edited by:
 - The technician it's assigned to, or
 - An Owner or Admin (they can edit any job).
 
-A technician viewing a job assigned to someone else gets a locked, read-only version of the workflow — inputs disabled, action buttons (dictate, enhance, add photo/DTC/part) hidden — with a banner showing who it's assigned to and which bay it's in. A draft job that hasn't been saved yet is always editable by whoever is creating it.
+A technician viewing a job assigned to someone else gets a locked, read-only version of the workflow — inputs disabled, action buttons (dictate, enhance, add photo/DTC/part) hidden — and the Job assignment fields on the Vehicle tab show who it's assigned to and which bay it's in, without the option to change them. A draft job that hasn't been saved yet is always editable by whoever is creating it.
 
 ---
 
@@ -100,7 +112,11 @@ Bottom nav → **Jobs**. Shows every job with:
 - Filter chips: **All / Active / Resolved / Deleted**, each showing a live count.
 - Each job card shows status, bay, date, vehicle, and a one-line issue summary.
 
-**Deleting a job**: tap the "⋯" menu on any active or resolved job card to delete it — this doesn't erase it, it moves it to the **Deleted** filter.
+**Job card menu (⋮)**: every active or resolved job card has a menu in its top-right corner with:
+- **Assign technician / Reassign technician** and **Assign bay / Reassign bay** — the label says "Reassign" once one is set. Each opens a picker: choose the new option, then tap **Save** (it shows a saving state, then a confirmation toast). Only people who can edit the job see these — the assigned technician or an Owner/Admin.
+- **Delete job** — this doesn't erase it, it moves it to the **Deleted** filter.
+
+A job card only ever shows a bay that its branch actually has. If a bay was deleted, renamed or never existed (old or imported data), the card reads **NO BAY** rather than showing a bay that isn't there.
 
 **Deleted jobs**: open one from the Deleted filter to see the full repair record plus two extra actions — **Restore job** (puts it back as active/resolved) or **Delete forever** (permanent, no undo).
 
@@ -165,6 +181,7 @@ Settings → **Repair sharing**. Two independent switches:
 Settings → **Bay management** (Owner/Admin only).
 - Set a **Default bay** — new jobs start here unless changed.
 - **Add bay** / tap an existing bay to edit its name, description, and active/inactive status.
+- **Renaming** a bay carries the new name over to every job in it; **deleting** a bay takes it off every job that was in it, so jobs never point at a bay that no longer exists.
 
 ---
 
@@ -182,7 +199,7 @@ Settings home is grouped, and groups itself by role:
   - Units & measurements — Metric vs Imperial. Only odometer mileage actually changes units today; the rest of the preview (length, temperature, pressure, torque, weight) is a placeholder showing which unit each would use, since those aren't recorded fields yet.
   - Voice & dictation — shows mic permission status and a test-microphone action. Language, auto-punctuation, and review-before-saving are **not built** — dictation always auto-transcribes in one pass.
   - Camera & photos — shows camera permission status. Photo quality tiers and location metadata are **not built** — photos upload at original quality, no location tag.
-  - Notifications — **not built** at all (every toggle disabled); the update banner on the Settings home page is the only alert the app currently sends.
+  - Notifications — **not built** at all (every toggle disabled); the update banner on the Settings home page is the only alert the app currently sends. In-app actions (reassigning, saving, deleting) confirm with a short toast at the bottom of the screen that dismisses itself after 5 seconds — a countdown ring circles its close button, and hovering or focusing it pauses the countdown.
   - Data & storage — **not built** — the app always reads live from the server, no offline cache.
   - Privacy — a plain-language summary of what's stored and shared.
 - **Support**:
@@ -209,3 +226,7 @@ A "You're up to date — Build …" line (with version) shows at the bottom once
 - **Three-tier repair-pattern sharing**: your own shop's history, your other branches (opt-in, named), and the wider anonymised network (opt-in) — all visible side-by-side on a car profile.
 - **Soft delete with full restore** for jobs, plus a separate, deliberate "Delete forever" for true permanent removal.
 - **Per-device branch pinning** so a shared workshop tablet never needs anyone to pick a branch.
+- **Reassign from the job list** — the ⋮ menu on a job card hands a job to another technician or moves it to another bay without opening it.
+- **Bays stay honest** — a job can only show a bay its branch really has, and renaming or deleting a bay updates its jobs automatically.
+- **Autosave on the Repair stage**, with a confirmation before leaving anything you haven't saved yourself.
+- **Light and dark themes** everywhere, including the sign-in screens.
