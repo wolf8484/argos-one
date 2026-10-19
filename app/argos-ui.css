@@ -42,7 +42,7 @@
   --topbar-height: calc(76px + var(--safe-top));
   --gutter: 16px;
   --content: 960px;
-  --copy-size: 16px;
+  --copy-size: 15px;
   --caps-size: 14px;
   /* Shared card gap/radius: control tiles, job cards, and library brand tiles
      are all built from this pair so a future change to the "card" look
@@ -975,7 +975,7 @@ summary,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 .job-status-group {
@@ -1006,7 +1006,7 @@ summary,
   font-size: 18px;
   font-weight: 600;
   line-height: 1.25;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .job-card-context {
@@ -1052,10 +1052,6 @@ summary,
 }
 
 @media (max-width: 500px) {
-  :root {
-    --copy-size: 15px;
-  }
-
   .job-vehicle {
     font-size: 16px;
   }
@@ -1756,7 +1752,7 @@ button.journey-item:active {
 }
 
 .repair-job-info strong {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 8px;
 }
@@ -7344,14 +7340,3 @@ a.profile-recall:focus-visible {
   overflow: hidden;
 }
 
-/* iOS Safari zooms the page when a focused field's text is under 16px, and
-   the zoom sticks -- the page ends up wider than the screen with content
-   cropped. Copy is 15px at this width (--copy-size), so every field is held
-   at 16px here regardless of the rule that styles it. */
-@media (max-width: 500px) {
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}

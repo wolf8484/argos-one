@@ -23,7 +23,7 @@
   --error: #ef4444;
   --success: #22c55e;
   --card-radius: 8px;
-  --copy-size: 16px;
+  --copy-size: 15px;
   --caps-size: 14px;
   --hover: 240ms cubic-bezier(0.25, 0.1, 0.25, 1);
 
@@ -364,7 +364,6 @@
 
 @media (max-width: 500px) {
   .page {
-    --copy-size: 15px;
     padding: 0;
   }
 
@@ -376,10 +375,5 @@
 
   .panel h1 {
     font-size: 24px;
-  }
-
-  /* 16px minimum so iOS doesn't zoom the page on focus (copy is 15px here). */
-  .form input {
-    font-size: 16px;
   }
 }

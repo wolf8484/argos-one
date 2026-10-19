@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   },
 }
 
-export const viewport: Viewport = { themeColor: '#090909', width: 'device-width', initialScale: 1, viewportFit: 'cover' }
+// maximumScale 1 stops iOS Safari zooming the page when a field is focused:
+// fields use 15px copy, and Safari auto-zooms anything under 16px and leaves
+// the page wider than the screen. iOS still allows pinch-zoom regardless;
+// Android honours it and blocks pinch-zoom too.
+export const viewport: Viewport = { themeColor: '#090909', width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover' }
 
 const themeScript = `try{var t=localStorage.getItem('argos-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`
 
