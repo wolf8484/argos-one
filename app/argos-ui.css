@@ -975,7 +975,7 @@ summary,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-top: 16px;
 }
 
 .job-status-group {
@@ -1000,6 +1000,8 @@ summary,
 }
 
 .job-vehicle {
+  /* Clears the options button, which sits top-right beside the title. */
+  padding-right: 40px;
   color: var(--heading);
   font-size: 18px;
   font-weight: 600;
@@ -1040,7 +1042,7 @@ summary,
 
 .job-issue {
   display: -webkit-box;
-  margin: 4px 32px 0 0;
+  margin: 4px 0 0;
   overflow: hidden;
   color: var(--muted);
   font-size: var(--copy-size);

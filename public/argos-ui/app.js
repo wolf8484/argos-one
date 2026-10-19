@@ -1685,6 +1685,9 @@ function jobCard(job, { hidden = false } = {}) {
   const showMenu = job.status !== "deleted";
   return `<div class="job-card" data-status="${job.status}"${hidden ? " hidden" : ""} data-job-search="${escapeHTML(jobSearchText(job))}">
     <button class="job-card-main" data-action="open-job" data-job-id="${job.id}" type="button" aria-label="${job.status === "open" ? "Resume" : `View ${statusLabel.toLowerCase()} job for`} ${jobVehicleName(job)}">
+      <span class="job-vehicle">${jobVehicleName(job)}</span>
+      <span class="job-card-context"><span>${escapeHTML(vehicleSpecLine(job.vehicle))}</span></span>
+      <span class="job-issue">${jobSummary(job)}</span>
       <span class="job-card-top">
         <span class="job-status-group">
           <span class="status-chip ${job.status === "resolved" ? "resolved" : job.status === "deleted" ? "deleted" : ""}">${statusLabel}</span>
@@ -1692,9 +1695,6 @@ function jobCard(job, { hidden = false } = {}) {
           ${dateLabel ? `<span class="job-date">${escapeHTML(dateLabel)}</span>` : ""}
         </span>
       </span>
-      <span class="job-vehicle">${jobVehicleName(job)}</span>
-      <span class="job-card-context"><span>${escapeHTML(vehicleSpecLine(job.vehicle))}</span></span>
-      <span class="job-issue">${jobSummary(job)}</span>
     </button>
     ${showMenu ? `<button class="job-card-menu" type="button" data-action="open-job-menu" data-job-id="${job.id}" aria-haspopup="menu" aria-expanded="false" aria-label="Job options for ${jobVehicleName(job)}">${icon("more")}</button>` : `<span class="job-card-menu-spacer" aria-hidden="true"></span>`}
     <span class="job-card-action" aria-hidden="true">${icon("arrow")}</span>
