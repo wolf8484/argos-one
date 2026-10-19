@@ -7341,3 +7341,15 @@ a.profile-recall:focus-visible {
   border-radius: 12px;
   overflow: hidden;
 }
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   the zoom sticks -- the page ends up wider than the screen with content
+   cropped. Copy is 15px at this width (--copy-size), so every field is held
+   at 16px here regardless of the rule that styles it. */
+@media (max-width: 500px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

@@ -377,4 +377,9 @@
   .panel h1 {
     font-size: 24px;
   }
+
+  /* 16px minimum so iOS doesn't zoom the page on focus (copy is 15px here). */
+  .form input {
+    font-size: 16px;
+  }
 }
