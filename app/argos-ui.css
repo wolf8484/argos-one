@@ -10,7 +10,7 @@
   --text: #e0e0dc;
   --heading: #e0e0dc;
   --text-inverse: #0a0a0a;
-  --muted: #c3c3c3;
+  --muted: #92928e;
   --muted-strong: #e0e0dc;
   --journey-incomplete: #a6a6a2;
   --line: #2d2d2d;
@@ -1760,7 +1760,7 @@ button.journey-item:active {
 .repair-job-info span {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: var(--copy-size);
 }
 
 .repair-job-meta {
