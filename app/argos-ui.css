@@ -447,7 +447,8 @@ main:focus {
   color: #e0e0dc;
 }
 
-/* The accent here is --accent-fill, not --accent: the bar keeps a hardcoded
+/* The bottom nav is the dark bar in both themes (no light override). The
+   accent here is --accent-fill, not --accent: the bar keeps a hardcoded
    dark background in both themes, and --accent resolves to near-black under
    the light theme, which would make the selected tab vanish. The colour
    change is the only thing marking the selection now -- the top stroke this
@@ -4910,22 +4911,6 @@ button.settings-toggle-row {
 :root[data-theme="light"] .select:focus,
 :root[data-theme="light"] .textarea:focus {
   outline-color: #1e1e1e;
-}
-
-:root[data-theme="light"] .bottom-nav {
-  background: #fefefe;
-  border-top: 1px solid #c3c3c3;
-  padding: 0 12px;
-}
-
-:root[data-theme="light"] .nav-item,
-:root[data-theme="light"] .nav-new {
-  color: #1e1e1e;
-}
-
-:root[data-theme="light"] .nav-item.is-active,
-:root[data-theme="light"] .nav-new.is-active {
-  color: #000000;
 }
 
 :root[data-theme="light"] .calendar-nav:active {
