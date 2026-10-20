@@ -65,7 +65,7 @@
   color-scheme: light;
   --hover-surface: #ebebeb;
   --accent-hover: color-mix(in srgb, var(--accent-fill) 94%, #000);
-  --bg: #f6f6f6;
+  --bg: #f3f3f3;
   --surface: #e0e0dc;
   --surface-2: #fefefe;
   --surface-3: #d8d8d5;
@@ -4326,13 +4326,13 @@ button.settings-toggle-row {
 }
 
 :root[data-theme="light"] .bottom-sheet {
-  border: 1px solid #f6f6f6;
-  background: #f6f6f6;
+  border: 1px solid #f3f3f3;
+  background: #f3f3f3;
   /* box-shadow: var(--sheet-shadow); */
 }
 
 :root[data-theme="light"] .sheet-head {
-  background: #f6f6f6;
+  background: #f3f3f3;
 }
 
 .bottom-sheet::-webkit-scrollbar {

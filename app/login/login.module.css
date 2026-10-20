@@ -40,7 +40,7 @@
 }
 
 :global(html[data-theme="light"]) .page {
-  --bg: #f6f6f6;
+  --bg: #f3f3f3;
   --field: #fefefe;
   --surface-2: #fefefe;
   --text: #1e1e1e;
@@ -53,7 +53,7 @@
   --tertiary-border: #92928e;
   --tertiary-text: #1e1e1e;
   --hover-surface: #ebebeb;
-  /* Text-on-light versions: the dark theme's tints fail contrast on #f6f6f6. */
+  /* Text-on-light versions: the dark theme's tints fail contrast on #f3f3f3. */
   --error: #b91c1c;
   --success: #15803d;
 }
