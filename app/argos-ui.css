@@ -3010,7 +3010,7 @@ button.journey-item:active {
 }
 
 /* Enhance only has something to do once there's text: dimmed until then.
-   With text it reveals its label -- styled as a link, not a button: no fill,
+   With text it reveals its label -- no fill at rest (a subtle one on hover),
    icon and label in one colour. The label slides open rather than popping. */
 .field-tools .enhance-button {
   opacity: 0.45;
@@ -5307,12 +5307,7 @@ button.settings-toggle-row {
   }
 
   .text-field-shell.has-text .field-tools .enhance-button.field-tool:not(.is-enhancing):hover {
-    background: transparent;
-  }
-
-  .text-field-shell.has-text .field-tools .enhance-button.field-tool:not(.is-enhancing):hover .field-tool-label {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    background: var(--hover-surface);
   }
 
   .scroll-cue:hover {
