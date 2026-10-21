@@ -2800,7 +2800,7 @@ button.journey-item:active {
   width: 100%;
   border-radius: var(--card-radius);
   background: #1c1c1c;
-  color: var(--muted);
+  color: var(--text);
   font-size: var(--copy-size);
   line-height: 1.35;
   appearance: none;
@@ -2946,8 +2946,18 @@ button.journey-item:active {
 .text-field-shell.has-tools .textarea {
   min-height: 88px;
   padding-bottom: 8px;
+  overflow-y: auto;
   border-radius: var(--card-radius) var(--card-radius) 0 0;
   background: transparent;
+  resize: none;
+}
+
+/* Phones cap the growth so a long note can't push Save off the screen;
+   bigger screens let it grow all the way. */
+@media (max-width: 500px) {
+  .text-field-shell.has-tools .textarea {
+    max-height: 60vh;
+  }
 }
 
 .text-field-shell.has-tools .textarea:focus {

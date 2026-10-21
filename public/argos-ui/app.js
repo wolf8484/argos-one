@@ -1103,6 +1103,22 @@ function fieldShellClass(value) {
 
 function updateFieldTools(target) {
   target?.closest(".text-field-shell")?.classList.toggle("has-text", Boolean(target.value.trim()));
+  autosizeTextarea(target);
+}
+
+// These fields grow with their text instead of scrolling inside the page --
+// a scroll box within a scrolling page is fiddly with gloves on, and a
+// dictated or enhanced note should be readable in full before it's saved.
+// CSS sets the floor (min-height) and, on phones, a ceiling (max-height)
+// past which it scrolls so the field never swallows the whole screen.
+function autosizeTextarea(textarea) {
+  if (!textarea?.matches?.(".text-field-shell.has-tools textarea")) return;
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
+function autosizeFieldTextareas(root) {
+  root.querySelectorAll(".text-field-shell.has-tools textarea").forEach(autosizeTextarea);
 }
 
 // The in-field mic is icon-only, so its state goes in the tooltip/aria-label
@@ -4998,6 +5014,7 @@ function render() {
     animateNextScreen = false;
   }
   app.focus({ preventScroll: true });
+  autosizeFieldTextareas(app);
   requestAnimationFrame(() => {
     restoreMatchCarouselPosition();
     updateScrollCue();
@@ -5203,6 +5220,7 @@ function openSheet(content, { sheetClass = "", ariaLabel = "" } = {}) {
   sheetLayer.innerHTML = `<section class="bottom-sheet${sheetClass ? ` ${sheetClass}` : ""}" role="dialog" aria-modal="true"${ariaLabel ? ` aria-label="${escapeHTML(ariaLabel)}"` : ""}>${content}</section>`;
   sheetLayer.hidden = false;
   hydrateIcons(sheetLayer);
+  autosizeFieldTextareas(sheetLayer);
   const sheet = sheetLayer.querySelector(".bottom-sheet");
   if (isRefreshing) {
     sheet.scrollTop = previousScrollTop;
@@ -6891,6 +6909,7 @@ document.addEventListener("click", (event) => {
     apiRequest("/api/ai/enhance", { method: "POST", body: JSON.stringify({ text: target.value, field }) }).then((result) => {
       target.value = result.text;
       target.dataset.aiOriginal = originalText;
+      updateFieldTools(target);
       if (seeOriginalButton) seeOriginalButton.hidden = false;
       syncTextFieldState(target);
       showToast("Text enhanced for clarity — review before continuing.");
@@ -7284,3 +7303,7 @@ document.addEventListener("visibilitychange", () => {
 });
 window.addEventListener("focus", () => { checkForUpdate(); checkAccess(); });
 })();
+
+// Rewrapping on a width change (rotation, split view) changes the height
+// the text needs.
+window.addEventListener("resize", () => autosizeFieldTextareas(document));
