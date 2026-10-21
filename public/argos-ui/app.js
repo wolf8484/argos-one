@@ -881,7 +881,7 @@ function canEditCurrentJob() {
 // still be able to see. Read-only affordances (photo viewing, journey nav,
 // "show original") are untouched since they don't mutate anything.
 const LOCKED_JOB_HIDE_SELECTORS = [
-  ".action-dock", ".dictate-button", ".enhance-button", ".photo-actions",
+  ".action-dock", ".dictate-button", ".enhance-button", ".field-tools", ".photo-actions",
   ".catalog-action-row", ".vin-camera", ".add-dtc-button", ".dtc-chip-remove",
   ".add-parts-button", ".recorded-part-actions", ".result-actions",
 ];
@@ -1087,7 +1087,46 @@ function queueRepairAutosave(delay = 900) {
   }, delay);
 }
 
+// Dictate and AI enhance live inside the text box, bottom-right: enhance on
+// the left, the mic on the right. Icon-only, with a tooltip on hover/focus;
+// enhance also grows an "Enhance" label once the field has text, which is
+// what makes it findable on touch devices where tooltips never show.
+function fieldTools(targetId, { enhance = true } = {}) {
+  return `<div class="field-tools">${enhance
+    ? `<button class="field-tool enhance-button" type="button" data-enhance="${targetId}" data-tooltip="AI enhance" aria-label="AI enhance">${icon("sparkles")}<span class="field-tool-label">Enhance</span></button><span class="field-tools-divider" aria-hidden="true"></span>`
+    : ""}<button class="field-tool dictate-button" type="button" data-dictate="${targetId}" data-tooltip="Dictate" aria-label="Dictate" aria-pressed="false">${icon("mic")}</button></div>`;
+}
+
+function fieldShellClass(value) {
+  return `text-field-shell has-tools${String(value || "").trim() ? " has-text" : ""}`;
+}
+
+function updateFieldTools(target) {
+  target?.closest(".text-field-shell")?.classList.toggle("has-text", Boolean(target.value.trim()));
+}
+
+// The in-field mic is icon-only, so its state goes in the tooltip/aria-label
+// rather than the button text the old labelled button used.
+function setDictateState(button, label) {
+  if (button.classList.contains("field-tool")) {
+    button.innerHTML = icon("mic");
+    button.dataset.tooltip = label;
+    button.setAttribute("aria-label", label);
+  } else {
+    button.innerHTML = `${icon("mic")} ${label}`;
+  }
+}
+
+function setEnhanceState(button, label) {
+  if (button.classList.contains("field-tool")) {
+    button.innerHTML = `${icon("sparkles")}<span class="field-tool-label">${label}</span>`;
+  } else {
+    button.innerHTML = `${icon("sparkles")} ${label === "Enhance" ? "AI enhance" : label}`;
+  }
+}
+
 function syncTextFieldState(target) {
+  updateFieldTools(target);
   if (target.id === "complaint") state.complaint = target.value;
   if (target.id === "notes") state.notes = target.value;
   if (target.id === "repair-notes") state.repair.workNotes = target.value;
@@ -1127,7 +1166,7 @@ async function startDictation(button, target) {
     activeDictationTarget = target;
     button.classList.add("is-listening");
     button.setAttribute("aria-pressed", "true");
-    button.innerHTML = `${icon("mic")} Listening…`;
+    setDictateState(button, "Listening… tap to stop");
     dictationDock.hidden = false;
     document.body.classList.add("dictation-active");
     requestAnimationFrame(() => dictationDock.classList.add("is-active"));
@@ -1146,7 +1185,7 @@ async function finishDictation() {
   const completedButton = activeDictationButton;
   const completedTarget = activeDictationTarget;
   const recorder = activeMediaRecorder;
-  completedButton.innerHTML = `${icon("mic")} Transcribing…`;
+  setDictateState(completedButton, "Transcribing…");
   completedButton.classList.remove("is-listening");
   dictationDock.classList.remove("is-active");
   document.body.classList.remove("dictation-active");
@@ -1173,6 +1212,8 @@ async function finishDictation() {
     if (completedTarget.id === "notes") state.notes = completedTarget.value;
     if (completedTarget.id === "repair-notes") state.repair.workNotes = completedTarget.value;
     if (completedTarget.id === "repair-verification") state.repair.verificationNotes = completedTarget.value;
+    if (completedTarget.id === "repair-extra-notes") state.repair.extraNotes = completedTarget.value;
+    updateFieldTools(completedTarget);
     showToast("Transcript added — press Dictate to record more.");
   } catch (error) {
     showToast(error?.message || "Voice transcription failed. Please try again.");
@@ -1184,7 +1225,7 @@ async function finishDictation() {
   }
   completedButton.classList.remove("is-listening");
   completedButton.setAttribute("aria-pressed", "false");
-  completedButton.innerHTML = `${icon("mic")} Dictate`;
+  setDictateState(completedButton, "Dictate");
   completedButton.blur();
   activeDictationButton = null;
   activeDictationTarget = null;
@@ -1204,7 +1245,7 @@ function cancelDictation() {
   if (cancelledButton) {
     cancelledButton.classList.remove("is-listening");
     cancelledButton.setAttribute("aria-pressed", "false");
-    cancelledButton.innerHTML = `${icon("mic")} Dictate`;
+    setDictateState(cancelledButton, "Dictate");
     cancelledButton.blur();
   }
   activeDictationButton = null;
@@ -2692,10 +2733,9 @@ function openAddNoteModal() {
   openSheet(`<div class="confirmation-content">
     <h2>Add a note</h2>
     <form class="profile-note-form" id="profile-note-form" autocomplete="off">
-      <textarea class="textarea" id="profile-note-input" name="body" rows="5" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>
+      <div class="${fieldShellClass(state.profileNoteDraft)}"><textarea class="textarea" id="profile-note-input" name="body" rows="5" placeholder="Anything worth remembering about this car">${escapeHTML(state.profileNoteDraft)}</textarea>${fieldTools("profile-note-input", { enhance: false })}</div>
       <div class="profile-note-actions">
         <button class="secondary-button" type="button" data-action="close-sheet">Cancel</button>
-        <button class="dictate-button tertiary-button" type="button" data-dictate="profile-note-input" aria-pressed="false" aria-label="Dictate note">${icon("mic")} Dictate</button>
         <button class="primary-button" type="submit">${icon("save")} Save note</button>
       </div>
     </form>
@@ -4548,13 +4588,11 @@ function renderProblem() {
     <form id="problem-form" class="form-grid assessment-form">
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="complaint">Symptoms</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea></div>
-        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="complaint" aria-pressed="false">${icon("mic")} Dictate</button></div>
+        <div class="${fieldShellClass(state.complaint)}"><textarea class="textarea" id="complaint" name="complaint" placeholder="In their own words…" required>${state.complaint}</textarea>${fieldTools("complaint", { enhance: false })}</div>
       </div>
       <div class="form-field">
         <div class="field-header"><label class="field-label intake-section-title" for="notes">Initial observations <span class="optional-label">(optional)</span></label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="notes">${icon("sparkles")} AI enhance</button></div>
+        <div class="${fieldShellClass(state.notes)}"><textarea class="textarea" id="notes" name="notes" placeholder="Objective signs noticed before research…">${state.notes}</textarea><button class="see-original-button" type="button" data-see-original="notes" hidden>Show original</button>${fieldTools("notes")}</div>
       </div>
       <div class="form-field repair-dtc-field">
         <div class="field-header"><span class="field-label intake-section-title">Diagnostic trouble codes <span class="optional-label">(optional)</span></span></div>
@@ -4668,8 +4706,7 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-notes">Work performed</label></div>
-        <div class="text-field-shell"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-notes">${icon("sparkles")} AI enhance</button></div>
+        <div class="${fieldShellClass(state.repair.workNotes)}"><textarea class="textarea repair-notes" id="repair-notes" name="workNotes" placeholder="Record tests, repair steps and adjustments…">${escapeHTML(state.repair.workNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-notes" hidden>Show original</button>${fieldTools("repair-notes")}</div>
       </div>
 
       <section class="repair-parts-section" aria-labelledby="repair-parts-heading">
@@ -4680,8 +4717,7 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-verification">Verification notes</label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>Show original</button></div>
-        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-verification" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-verification">${icon("sparkles")} AI enhance</button></div>
+        <div class="${fieldShellClass(state.repair.verificationNotes)}"><textarea class="textarea" id="repair-verification" name="verificationNotes" placeholder="How did you confirm the repair worked?">${escapeHTML(state.repair.verificationNotes)}</textarea><button class="see-original-button" type="button" data-see-original="repair-verification" hidden>Show original</button>${fieldTools("repair-verification")}</div>
       </div>
 
       <div class="form-field">
@@ -4693,9 +4729,8 @@ function renderRepairRecord() {
 
       <div class="form-field">
         <div class="field-header"><label class="field-label" for="repair-extra-notes">Extra notes <span class="optional-label">(optional)</span></label></div>
-        <div class="text-field-shell"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button></div>
+        <div class="${fieldShellClass(state.repair.extraNotes)}"><textarea class="textarea" id="repair-extra-notes" name="extraNotes" placeholder="Anything worth knowing next time this model comes in.">${escapeHTML(state.repair.extraNotes || "")}</textarea><button class="see-original-button" type="button" data-see-original="repair-extra-notes" hidden>Show original</button>${fieldTools("repair-extra-notes")}</div>
         <p class="helper">Saved to the car profile as a shop notes</p>
-        <div class="field-actions"><button class="dictate-button tertiary-button" type="button" data-dictate="repair-extra-notes" aria-pressed="false">${icon("mic")} Dictate</button><button class="enhance-button tertiary-button" type="button" data-enhance="repair-extra-notes">${icon("sparkles")} AI enhance</button></div>
       </div>
 
       <div class="action-dock repair-action-dock"><button class="secondary-button full" type="button" data-action="save-repair-draft">${icon("save")} Save job</button><button class="primary-button full" type="submit">${icon("check")} Complete job</button></div>
@@ -6850,7 +6885,7 @@ document.addEventListener("click", (event) => {
     if (fieldShell) void fieldShell.offsetWidth;
     fieldShell?.classList.add("is-ai-tracing");
     enhancer.classList.add("is-enhancing");
-    enhancer.innerHTML = `${icon("sparkles")} Enhancing…`;
+    setEnhanceState(enhancer, "Enhancing…");
     const field = target.id === "complaint" ? "complaint" : target.id === "notes" ? "observations" : target.id === "repair-verification" ? "verification" : "work_performed";
     const originalText = target.value;
     apiRequest("/api/ai/enhance", { method: "POST", body: JSON.stringify({ text: target.value, field }) }).then((result) => {
@@ -6865,7 +6900,7 @@ document.addEventListener("click", (event) => {
       showToast(`${error.message}. Basic cleanup applied locally.`);
     }).finally(() => {
       enhancer.classList.remove("is-enhancing");
-      enhancer.innerHTML = `${icon("sparkles")} AI enhance`;
+      setEnhanceState(enhancer, "Enhance");
       enhancer.blur();
       fieldShell?.classList.remove("is-ai-tracing");
     });
@@ -6877,6 +6912,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("input", (event) => {
+  if (event.target.matches(".text-field-shell.has-tools textarea")) updateFieldTools(event.target);
   // Toggled in place rather than through a re-render, so the field keeps focus
   // and the keyboard stays up while the mechanic types.
   if (event.target.id === "parts-search-input") {
