@@ -1775,7 +1775,7 @@ function renderJobs() {
       <span class="jobs-search-control">${icon("search")}<input class="input jobs-search-input" id="job-search" type="search" value="${escapeHTML(state.jobSearch)}" placeholder="Vehicle or customer" autocomplete="off" /></span>
     </label>
     <div class="quick-row job-filters" role="group" aria-label="Filter jobs">
-      ${[["all", "All"], ["open", "Active"], ["resolved", "Resolved"], ["deleted", "Deleted"]].map(([filter, label]) => `<button class="quick-chip tertiary-button${state.jobFilter === filter ? " is-selected" : ""}" type="button" data-action="filter-jobs" data-job-filter="${filter}" aria-pressed="${state.jobFilter === filter}">${label} ${counts[filter]}</button>`).join("")}
+      ${[["all", "All"], ["open", "Active"], ["resolved", "Resolved"], ["deleted", "Deleted"]].map(([filter, label]) => `<button class="job-tab${state.jobFilter === filter ? " is-selected" : ""}" type="button" data-action="filter-jobs" data-job-filter="${filter}" aria-pressed="${state.jobFilter === filter}">${label} ${counts[filter]}</button>`).join("")}
     </div>
     <div class="job-list">
       ${visibleJobs.map((job) => jobCard(job, { hidden: Boolean(normalizedSearch && !jobSearchText(job).includes(normalizedSearch)) })).join("")}

@@ -5,6 +5,6 @@
 // will flag itself as stale the same way a stale production tab would,
 // letting the update-available flow (nav blip + Settings reload) be
 // exercised without a real deploy.
-const DEV_BUILD_LABEL = "20261021-light-bg-f1f1f1"
+const DEV_BUILD_LABEL = "20261021-job-underline-tabs"
 
 export const BUILD_VERSION = process.env.VERCEL_GIT_COMMIT_SHA || DEV_BUILD_LABEL
