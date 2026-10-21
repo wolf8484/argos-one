@@ -5306,7 +5306,13 @@ button.settings-toggle-row {
     transform: translate(-50%, 0);
   }
 
-  .text-field-shell.has-text .field-tools .enhance-button.field-tool:not(.is-enhancing):hover {
+  /* The field fill (#1c1c1c) is already close to --hover-surface, so the
+     in-field tools hover one step lighter to read clearly in dark mode. */
+  .text-field-shell.has-tools .field-tools .field-tool.field-tool:not(.is-enhancing):not(.is-listening):hover {
+    background: #2d2d2d;
+  }
+
+  :root[data-theme="light"] .text-field-shell.has-tools .field-tools .field-tool.field-tool:not(.is-enhancing):not(.is-listening):hover {
     background: var(--hover-surface);
   }
 
