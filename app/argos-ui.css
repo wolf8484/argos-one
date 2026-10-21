@@ -6375,7 +6375,14 @@ body.dictation-active .toast {
   }
 
   .match-option {
-    padding: 14px 62px 14px 14px;
+    padding: 16px 62px 16px 16px;
+  }
+
+  /* The 62px right padding keeps the copy clear of the action button; the
+     score/badge row reaches back across it so the badge sits 16px from the
+     corner like the other edges. */
+  .match-option-top {
+    margin-right: -46px;
   }
 
   .match-option-copy {
