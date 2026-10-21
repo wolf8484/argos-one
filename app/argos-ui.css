@@ -2929,21 +2929,42 @@ button.journey-item:active {
   display: none;
 }
 
-/* In-field toolbar: AI enhance then the mic, bottom-right inside the text
-   box. The textarea reserves room underneath its text for it, and it sits
-   left of the resize handle so that stays grabbable. */
+/* In-field toolbar. The shell becomes the visible box (fill, radius, focus
+   ring) holding the textarea and a footer row beneath it, so long text
+   scrolls inside the textarea and never runs under the buttons. */
+.text-field-shell.has-tools {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--card-radius);
+  background: #1c1c1c;
+}
+
+:root[data-theme="light"] .text-field-shell.has-tools {
+  background: var(--surface-2);
+}
+
 .text-field-shell.has-tools .textarea {
-  padding-bottom: 64px;
+  min-height: 88px;
+  padding-bottom: 8px;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  background: transparent;
+}
+
+.text-field-shell.has-tools .textarea:focus {
+  outline: none;
+}
+
+.text-field-shell.has-tools:has(.textarea:focus) {
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .field-tools {
-  position: absolute;
-  z-index: 3;
-  right: 20px;
-  bottom: 8px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
+  padding: 0 12px 8px;
 }
 
 .field-tools-divider {
@@ -2958,7 +2979,6 @@ button.journey-item:active {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   width: auto;
   min-width: 44px;
   height: 44px;
@@ -2970,6 +2990,7 @@ button.journey-item:active {
   color: var(--muted-strong);
   font-size: var(--copy-size);
   font-weight: 500;
+  transition: opacity 240ms var(--hover-ease), background-color var(--hover-duration) var(--hover-ease), color var(--hover-duration) var(--hover-ease);
 }
 
 .field-tools .field-tool svg {
@@ -2978,36 +2999,39 @@ button.journey-item:active {
   color: currentColor;
 }
 
-/* Enhance only has something to do once there's text: dimmed until then,
-   and with text it grows its label (accent icon) so it reads as an action
-   even without a hover tooltip. */
+/* Enhance only has something to do once there's text: dimmed until then.
+   With text it reveals its label -- styled as a link, not a button: no fill,
+   icon and label in one colour. The label slides open rather than popping. */
 .field-tools .enhance-button {
   opacity: 0.45;
 }
 
 .field-tool-label {
-  display: none;
+  display: inline-block;
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 360ms var(--hover-ease), margin-left 360ms var(--hover-ease), opacity 260ms var(--hover-ease) 80ms;
 }
 
 .has-text .field-tools .enhance-button {
   opacity: 1;
-  padding: 0 14px 0 12px;
-  background: var(--hover-surface);
   color: var(--heading);
-}
-
-.has-text .field-tools .enhance-button svg {
-  color: var(--accent);
 }
 
 .has-text .field-tool-label,
 .field-tools .enhance-button.is-enhancing .field-tool-label {
-  display: inline;
+  max-width: 96px;
+  margin-left: 8px;
+  opacity: 1;
 }
 
 .field-tools .enhance-button.is-enhancing {
   opacity: 1;
   border: 0;
+  background: transparent;
 }
 
 .field-tools .dictate-button.is-listening {
@@ -3017,6 +3041,12 @@ button.journey-item:active {
 
 .field-tools .dictate-button.is-listening svg {
   color: var(--on-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-tool-label {
+    transition: none;
+  }
 }
 
 /* Tooltip above each tool: hover on pointer devices, and keyboard focus.
@@ -5264,6 +5294,15 @@ button.settings-toggle-row {
   .field-tool[data-tooltip]:hover::after {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+
+  .text-field-shell.has-text .field-tools .enhance-button.field-tool:not(.is-enhancing):hover {
+    background: transparent;
+  }
+
+  .text-field-shell.has-text .field-tools .enhance-button.field-tool:not(.is-enhancing):hover .field-tool-label {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .scroll-cue:hover {
