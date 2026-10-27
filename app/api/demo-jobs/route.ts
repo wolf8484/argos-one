@@ -24,6 +24,7 @@ type DemoFixture = {
   observations: string
   summary: string
   repair?: {
+    system?: string
     cause: string
     workPerformed: string
     verification: string
@@ -101,6 +102,219 @@ const fixtures: DemoFixture[] = [
       items: [
         { kind: 'part', name: 'Catalytic converter assembly', partNumber: '18160-5BA-A00', quantity: 1 },
         { kind: 'part', name: 'Exhaust flange gasket', partNumber: '18212-SA7-003', quantity: 2 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-engine-fuel-air', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Daniel Okafor', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 64100, dtc: 'P0171',
+    complaint: 'Rough idle when cold and a hesitation pulling away from the lights.',
+    observations: 'Smoke test found an unmetered air leak at the PCV hose. Long-term fuel trim was +18% at idle.',
+    summary: 'Rough cold idle and hesitation. Smoke test found a split PCV hose with fuel trims running lean.',
+    repair: {
+      system: 'engine_fuel_air',
+      cause: 'Split PCV hose letting unmetered air into the intake, driving the engine lean at idle.',
+      workPerformed: 'Smoke-tested the intake and confirmed a leak at the PCV hose.\nReplaced the PCV hose and valve.\nCleaned the throttle body and reset idle learn.\nRoad-tested and confirmed fuel trims back within ±5%.',
+      verification: 'Fuel trims settled within ±5% at idle and cruise. No DTC returned after two cold starts.',
+      steps: [
+        'Smoke-tested the intake and confirmed a leak at the PCV hose.',
+        'Replaced the PCV hose and valve.',
+        'Cleaned the throttle body and reset idle learn.',
+        'Road-tested and confirmed fuel trims back within ±5%.',
+      ],
+      items: [
+        { kind: 'part', name: 'PCV hose', quantity: 1 },
+        { kind: 'part', name: 'PCV valve', quantity: 1 },
+        { kind: 'consumable', name: 'Throttle body cleaner', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-ignition', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Sophie Tran', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 97300, dtc: 'P0302',
+    complaint: 'Engine shudders under load and the check-engine light flashes on the highway.',
+    observations: 'Misfire counter high on cylinder 2. Swapping coils moved the misfire to cylinder 3.',
+    summary: 'Flashing check-engine light with shudder under load. Misfire followed the cylinder 2 coil when swapped.',
+    repair: {
+      system: 'ignition',
+      cause: 'Failed ignition coil on cylinder 2 causing a misfire under load.',
+      workPerformed: 'Read misfire counters and confirmed cylinder 2.\nSwapped coils 2 and 3 to confirm the misfire followed the coil.\nReplaced the coil and all four spark plugs.\nCleared codes and road-tested under load.',
+      verification: 'Misfire counters stayed at zero across a 20 km road test including highway load.',
+      steps: [
+        'Read misfire counters and confirmed cylinder 2.',
+        'Swapped coils 2 and 3 to confirm the misfire followed the coil.',
+        'Replaced the coil and all four spark plugs.',
+        'Cleared codes and road-tested under load.',
+      ],
+      items: [
+        { kind: 'part', name: 'Ignition coil', quantity: 1 },
+        { kind: 'part', name: 'Spark plug', quantity: 4 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-transmission', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Liam Fraser', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 118500, dtc: 'P0868',
+    complaint: 'Judder pulling away from a stop and the revs flare under light throttle.',
+    observations: 'CVT fluid dark with a burnt smell. Line pressure low at idle and fluid temperature normal.',
+    summary: 'Take-off judder and revs flaring. CVT fluid degraded and line pressure low at idle.',
+    repair: {
+      system: 'transmission',
+      cause: 'Degraded CVT fluid causing low line pressure and belt slip on take-off.',
+      workPerformed: 'Checked CVT fluid condition and level.\nDrained and refilled the CVT fluid twice.\nReplaced the CVT fluid strainer.\nRan the CVT learn procedure and road-tested.',
+      verification: 'Smooth take-off with no judder or flare. Line pressure back in specification.',
+      steps: [
+        'Checked CVT fluid condition and level.',
+        'Drained and refilled the CVT fluid twice.',
+        'Replaced the CVT fluid strainer.',
+        'Ran the CVT learn procedure and road-tested.',
+      ],
+      items: [
+        { kind: 'consumable', name: 'Honda HCF-2 CVT fluid (L)', quantity: 7 },
+        { kind: 'part', name: 'CVT fluid strainer', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-cooling-hvac', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Grace Whitfield', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 71800,
+    complaint: 'Air-con blowing warm air on hot days, then cools again on the highway.',
+    observations: 'Condenser fan not running with AC on. Fan motor drew no current with 12 V applied at the connector.',
+    summary: 'AC warm at idle and cool at speed. Condenser fan motor not running with power applied.',
+    repair: {
+      system: 'cooling_hvac',
+      cause: 'Seized condenser fan motor, so the AC lost condensing airflow at idle.',
+      workPerformed: 'Confirmed refrigerant pressures rose at idle with the fan off.\nApplied 12 V to the fan and confirmed the motor was seized.\nReplaced the condenser fan motor and shroud.\nChecked vent temperature at idle and on the road.',
+      verification: 'Vent temperature held at 6 °C at idle on a 34 °C day. Fan cycling normally.',
+      steps: [
+        'Confirmed refrigerant pressures rose at idle with the fan off.',
+        'Applied 12 V to the fan and confirmed the motor was seized.',
+        'Replaced the condenser fan motor and shroud.',
+        'Checked vent temperature at idle and on the road.',
+      ],
+      items: [
+        { kind: 'part', name: 'Condenser fan motor and shroud', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-brakes', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Ethan Kowalski', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 58900,
+    complaint: 'Steering wheel shakes when braking from highway speed.',
+    observations: 'Front rotor runout 0.09 mm, above the 0.04 mm limit. Pads at 4 mm.',
+    summary: 'Brake judder from highway speed. Front rotor runout over limit and pads worn.',
+    repair: {
+      system: 'brakes',
+      cause: 'Excessive front rotor runout causing pedal pulsation and steering shake under braking.',
+      workPerformed: 'Measured front rotor runout and thickness.\nReplaced both front rotors and pads.\nCleaned and lubricated the caliper slide pins.\nBedded in the new pads and road-tested.',
+      verification: 'No judder from 100 km/h stops. Pedal firm and runout within specification.',
+      steps: [
+        'Measured front rotor runout and thickness.',
+        'Replaced both front rotors and pads.',
+        'Cleaned and lubricated the caliper slide pins.',
+        'Bedded in the new pads and road-tested.',
+      ],
+      items: [
+        { kind: 'part', name: 'Front brake rotor', quantity: 2 },
+        { kind: 'part', name: 'Front brake pad set', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-suspension-steering', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Hannah Lee', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 89200,
+    complaint: 'Clunk from the front left over speed bumps and a light knock when turning.',
+    observations: 'Front left sway-bar link had free play at the ball joint. Strut mounts and lower arm bushes were fine.',
+    summary: 'Front left clunk over bumps. Sway-bar link ball joint worn with free play.',
+    repair: {
+      system: 'suspension_steering',
+      cause: 'Worn front left sway-bar link ball joint knocking over bumps.',
+      workPerformed: 'Road-tested to confirm the noise.\nInspected the front suspension on the hoist.\nReplaced both front sway-bar links.\nTorqued to specification and re-tested over bumps.',
+      verification: 'No clunk over speed bumps or when turning at full lock.',
+      steps: [
+        'Road-tested to confirm the noise.',
+        'Inspected the front suspension on the hoist.',
+        'Replaced both front sway-bar links.',
+        'Torqued to specification and re-tested over bumps.',
+      ],
+      items: [
+        { kind: 'part', name: 'Front sway-bar link', quantity: 2 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-electrical', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Noah Patel', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 76400,
+    complaint: 'Slow cranking in the mornings and the car occasionally needs a jump start.',
+    observations: 'Battery passed load test. Parasitic draw of 280 mA traced to the boot light staying on.',
+    summary: 'Slow morning starts. Parasitic draw traced to the boot light switch holding the lamp on.',
+    repair: {
+      system: 'electrical',
+      cause: 'Faulty boot latch switch keeping the boot light on and draining the battery overnight.',
+      workPerformed: 'Load-tested the battery and charging system.\nMeasured parasitic draw and isolated it by pulling fuses.\nReplaced the boot latch switch.\nRecharged the battery and re-measured draw.',
+      verification: 'Parasitic draw down to 25 mA after sleep mode. Starts normally after three nights parked.',
+      steps: [
+        'Load-tested the battery and charging system.',
+        'Measured parasitic draw and isolated it by pulling fuses.',
+        'Replaced the boot latch switch.',
+        'Recharged the battery and re-measured draw.',
+      ],
+      items: [
+        { kind: 'part', name: 'Boot latch switch', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-body-interior', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Chloe Martin', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 52700,
+    complaint: 'Water on the front passenger floor after heavy rain.',
+    observations: 'Water test showed the windscreen cowl drain blocked with leaves, overflowing into the cabin filter housing.',
+    summary: 'Wet passenger floor after rain. Blocked cowl drain overflowing into the cabin.',
+    repair: {
+      system: 'body_interior',
+      cause: 'Blocked windscreen cowl drain letting water overflow into the cabin air intake.',
+      workPerformed: 'Water-tested to find the entry point.\nRemoved the cowl panel and cleared the drain.\nReplaced the soaked cabin air filter.\nDried the carpet and re-tested with a hose.',
+      verification: 'No water entry after a 10-minute hose test. Carpet dry the following day.',
+      steps: [
+        'Water-tested to find the entry point.',
+        'Removed the cowl panel and cleared the drain.',
+        'Replaced the soaked cabin air filter.',
+        'Dried the carpet and re-tested with a hose.',
+      ],
+      items: [
+        { kind: 'part', name: 'Cabin air filter', quantity: 1 },
+      ],
+    },
+  },
+  {
+    key: 'honda-civic-other', status: 'resolved', stage: 'resolved', bay: 'Bay 01',
+    customer: 'Oliver Grant', year: 2019, make: 'Honda', model: 'Civic',
+    trim: 'EX', engine: '2.0L', drivetrain: 'FWD', transmission: 'CVT automatic', mileage: 104600,
+    complaint: 'Squealing noise from the engine bay on cold starts that fades after a minute.',
+    observations: 'Drive belt glazed with cracks across the ribs. Tensioner pulley bearing noisy when spun by hand.',
+    summary: 'Cold-start squeal. Drive belt glazed and the tensioner bearing noisy.',
+    repair: {
+      system: 'other',
+      cause: 'Glazed drive belt and worn tensioner bearing squealing on cold starts.',
+      workPerformed: 'Confirmed the noise source with a stethoscope.\nReplaced the drive belt.\nReplaced the belt tensioner.\nChecked belt alignment and re-tested from cold.',
+      verification: 'No squeal on two cold starts. Belt tracking correctly.',
+      steps: [
+        'Confirmed the noise source with a stethoscope.',
+        'Replaced the drive belt.',
+        'Replaced the belt tensioner.',
+        'Checked belt alignment and re-tested from cold.',
+      ],
+      items: [
+        { kind: 'part', name: 'Drive belt', quantity: 1 },
+        { kind: 'part', name: 'Belt tensioner', quantity: 1 },
       ],
     },
   },
@@ -215,6 +429,7 @@ export async function POST() {
           cause: fixture.repair.cause,
           work_performed: fixture.repair.workPerformed,
           verification_notes: fixture.repair.verification,
+          system: fixture.repair.system ?? null,
           verified: true,
           completed_by: profile.id,
         }).select('id').single()
