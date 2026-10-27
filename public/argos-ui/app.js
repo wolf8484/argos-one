@@ -2262,6 +2262,13 @@ function repairCaseOptionLabel(instance, index) {
   return `${String(index + 1).padStart(2, "0")} · ${bits.join(" · ") || "Repair"}`;
 }
 
+// The header names the system (icon + label), not the case: case labels are
+// whole diagnostic sentences, which made a three-line title that ran under
+// the close button. The sentence moves into the body as its own section.
+function repairCaseSheetHead(system, meta) {
+  return `<div class="sheet-head"><div><h2 class="repair-case-title"><span class="known-issues-system-icon">${repairSystemIcon(system)}</span>${escapeHTML(REPAIR_SYSTEM_LABELS.get(system) || "Other")}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>`;
+}
+
 function shopRepairCaseSheet(row, selectedIndex = 0) {
   const instances = Array.isArray(row.instances) ? row.instances : [];
   const index = Math.min(Math.max(selectedIndex, 0), Math.max(instances.length - 1, 0));
@@ -2274,9 +2281,10 @@ function shopRepairCaseSheet(row, selectedIndex = 0) {
       ${instances.map((instance, i) => `<option value="${i}"${i === index ? " selected" : ""}>${escapeHTML(repairCaseOptionLabel(instance, i))}</option>`).join("")}
     </select>${icon("down")}</span>
   </label>` : "";
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.label)}</h2><span class="task-context">${escapeHTML(countLabel)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`${repairCaseSheetHead(row.system || "other", countLabel)}
     <div class="sheet-body repair-case-sheet-body">
       ${caseSelector}
+      ${resolvedDetailSection("Cause", `<div class="repair-summary-box"><p>${escapeHTML(row.label)}</p></div>`)}
       ${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(current.symptom_text || "No complaint recorded.")}</p></div>`)}
       ${resolvedDetailSection("Work performed", `<div class="repair-summary-box"><p>${escapeHTML(current.repair_text || "No work performed recorded.")}</p></div>`)}
     </div>
@@ -2330,8 +2338,9 @@ function networkPatternRow(row) {
 
 function networkRepairCaseSheet(row) {
   const meta = `${row.shopCount} shop${row.shopCount === 1 ? "" : "s"} · ${row.occurrences} repair${row.occurrences === 1 ? "" : "s"} reported`;
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.mostCommonIssue || row.label)}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`${repairCaseSheetHead(row.system || "other", meta)}
     <div class="sheet-body">
+      ${resolvedDetailSection("Issue", `<div class="repair-summary-box"><p>${escapeHTML(row.mostCommonIssue || row.label)}</p></div>`)}
       ${resolvedDetailSection("Symptoms", `<div class="repair-summary-box"><p>${escapeHTML(row.symptomsSummary)}</p></div>`)}
       ${resolvedDetailSection("Repair", `<div class="repair-summary-box"><p>${escapeHTML(row.repairSummary)}</p></div>`)}
     </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.mostCommonIssue || row.label });
@@ -2426,8 +2435,9 @@ function branchRepairCaseSheet(row) {
   const list = (entries) => entries.length
     ? `<div class="repair-summary-box">${entries.map((entry) => `<p>${escapeHTML(entry)}</p>`).join("")}</div>`
     : `<p class="profile-empty">Nothing recorded.</p>`;
-  openSheet(`<div class="sheet-head"><div><h2>${escapeHTML(row.label)}</h2><span class="task-context">${escapeHTML(meta)}</span></div><button class="icon-button" type="button" data-action="close-sheet" aria-label="Close">${icon("close")}</button></div>
+  openSheet(`${repairCaseSheetHead(row.system || "other", meta)}
     <div class="sheet-body">
+      ${resolvedDetailSection("Cause", `<div class="repair-summary-box"><p>${escapeHTML(row.label)}</p></div>`)}
       ${resolvedDetailSection("Symptoms", list(row.symptoms || []))}
       ${resolvedDetailSection("Repair", list(row.repairs || []))}
     </div>`, { sheetClass: "repair-case-sheet", ariaLabel: row.label });

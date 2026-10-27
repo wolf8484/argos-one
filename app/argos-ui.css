@@ -7533,3 +7533,16 @@ a.profile-recall:focus-visible {
   overflow: hidden;
 }
 
+
+/* The close button floats (absolute) over the head, so any title long enough
+   to reach it ran underneath. Reserve its width on every sheet that has one. */
+.sheet-head:has(> .icon-button) > div:first-child {
+  min-width: 0;
+  padding-right: 52px;
+}
+
+.repair-case-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
